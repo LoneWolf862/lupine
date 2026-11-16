@@ -4,7 +4,7 @@ A small, offline, story-independent interactive fiction engine written in Rust. 
 
 ## Status
 
-**v0.1.0 foundation:** terminal loop, typed commands, help, look, navigation, safe input handling, and automated parser/navigation tests. Inventory, objects, puzzle interactions, and the enhanced parser are planned but **not yet implemented**.
+**v0.2.0 — Objects and Inventory (candidate):** includes terminal navigation, a typed parser, portable/fixed objects, inspect/take/drop/inventory, object aliases, ambiguity feedback, and a generic stateful `use <item> on <target>` rule. This update must be compiled and tested locally before treating it as verified.
 
 ## Requirements
 
@@ -23,10 +23,17 @@ cargo clippy --all-targets -- -D warnings
 
 ```text
 look
+examine table
+take brass key
+inventory
 go north
 e
+examine panel
+use key on panel
 west
 south
+drop key
+look
 help
 quit
 ```
@@ -38,10 +45,11 @@ quit
 - `src/parser.rs`: normalization and command grammar
 - `src/commands.rs`: typed commands and directions
 - `src/world.rs`: immutable test world
-- `src/state.rs`: mutable player location
+- `src/state.rs`: mutable player position, item locations, and interaction flags
 - `src/engine.rs`: validate and execute commands
 - `src/render.rs`: terminal text
-- `tests/gameplay.rs`: integration test
+- `tests/gameplay.rs`: navigation integration test
+- `tests/objects.rs`: object and interaction integration tests
 - `docs/`: requirements, architecture, handoff notes, roadmap
 
 ## CSE 310
@@ -50,7 +58,7 @@ Code exercises immutable `World`, mutable `GameState`, an input `loop`, borrowin
 
 ## Next milestone
 
-Add portable/fixed objects, examine/take/drop/inventory, entity resolution, alias handling, and a stateful generic interaction. See `docs/ROADMAP.md`.
+Verify Windows and CachyOS builds and tests, review ambiguous object resolution and parser usability, then prepare instructor-template documentation and offline releases. See `docs/ROADMAP.md`.
 
 ## License
 

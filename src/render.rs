@@ -1,10 +1,32 @@
-use crate::world::Room;
+use crate::state::{GameState, ItemLocation};
+use crate::world::{Room, World};
 
-pub fn describe_room(room: &Room) -> String {
-    let exits = room.exits.iter().map(|(direction, _)| direction.label()).collect::<Vec<_>>();
-    format!("{}\n{}\nExits: {}", room.title, room.description, exits.join(", "))
+pub fn describe_room(world: &World, state: &GameState, room: &Room) -> String {
+    let exits = room
+        .exits
+        .iter()
+        .map(|(direction, _)| direction.label())
+        .collect::<Vec<_>>();
+    let objects = world
+        .items
+        .iter()
+        .filter(|item| state.location(item.id) == Some(ItemLocation::Room(room.id)))
+        .map(|item| item.name)
+        .collect::<Vec<_>>();
+    let visible = if objects.is_empty() {
+        "Objects: none".to_string()
+    } else {
+        format!("Objects: {}", objects.join(", "))
+    };
+    format!(
+        "{}\n{}\nExits: {}\n{}",
+        room.title,
+        room.description,
+        exits.join(", "),
+        visible
+    )
 }
 
 pub fn help() -> &'static str {
-    "Commands: look (l), north/south/east/west/up/down (n/s/e/w/u/d), go <direction>, help (h), quit (q).\nMore interactions will be added in upcoming milestones."
+    "Commands: look (l), directions (n/s/e/w/u/d), go <direction>, examine <object> (x), take <object> (get/grab/pick up), drop <object>, inventory (i), use <item> on <target>, help (h), quit (q)."
 }

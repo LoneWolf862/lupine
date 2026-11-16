@@ -9,11 +9,11 @@ fn main() -> io::Result<()> {
     let world = fixture_world();
     let mut state = GameState::new(&world);
 
-    println!("LUPINE v0.1.0 — Interactive Fiction Engine");
+    println!("LUPINE v0.2.0 — Interactive Fiction Engine");
     println!("Temporary test world. HOWLBOUND story not yet designed.");
     println!("Type 'help' for commands.\n");
     if let Some(room) = world.room(state.current_room) {
-        println!("{}\n", lupine::render::describe_room(room));
+        println!("{}\n", lupine::render::describe_room(&world, &state, room));
     }
 
     loop {
@@ -33,8 +33,15 @@ fn main() -> io::Result<()> {
                 }
             },
             Err(ParseError::Empty) => continue,
-            Err(ParseError::MissingDirection) => println!("Where would you like to go? Try 'go north'.\n"),
-            Err(ParseError::Unknown(command)) => println!("I don't understand '{command}'. Type 'help' for commands.\n"),
+            Err(ParseError::MissingDirection) => {
+                println!("Where would you like to go? Try 'go north'.\n")
+            }
+            Err(ParseError::MissingTarget(action)) => {
+                println!("Please specify a target. Try 'help' for the syntax of {action}.\n")
+            }
+            Err(ParseError::Unknown(command)) => {
+                println!("I don't understand '{command}'. Type 'help' for commands.\n")
+            }
         }
     }
     Ok(())

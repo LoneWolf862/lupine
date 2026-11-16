@@ -25,6 +25,11 @@ impl Direction {
 pub enum Command {
     Look,
     Move(Direction),
+    Examine(String),
+    Take(String),
+    Drop(String),
+    Inventory,
+    Use { item: String, target: String },
     Help,
     Quit,
 }

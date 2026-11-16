@@ -19,7 +19,10 @@ fn walkthrough_navigation_and_blocked_exit() {
     assert_eq!(state.current_room, "chamber");
 
     let blocked = execute_command(&world, &mut state, Command::Move(Direction::North));
-    assert_eq!(blocked, ActionOutcome::Message("You cannot go north from here.".into()));
+    assert_eq!(
+        blocked,
+        ActionOutcome::Message("You cannot go north from here.".into())
+    );
     assert_eq!(state.current_room, "chamber");
 
     execute_command(&world, &mut state, Command::Move(Direction::West));
