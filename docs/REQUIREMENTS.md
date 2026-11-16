@@ -1,15 +1,15 @@
-# Terminal Interactive Fiction Engine — Requirements
+# Lupine Interactive Fiction Engine — Requirements
 
-**Status:** Planning / implementation-ready  
+**Status:** v0.2.0 implemented and verified on Windows; v0.3.0 planned  
 **Language:** Rust (Cargo)  
 **Course:** CSE 310 Applied Programming — Rust module  
-**Story:** To be created separately; no setting, plot, characters, or lore are prescribed here.
+**First game:** HOWLBOUND (tentative name; story to be designed separately). No setting, plot, characters, or lore are prescribed here.
 
 ## 1. Project goal
 
 Build a compact, **offline, terminal-only interactive fiction engine** inspired by the *interaction style* of classic parser adventures such as Zork, but with a more forgiving, discoverable parser. The project is **not** a remake of Zork. Game mechanics and content must be original. A player should be able to run a locally built executable and play without an account, server, internet connection, cloud AI, or installed Rust toolchain.
 
-The primary deliverable is a reusable **framework** that can support different stories without reworking the parser or core world logic. A small neutral test world should demonstrate all necessary behaviors; its narrative is provisional.
+The primary deliverable is an **open-source reusable framework** that third parties can use to make different adventures without reworking the parser or core world logic. HOWLBOUND will be the first original game used to test the engine, not built-in engine content. A small neutral test world demonstrates behavior in the meantime. **Final-release accessibility goal:** people without a technical/programming background must be able to create, validate, test, and package their own adventures without editing Rust. This is a final-release requirement, **not an MVP or CSE 310 requirement**. See `CREATOR_VISION.md`.
 
 ## 2. Non-negotiable constraints
 
@@ -18,7 +18,8 @@ The primary deliverable is a reusable **framework** that can support different s
 - **Self-contained release:** distribute a platform-specific executable with the story data bundled into it, or with clearly packaged local data files. If story content is in external files, make the release complete and immediately playable.
 - **Small footprint:** avoid a large language model, heavyweight runtime, database, web server, or unnecessary dependencies. Prefer standard library and carefully justified small crates.
 - **Cross-platform target:** Windows and Linux first; macOS desirable. Build separate binaries per OS if needed.
-- **Story-independent engine:** keep story content and world definitions separate from parsing, rules, and rendering.
+- **Story-independent engine:** keep story content and world definitions separate from parsing, rules, and rendering. Developers should be able to supply new worlds without rewriting engine internals.
+- **Accessible creator path by final release:** a nonprogrammer can author and export a game through approachable tooling; no-Rust creation is not required for the initial framework milestones.
 - **Original content:** draw inspiration from the command-driven genre, not from Zork's copyrighted rooms, prose, puzzles, or assets.
 
 ## 3. Core player experience (MVP)
@@ -87,16 +88,16 @@ The stretch challenge is distinct from the mandatory five. The above mapping is 
 - REQ-29: `cargo fmt`, `cargo clippy`, and `cargo test` should pass before submission (subject to tool availability).
 - REQ-30: Include a public-repo-ready README, build/run steps, command reference, and a short demonstration script.
 
-## 6. Optional features (explicitly not needed for first framework pass)
+## 6. Later features (explicitly not needed for first framework pass)
 
 - Save/load player progress using local files; portable serialization format and versioning.
-- A data-driven story format (TOML/JSON/RON) and bundled example content.
+- A data-driven story format (TOML/JSON/RON or another evaluated format) and bundled example content. **Deferred from MVP but necessary in some suitable form for the final creator release.**
 - Conversation systems, NPCs, branching dialogue, combat, quests, or complex puzzles.
 - Rich terminal formatting, colors, accessible contrast controls.
 - Unicode-friendly matching and typo suggestions.
-- User-defined world loading / modding.
+- User-defined world loading / modding. **User-authored world loading is required eventually for the final creator release, but not for this first pass.**
 
-**Priority:** A robust parser and stateful world matter more than large quantities of story content. Resist scope creep.
+**Priority:** A robust parser and stateful world matter more than large quantities of story content. Resist scope creep. A possible graphical **Lupine Studio** editor is only a candidate; its existence and exact interface are not yet decided.
 
 ## 7. Acceptance checks for first playable version
 
@@ -111,11 +112,25 @@ The stretch challenge is distinct from the mandatory five. The above mapping is 
 9. Unit tests cover commands, synonyms, name resolution, state changes, and invalid inputs.
 10. In a code walkthrough, identify all **five Rust course features** and a stretch challenge.
 
-## 8. Scope and story-content boundary
+## 8. Long-term reusable and creator-accessible release requirements
+
+The following are **final-release requirements**, not acceptance gates for the current Rust course sprint or v0.3.0:
+
+- **REQ-F01 — Independent games:** a developer can build at least two materially different games with public Lupine capabilities, without editing parser/rules internals.
+- **REQ-F02 — No-code story authoring:** a person without Rust or programming knowledge can create rooms, exits, objects, descriptions, and common interactions using an approachable authoring workflow.
+- **REQ-F03 — Content validation:** duplicate IDs, broken references, and invalid rules produce creator-facing, actionable diagnostics rather than opaque crashes.
+- **REQ-F04 — Rapid playtesting:** creators can run their authored game and immediately test changes in a predictable local workflow.
+- **REQ-F05 — Creator packaging:** creators can export a complete offline game via an approachable process. Players must not need a compiler, Cargo, an account, or network access.
+- **REQ-F06 — Documentation and usability:** provide a starter game, beginner tutorial, and a practical usability check with someone unfamiliar with programming.
+- **REQ-F07 — Game/engine isolation:** HOWLBOUND is created using the same public authoring mechanisms available to other creators; no exclusive story logic in core engine.
+
+Implementation decisions remain open: story-file format, editor UX, content schema, and exact packaging method. A visual editor may help but is not itself a guaranteed requirement. See `CREATOR_VISION.md`.
+
+## 9. Scope and story-content boundary
 
 This requirements document intentionally does **not** choose the setting, plot, genre, protagonist, lore, exact items, or puzzle solutions. A generic fixture world is permitted for tests, but should be replaceable later. Story design will have its own document once decided.
 
-## 9. Submission deliverables
+## 10. Submission deliverables
 
 - Runnable Rust/Cargo source project in a public GitHub repository.
 - Root `README.md` using the instructor-provided CSE 310 template (obtain/fill it rather than assuming an invented template is equivalent).
@@ -125,3 +140,10 @@ This requirements document intentionally does **not** choose the setting, plot, 
 - Test results and source/reference links used while learning Rust.
 
 **Instructor-specific note:** The professor has approved counting this semester's existing project work within the self-contained sprint. Document honestly; do not fabricate hours or development dates.
+
+## Implementation status checkpoint (2026-11-16)
+
+- **Verified on Windows:** v0.2.0 builds, 10 automated tests pass, interactive play works, `cargo fmt --all` ran, strict Clippy passed. Commit `6d58bdc` is pushed to public `main`.
+- **Not yet verified:** CachyOS/Linux build, packaged executable operating without build tools, course README template/video.
+- **Not implemented yet:** external story files, general conditions/effects system, state-dependent descriptions, nontechnical creator workflow, visual editor.
+- **Next milestone:** v0.3.0 reusable engine architecture; see `ROADMAP.md`.

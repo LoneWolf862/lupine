@@ -1,0 +1,4 @@
+Lupine documentation-only update, based on the v0.2.0 project ZIP and verified user test results.
+Extract into C:\Users\Rex\Code\Lupine, overwrite matching files.
+Adds docs/CREATOR_VISION.md. Updates README.md, AGENTS.md, docs/ARCHITECTURE.md, docs/REQUIREMENTS.md, docs/ROADMAP.md, docs/START_HERE.md.
+No Rust/Cargo source or project version changes. Review with git diff before committing.
