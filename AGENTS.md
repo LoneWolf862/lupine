@@ -65,3 +65,12 @@
 - `save_compatibility_version` is independent of save serialization `save_format_version`. Mismatch is a load error; never partially alter current state.
 - Do not truncate existing RORK save files; stage, sync, and publish. No implicit automatic saves.
 - New stage is a candidate until `cargo fmt`, `cargo test`, and strict Clippy pass on the target platform.
+
+
+## v0.7.0-B candidate: optional room art
+
+- Prefer plain `art/*.txt` artwork in game folders, referenced from rooms with `art_file` (relative to art/).
+- Dynamic `[[art_variants]]` use the existing condition vocabulary, with first-match priority and default artwork fallback.
+- Do not treat artwork as mutable or write it into RORK; RORK already saves the flags and inventory that control art selection.
+- Enforce relative, confined art paths; reject terminal control characters and overly large art.
+- Creating room/item templates must never overwrite existing content or leave the game folder.

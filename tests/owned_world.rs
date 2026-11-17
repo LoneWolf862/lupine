@@ -25,6 +25,8 @@ fn accepts_runtime_allocated_names_descriptions_and_ids() {
                     when: vec![Condition::FlagSet(dynamic("unlocked"))],
                     text: dynamic("The passage is open."),
                 }],
+                art: None,
+                art_variants: vec![],
                 exits: vec![(Direction::North, dynamic("next"))],
             },
             Room {
@@ -32,6 +34,8 @@ fn accepts_runtime_allocated_names_descriptions_and_ids() {
                 title: dynamic("Second Room"),
                 description: dynamic("Another room."),
                 descriptions: vec![],
+                art: None,
+                art_variants: vec![],
                 exits: vec![],
             },
         ],

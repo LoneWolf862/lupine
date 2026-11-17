@@ -13,6 +13,8 @@ pub fn fixture_world() -> World {
                 title: "Test Foyer".into(),
                 description: "A plain room used to test navigation. A corridor leads north.".into(),
                 descriptions: vec![],
+                art: None,
+                art_variants: vec![],
                 exits: vec![(Direction::North, "corridor".into())],
             },
             Room {
@@ -20,6 +22,8 @@ pub fn fixture_world() -> World {
                 title: "Test Corridor".into(),
                 description: "A short corridor. The foyer is south; a test chamber is east.".into(),
                 descriptions: vec![],
+                art: None,
+                art_variants: vec![],
                 exits: vec![
                     (Direction::South, "foyer".into()),
                     (Direction::East, "chamber".into()),
@@ -35,6 +39,8 @@ pub fn fixture_world() -> World {
                     when: vec![Condition::FlagSet("panel_activated".into())],
                     text: "The control panel glows green. The northern passage is now open.".into(),
                 }],
+                art: None,
+                art_variants: vec![],
                 exits: vec![
                     (Direction::West, "corridor".into()),
                     (Direction::North, "vault".into()),
@@ -45,6 +51,8 @@ pub fn fixture_world() -> World {
                 title: "Test Vault".into(),
                 description: "An empty room demonstrating a conditional exit.".into(),
                 descriptions: vec![],
+                art: None,
+                art_variants: vec![],
                 exits: vec![(Direction::South, "chamber".into())],
             },
         ],

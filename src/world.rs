@@ -56,6 +56,10 @@ pub struct Room {
     pub title: String,
     pub description: String,
     pub descriptions: Vec<DescriptionVariant>,
+    /// Optional default text art for this room.
+    pub art: Option<String>,
+    /// First variant whose conditions match takes precedence over default art.
+    pub art_variants: Vec<DescriptionVariant>,
     pub exits: Vec<(Direction, RoomId)>,
 }
 
@@ -144,7 +148,7 @@ impl World {
                     ));
                 }
             }
-            for variant in &room.descriptions {
+            for variant in room.descriptions.iter().chain(&room.art_variants) {
                 check_conditions(&variant.when, &items, &mut errors);
             }
         }

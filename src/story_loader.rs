@@ -45,6 +45,20 @@ struct RoomData {
     descriptions: Vec<DescriptionData>,
     #[serde(default)]
     exits: BTreeMap<String, String>,
+    /// Short inline artwork, optional alternative to art_file.
+    art: Option<String>,
+    /// Relative path under the game's art/ directory.
+    art_file: Option<String>,
+    #[serde(default)]
+    art_variants: Vec<ArtVariantData>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ArtVariantData {
+    when: Vec<toml::Value>,
+    file: Option<String>,
+    text: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -216,6 +230,110 @@ fn descriptions(
         .collect()
 }
 
+/// Resolve artwork only from <story>/art, including when symlinks exist.
+/// Never interpret ANSI control sequences embedded in story files.
+const MAX_ART_BYTES: u64 = 64 * 1024;
+
+fn validate_art(text: &str, origin: &str) -> Result<(), String> {
+    if text.len() as u64 > MAX_ART_BYTES {
+        return Err(format!("{origin}: artwork exceeds 64 KiB"));
+    }
+    if text
+        .chars()
+        .any(|c| c.is_control() && !matches!(c, '\n' | '\r' | '\t'))
+    {
+        return Err(format!(
+            "{origin}: artwork contains terminal control characters"
+        ));
+    }
+    Ok(())
+}
+
+fn read_art(root: &Path, file: &str, origin: &str) -> Result<String, String> {
+    let relative = Path::new(file);
+    if relative.as_os_str().is_empty()
+        || relative.is_absolute()
+        || relative
+            .components()
+            .any(|c| !matches!(c, std::path::Component::Normal(_)))
+    {
+        return Err(format!(
+            "{origin}: art file path must be relative with no '..' segments"
+        ));
+    }
+    let story_root = root
+        .canonicalize()
+        .map_err(|e| format!("{origin}: story directory: {e}"))?;
+    let art_directory = root
+        .join("art")
+        .canonicalize()
+        .map_err(|e| format!("{origin}: art/ directory: {e}"))?;
+    if !art_directory.starts_with(&story_root) {
+        return Err(format!(
+            "{origin}: art/ must be inside the adventure directory"
+        ));
+    }
+    let path = root.join("art").join(relative);
+    let resolved = path
+        .canonicalize()
+        .map_err(|e| format!("{origin}: {}: {e}", path.display()))?;
+    if !resolved.starts_with(&art_directory) || !resolved.is_file() {
+        return Err(format!(
+            "{origin}: art file must be a regular file inside art/"
+        ));
+    }
+    let length = fs::metadata(&resolved)
+        .map_err(|e| format!("{origin}: {e}"))?
+        .len();
+    if length > MAX_ART_BYTES {
+        return Err(format!("{origin}: artwork exceeds 64 KiB"));
+    }
+    let text =
+        fs::read_to_string(&resolved).map_err(|e| format!("{origin}: {}: {e}", path.display()))?;
+    validate_art(&text, origin)?;
+    Ok(text)
+}
+
+fn resolve_art(
+    root: &Path,
+    inline: Option<String>,
+    file: Option<String>,
+    origin: &str,
+) -> Result<Option<String>, String> {
+    match (inline, file) {
+        (Some(_), Some(_)) => Err(format!("{origin}: choose either art or art_file, not both")),
+        (Some(text), None) => {
+            validate_art(&text, origin)?;
+            Ok(Some(text))
+        }
+        (None, Some(file)) => read_art(root, &file, origin).map(Some),
+        (None, None) => Ok(None),
+    }
+}
+
+fn resolve_art_variants(
+    root: &Path,
+    variants: Vec<ArtVariantData>,
+    origin: &str,
+) -> Result<Vec<DescriptionVariant>, String> {
+    variants
+        .into_iter()
+        .enumerate()
+        .map(|(i, variant)| {
+            let context = format!("{origin} art_variants #{}", i + 1);
+            if variant.when.is_empty() {
+                return Err(format!("{context}: 'when' must not be empty"));
+            }
+            let art = resolve_art(root, variant.text, variant.file, &context)?
+                .ok_or_else(|| format!("{context}: specify 'file' or 'text'"))?;
+            Ok(DescriptionVariant {
+                when: conditions(&variant.when, &context)?,
+                text: art,
+            })
+        })
+        .collect()
+}
+
 /// Load a story directory. No story file is executed as code.
 /// The returned World is validated before it can be used for gameplay.
 pub fn load_game(directory: impl AsRef<Path>) -> Result<LoadedGame, String> {
@@ -262,12 +380,16 @@ pub fn load_game(directory: impl AsRef<Path>) -> Result<LoadedGame, String> {
                 destination,
             ));
         }
+        let art = resolve_art(directory, data.art, data.art_file, &origin)?;
+        let art_variants = resolve_art_variants(directory, data.art_variants, &origin)?;
         room_paths.push(path.clone());
         rooms.push(Room {
             id: data.id,
             title: data.title,
             description: data.description,
             descriptions: descriptions(data.descriptions, &origin)?,
+            art,
+            art_variants,
             exits,
         });
     }

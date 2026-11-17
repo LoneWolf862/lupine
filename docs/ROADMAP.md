@@ -23,3 +23,11 @@ Milestones are design targets unless marked verified; HOWLBOUND remains a tentat
 **Non-negotiable:** save/load is engine-owned, completely manual. No autosave, checkpoint save, or save-on-quit. RORK `.rork` files remain TOML under the hood.
 
 Windows verification does not establish Linux/CachyOS portability or completed standalone packaging. Keep the course's README template, video, and accurate work log separate.
+
+## v0.7.0-B candidate — room/item tools and dynamic ASCII art
+
+- `add room` and `add item` create exclusive, editable TOML files in an existing adventure.
+- Rooms optionally reference `art/*.txt` using `art_file` and select dynamic artwork via `[[art_variants]]` and existing engine conditions.
+- Inline artwork via `art` or variant `text` is also supported. No GUI or autosaving.
+- `story_example` demonstrates art changing on `door_open`; tests verify look/entry, flag changes, paths, and saved-state rendering.
+- This is **not verified on Windows/Linux yet**; run tests and review interactive behavior before committing.

@@ -7,7 +7,7 @@ fn main() -> std::io::Result<()> {
     match args.as_slice() {
         [_] => lupine::runner::run_with_game_id(
             fixture_world::fixture_world(),
-            "LUPINE v0.7.0-alpha.1 — Engine Test Adventure",
+            "LUPINE v0.7.0-alpha.2 — Engine Test Adventure",
             "lupine_fixture",
         ),
         [_, command, path] if command == "play" => {
@@ -43,16 +43,30 @@ fn main() -> std::io::Result<()> {
             println!("  lupine play {destination}");
             Ok(())
         }
+        [_, command, kind, directory, id] if command == "add" && kind == "room" => {
+            lupine::creator::add_room(std::path::Path::new(directory), id)
+                .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidInput, e))?;
+            println!("Created room: {directory}/rooms/{id}.toml");
+            Ok(())
+        }
+        [_, command, kind, directory, id] if command == "add" && kind == "item" => {
+            lupine::creator::add_item(std::path::Path::new(directory), id)
+                .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidInput, e))?;
+            println!("Created item: {directory}/items/{id}.toml");
+            Ok(())
+        }
         [_, command] if command == "help" => {
             println!("Lupine authoring commands:");
             println!("  lupine new <directory> <game-id> <title words...>");
+            println!("  lupine add room <directory> <room-id>");
+            println!("  lupine add item <directory> <item-id>");
             println!("  lupine validate <directory>");
             println!("  lupine play <directory>");
             println!("Running `lupine` without arguments launches the test adventure.");
             Ok(())
         }
         _ => {
-            eprintln!("Usage: lupine [new <directory> <game-id> <title...> | play <directory> | validate <directory> | help]");
+            eprintln!("Usage: lupine [new <directory> <game-id> <title...> | add <room|item> <directory> <id> | play <directory> | validate <directory> | help]");
             Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidInput,
                 "invalid arguments",

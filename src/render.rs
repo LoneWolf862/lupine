@@ -18,13 +18,31 @@ pub fn describe_room(world: &World, state: &GameState, room: &Room) -> String {
     } else {
         format!("Objects: {}", objects.join(", "))
     };
-    format!(
-        "{}\n{}\nExits: {}\n{}",
-        room.title,
-        select_description(&room.description, &room.descriptions, state),
-        exits.join(", "),
-        visible
-    )
+    let description = select_description(&room.description, &room.descriptions, state);
+    let art = room
+        .art_variants
+        .iter()
+        .find(|variant| variant.when.iter().all(|condition| condition.met(state)))
+        .map(|variant| variant.text.as_str())
+        .or(room.art.as_deref())
+        .filter(|art| !art.is_empty());
+    match art {
+        Some(art) => format!(
+            "{}\n{}\n{}\nExits: {}\n{}",
+            room.title,
+            description,
+            art,
+            exits.join(", "),
+            visible
+        ),
+        None => format!(
+            "{}\n{}\nExits: {}\n{}",
+            room.title,
+            description,
+            exits.join(", "),
+            visible
+        ),
+    }
 }
 
 pub fn help() -> &'static str {

@@ -1,0 +1,1 @@
+Extract this incremental archive over your v0.7.0-A repository; do not delete .git. Run cargo fmt --all, cargo test, cargo clippy --all-targets -- -D warnings. Verify artwork via cargo run -- play story_example. DO NOT commit until tested. Existing Rust Room struct literals must include art: None, art_variants: vec![] (updated in bundled fixtures and sample).

@@ -50,6 +50,8 @@ fn alternate_world() -> World {
                 when: vec![Condition::FlagSet("lamp_lit".into())],
                 text: "A bright lantern lights the pier.".into(),
             }],
+            art: None,
+            art_variants: vec![],
             exits: vec![],
         }],
         items: vec![
