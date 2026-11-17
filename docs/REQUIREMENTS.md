@@ -1,6 +1,6 @@
 # Lupine Interactive Fiction Engine — Requirements
 
-**Status:** v0.2.0 implemented and verified on Windows; v0.3.0 planned  
+**Status:** v0.5.0-A verified on Windows; v0.5.0-B TOML loader candidate in testing  
 **Language:** Rust (Cargo)  
 **Course:** CSE 310 Applied Programming — Rust module  
 **First game:** HOWLBOUND (tentative name; story to be designed separately). No setting, plot, characters, or lore are prescribed here.
@@ -90,14 +90,14 @@ The stretch challenge is distinct from the mandatory five. The above mapping is 
 
 ## 6. Later features (explicitly not needed for first framework pass)
 
-- Save/load player progress using local files; portable serialization format and versioning.
+- Manual-only save/load is a **required final-release feature**, specified in `SAVE_FORMAT.md` and planned for v0.6.0; it is not implemented yet.
 - A data-driven story format (TOML/JSON/RON or another evaluated format) and bundled example content. **Deferred from MVP but necessary in some suitable form for the final creator release.**
 - Conversation systems, NPCs, branching dialogue, combat, quests, or complex puzzles.
 - Rich terminal formatting, colors, accessible contrast controls.
 - Unicode-friendly matching and typo suggestions.
 - User-defined world loading / modding. **User-authored world loading is required eventually for the final creator release, but not for this first pass.**
 
-**Priority:** A robust parser and stateful world matter more than large quantities of story content. Resist scope creep. A possible graphical **Lupine Studio** editor is only a candidate; its existence and exact interface are not yet decided.
+**Priority:** A robust parser and stateful world matter more than large quantities of story content. Resist scope creep. Creators use TOML templates and terminal commands; no graphical editor is planned.
 
 ## 7. Acceptance checks for first playable version
 
@@ -124,7 +124,7 @@ The following are **final-release requirements**, not acceptance gates for the c
 - **REQ-F06 — Documentation and usability:** provide a starter game, beginner tutorial, and a practical usability check with someone unfamiliar with programming.
 - **REQ-F07 — Game/engine isolation:** HOWLBOUND is created using the same public authoring mechanisms available to other creators; no exclusive story logic in core engine.
 
-Implementation decisions remain open: story-file format, editor UX, content schema, and exact packaging method. A visual editor may help but is not itself a guaranteed requirement. See `CREATOR_VISION.md`.
+Story authoring decisions: TOML files, terminal tools, no GUI. Exact packaging method remains open. See `CREATOR_VISION.md`.
 
 ## 9. Scope and story-content boundary
 
@@ -143,10 +143,11 @@ This requirements document intentionally does **not** choose the setting, plot, 
 
 ## Implementation status checkpoint (2026-11-16)
 
-- **Verified on Windows:** v0.2.0 builds, 10 automated tests pass, interactive play works, `cargo fmt --all` ran, strict Clippy passed. Commit `6d58bdc` is pushed to public `main`.
-- **Not yet verified:** CachyOS/Linux build, packaged executable operating without build tools, course README template/video.
-- **Not implemented yet:** external story files, general conditions/effects system, state-dependent descriptions, nontechnical creator workflow, visual editor.
-- **Next milestone:** v0.3.0 reusable engine architecture; see `ROADMAP.md`.
+- v0.3.0 reusable engine and v0.4.0 independent game support verified on Windows.
+- v0.5.0-A runtime-owned data verified: 18 automated tests, Clippy and interactive checks, commit `97b9476` pushed.
+- v0.5.0-B TOML loader and CLI story launching are candidates requiring Windows verification before release.
+- Not yet implemented: manual save/load and `.rork`, creator generator/export, fully packaged offline player, Linux verification.
+- Course-specific README template, time log and demonstration remain separate deliverables.
 
 ## Engine-level manual save/load — confirmed post-v0.5.0 requirement
 

@@ -1,6 +1,6 @@
 # Lupine v0.5 — Story file format proposal
 
-**Status:** Design proposal for review; not implemented in Lupine v0.4.0.  
+**Status:** TOML layout approved; v0.5.0-B loader is an implementation candidate pending testing.  
 **Goal:** Let creators describe an adventure in editable local files while preserving the existing deterministic Rust engine and its public API.
 
 ## Design principles
@@ -104,11 +104,9 @@ For v0.5, preserve the already-supported conditions and effects only:
 
 All listed `requires` conditions must be met. All effects execute in the supplied order after validation. Conditions and effects should use typed variants rather than ad hoc strings at runtime.
 
-## Required internal refactor before the loader
+## Completed internal refactor (v0.5.0-A)
 
-The current v0.4 API uses `&'static str` identifiers and definition fields (`RoomId`, `ItemId`, `FlagId` and prose fields). File content is allocated at runtime and **cannot safely be treated as `'static`**. Do **not** use `Box::leak`, global storage, or fake lifetimes to bypass this.
-
-Recommended design: switch world-owned identifiers and text to owned `String` values; use a consistent owned ID strategy in `GameState` and all lookup methods (borrowing `&str` for queries), while preserving a convenient Rust-authored world API. This is a source-breaking refactor appropriate before v1.0. It should receive focused tests, particularly around cloning state, item relocation, and world lifetimes.
+The v0.5.0-A refactor replaced world/state static references with owned `String` identifiers, preserving borrowing for lookup. Windows tests passed.
 
 File ingestion will parse into `serde`-compatible DTOs, convert to engine `World`, then call validation. Keep file-format DTOs separate from core engine structs so the TOML schema can evolve without binding every internal detail to serialized field names.
 
@@ -137,6 +135,6 @@ For v0.5 the minimum is: malformed TOML with file name; duplicate IDs; missing r
 
 **Not yet part of v0.5:** GUI editor, dialogue trees, nested containers, combat, user-defined scripting, save games, or one-click game packaging.
 
-## Decision requested before implementation
+## Approved decisions
 
-Approve **TOML + one file per room/item + a central interactions file** as an initial *versioned* format. This is the simplest comprehensible starting point, not a promise that the final authoring UX must expose raw TOML.
+**TOML + one file per room/item + a central interactions file** is the initial versioned format. Creators may edit files in any text editor; future optional terminal helpers do not introduce a GUI. `interactions.toml` is optional when the story defines no rules. The v0.5.0-B implementation must be tested before its syntax is described as released.

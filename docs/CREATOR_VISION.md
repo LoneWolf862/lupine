@@ -41,7 +41,7 @@ The final user experience should be assessed with at least one person who has li
 - Give creators sensible defaults for ordinary interactions; more sophisticated mechanics can remain optional.
 - Keep the *runtime* story-independent. Separate any future editor from the game executable.
 
-**Format is undecided.** TOML, JSON, RON, or another appropriate format may be evaluated for clarity and validation. The hypothetical examples below are *illustrative design sketches*, **not supported Lupine syntax**:
+**TOML is approved for initial authoring.** Creators use example/template files and optional future terminal commands; no graphical editor is planned. The example below illustrates the approved v1 TOML schema; the loader is pending v0.5.0-B testing:
 
 ```toml
 # Illustrative only — there is no Lupine story-file loader yet.
@@ -52,12 +52,12 @@ description = "Tall pines surround a quiet clearing."
 north = "cabin"
 ```
 
-## Authoring interface options (undecided)
+## Authoring interface — text only
 
-- **First:** stable data model, documented examples, validator, and convenient playtest command/workflow.
-- **Possible later:** guided command-line or text authoring assistant; simple form-driven editor; **Lupine Studio**, a graphical room-map and story editor.
-- A graphical editor is a **product candidate**, not a commitment. It should read/write the same canonical game format rather than introducing incompatible content.
-- Whether creators need Rust/Cargo to *export* (as opposed to play) requires a dedicated packaging design; the goal is that **nontechnical creators do not**.
+- Primary workflow: create and edit readable TOML story files using any text editor.
+- Future terminal commands may generate templates, validate references, launch a playtest or package releases.
+- No graphical editor, room-map GUI or Lupine Studio application is planned.
+- Nontechnical accessibility will be measured through examples, error messages and beginner usability checks; no Rust should be needed for authoring or distributing a game at final release.
 
 ## HOWLBOUND as a real-world test
 
@@ -66,7 +66,7 @@ HOWLBOUND should be authored as a separate game using public Lupine mechanisms a
 ## Explicitly out of scope for the current milestone
 
 - A functioning TOML/JSON/RON loader or fixed schema.
-- A graphical editor, visual map editor, or Lupine Studio release.
+- Any graphical editor or visual map editor.
 - One-click cross-platform compiler/packager.
 - NPC dialogue trees, combat, quests, broad scripting languages, or cloud collaboration.
 

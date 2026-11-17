@@ -5,6 +5,7 @@ pub mod parser;
 pub mod render;
 pub mod runner;
 pub mod state;
+pub mod story_loader;
 pub mod world;
 
 pub use runner::run;

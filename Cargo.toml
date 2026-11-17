@@ -1,9 +1,11 @@
 [package]
 name = "lupine"
-version = "0.5.0-alpha.1"
+version = "0.5.0-alpha.2"
 edition = "2021"
 autoexamples = false
 description = "A small, offline, story-independent interactive fiction engine"
 license = "MIT"
 
 [dependencies]
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"

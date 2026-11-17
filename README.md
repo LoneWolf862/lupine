@@ -1,86 +1,71 @@
 # Lupine
 
-**Lupine** is an open-source, lightweight Rust engine for offline, terminal-based interactive fiction. It is inspired by the *command-driven interaction style* of classic adventures such as Zork, not their copyrighted stories, rooms, puzzles, or prose.
+**Lupine** is an open-source, lightweight Rust engine for offline terminal-based interactive fiction. Its parser-driven interface is inspired by classic adventure games such as Zork; game content and mechanics are original. **HOWLBOUND** is the tentative title of a separate future game, not the built-in fixture.
 
-**Lupine is an engine, not a particular game.** Anyone should ultimately be able to create their own adventure with it. **HOWLBOUND** is the tentative title for the first original game we will build to exercise and improve Lupine; its story has not been decided.
+## Development status
 
-## Status — v0.2.0 verified on Windows
+- **v0.5.0-A verified on Windows:** owned world/state data, reusable conditions and effects, state-dependent descriptions, independent Rust-authored games and reusable terminal runner. 18 tests passed, interactive testing passed, strict Clippy passed. Commit `97b9476`.
+- **v0.5.0-B candidate — requires local verification:** versioned TOML story loading, a story folder example, and `play` terminal launch argument.
+- **Not implemented yet:** `save`, `load`, `saves`, `.rork` files, template generator, creator packaging, and graphical interfaces (none planned). Linux testing and packaging remain outstanding.
 
-The following functionality has been implemented and tested on Windows 10:
+## Development commands
 
-- Offline terminal REPL; `help`, `quit`, `look`, and directional navigation.
-- Deterministic parser supporting capitalization/spacing normalization, basic synonyms and object phrases.
-- Objects with stable IDs, aliases, portable/fixed properties, and examine text.
-- `take`, `drop`, `inventory`, and `examine`; ambiguous names do not silently select an object.
-- A simple `use <item> on <target>` interaction that persists a state flag during play.
-- A **temporary three-room fixture** for testing. The fixture is *not* HOWLBOUND content.
-
-**Verified:** `cargo build`, `cargo test` (10 passing tests), interactive gameplay, `cargo fmt --all`, and `cargo clippy --all-targets -- -D warnings`. **Not yet verified:** CachyOS build, packaged offline releases, independent external story files, or nontechnical authoring.
-
-## Build, run, and check
-
-To develop from source, install the Rust toolchain and Cargo. Windows builds using the MSVC Rust target also require Microsoft C++ build tools. From the repository root:
+Install Rust/Cargo to develop from source. On Windows, the MSVC Rust toolchain may require Microsoft C++ build tools. From the repository root:
 
 ```sh
 cargo run
+cargo run -- play story_example
+cargo run --manifest-path samples/independent_game/Cargo.toml
+cargo fmt --all
 cargo test
-cargo fmt --all -- --check
 cargo clippy --all-targets -- -D warnings
 ```
 
-The eventual **player-facing release** will ship as a packaged platform-specific executable; players will not need Cargo or Rust. A release download is **not yet available**.
+The first command launches the existing Rust fixture; `cargo run -- play story_example` launches a TOML-authored game from disk. **In-game commands are different from shell commands**; exit the adventure (`quit`) before launching a new Cargo process.
 
-Try this fixture-world sequence:
+Try the file-authored example:
 
 ```text
-look
-examine table
-take table
-take brass key
-inventory
 north
-east
-use key on panel
 look
-west
-south
-drop key
+take key
+use key on door
+look
+north
 quit
 ```
 
-## Repository map
+The north passage is locked until the key unlocks the door. You can change the room prose in `story_example/rooms/foyer.toml` and relaunch without changing Rust source.
+
+## Authoring your own adventure
+
+Copy `story_example/` to another directory. Edit `game.toml`, add room files under `rooms/`, and item files under `items/`; define optional interactions and exit rules in `interactions.toml`. Launch with `cargo run -- play <directory>` during development, or a compiled binary with `lupine play <directory>`.
+
+The versioned TOML format is specified in [`docs/STORY_FORMAT_PROPOSAL.md`](docs/STORY_FORMAT_PROPOSAL.md). See [`docs/CREATOR_VISION.md`](docs/CREATOR_VISION.md) for the final goal of easy text-only authoring without programming knowledge or requiring Cargo for players.
+
+## Repository layout
 
 | Path | Responsibility |
 |---|---|
-| `src/main.rs` | Current terminal app and fixture-world startup |
-| `src/lib.rs` | Public Rust module exports |
-| `src/parser.rs`, `src/commands.rs` | Normalize/parse typed commands |
-| `src/world.rs` | Current world/item/interaction types and temporary fixture |
-| `src/state.rs` | Mutable room, item-location, and flag state |
-| `src/engine.rs` | Object resolution, validation, and state transitions |
-| `src/render.rs` | Player-visible text |
-| `tests/` | Navigation and object/interaction integration tests |
-| `docs/` | Requirements, architecture, roadmap, authoring vision, handoff |
+| `src/parser.rs`, `src/commands.rs` | Deterministic player commands |
+| `src/world.rs`, `src/state.rs` | Content definitions and mutable play state |
+| `src/engine.rs`, `src/render.rs` | Rules, transitions, and narration |
+| `src/runner.rs` | Shared terminal runtime |
+| `src/story_loader.rs` | TOML story parser and validation (v0.5.0-B candidate) |
+| `examples/fixture_world.rs` | Built-in test world |
+| `samples/independent_game/` | Separate Rust-authored sample game |
+| `story_example/` | TOML-authored sample game |
+| `tests/` | Unit and integration tests |
+| `docs/` | Requirements, architecture, format specs and roadmap |
 
-## For adventure creators
+## Future saves: RORK
 
-**Current reality:** Creating a custom world currently requires editing Rust definitions and rebuilding. Lupine does **not yet** include a story-file loader, visual editor, or no-code creation workflow.
+Manual `save`, `load`, and `saves` are **planned**, not yet available. Native saves will have the TOML-based `.rork` extension, with filenames such as `forestcamp.howlbound.rork`. **No autosaving**, by design. See [`docs/SAVE_FORMAT.md`](docs/SAVE_FORMAT.md).
 
-**Final-release goal:** A person without a programming background can author, validate, test, and package a game without writing Rust or changing engine internals. We plan to support a human-readable story format and accessible tooling; a graphical **Lupine Studio** is a *candidate*, not a committed implementation. Read [Creator Vision](docs/CREATOR_VISION.md).
+## CSE 310
 
-## Development direction
-
-The next architectural milestone is to separate generic engine behavior from the temporary fixture and introduce reusable conditions, effects, and state-dependent descriptions in a form suitable for later data-driven content. See [Roadmap](docs/ROADMAP.md), [Architecture](docs/ARCHITECTURE.md), and [Requirements](docs/REQUIREMENTS.md).
-
-## CSE 310 note
-
-This project also supports a CSE 310 Rust module. It exercises mutable/immutable values, loops, borrowing, `Vec`, `match`, and structured types. **The instructor-provided README template must be obtained and incorporated before course submission.** This repository README is project documentation, not a substitute for that template.
+Lupine is also a Rust programming course project. The instructor-provided README template and actual video / sprint reporting remain required for course submission; this project README is not a substitute.
 
 ## License
 
 MIT — see [LICENSE](LICENSE).
-
-
-## v0.3.0 architecture candidate
-
-The reusable engine now supports data-oriented conditional interactions, gated exits, dynamic descriptions, and `World::validate()`. The bundled example lives outside the core library in `examples/fixture_world.rs`. See [`docs/CREATING_A_GAME.md`](docs/CREATING_A_GAME.md) and [`docs/V0_3_0_UPDATE.md`](docs/V0_3_0_UPDATE.md). These changes are **pending local Cargo test and lint verification**; external story files and no-code authoring remain future work.

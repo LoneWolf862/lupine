@@ -1,66 +1,21 @@
 # Lupine Development Roadmap
 
-**Versions here describe planned milestones, not guaranteed release dates.** Mark a milestone complete only after implementation and verification. HOWLBOUND is the tentative title of an original game used to exercise the reusable engine.
+Milestones are aspirational unless explicitly marked verified. HOWLBOUND remains a tentative original game with no prescribed story.
 
-## v0.1.0 — Foundation — COMPLETE (Windows)
+| Milestone | Status | Result / planned objective |
+|---|---|---|
+| v0.1.0 | Complete, Windows | Basic offline terminal parser and navigation. |
+| v0.2.0 | Complete, Windows | Items, inventory, and interactions; 10 tests. |
+| v0.3.0 | Complete, Windows | Reusable world model, condition/effect rules, descriptions and tests. |
+| v0.4.0 | Complete, Windows | Independent Rust-authored game and shared terminal runner; 17 tests; commit `56db281`. |
+| v0.5.0-A | Complete, Windows | Runtime-owned world and state data; 18 tests, strict Clippy and interactive checks; commit `97b9476`. |
+| **v0.5.0-B** | **Candidate / in testing** | Load versioned TOML story folders using the same `World` API. |
+| v0.5.0-C | Planned | Improve story diagnostics, creator documentation, multiple story examples. |
+| v0.6.0 | Planned, required | Manual-only `save`, `load`, `saves`, `.rork` TOML save files, safe versioned state persistence. **Never autosave.** |
+| v0.7.0+ | Planned | Text-only creator validation, terminal generators/templates and streamlined playtest workflow. |
+| v0.9.0+ | Planned | Offline release packaging, creator export workflow, cross-platform verification. |
+| v1.0.0 | Long-term goal | Stable usable engine and nonprogrammer-accessible text-based authoring. |
 
-- [x] Cargo project, terminal loop, basic typed commands, `help`, `quit`, `look`, navigation
-- [x] Three neutral fixture rooms and navigation test
-- [x] Public repository `LoneWolf862/lupine` created
-- [x] Windows build and four tests passed
+Final creator release requires a person unfamiliar with Rust to author, validate, playtest, and package a complete adventure without modifying Rust or using a GUI. A separate graphical Studio is **not planned**. See `CREATOR_VISION.md`.
 
-## v0.2.0 — Objects and Inventory — COMPLETE (Windows)
-
-- [x] Portable/fixed objects, stable IDs, item locations, inventory, take/drop/examine
-- [x] Alias/multiword matching, synonym handling, ambiguity feedback
-- [x] One simple `use` rule producing persistent state; integration tests
-- [x] Windows `cargo build`, `cargo test` (10 passing), interactive run, formatting, strict Clippy
-- [x] Pushed commit `6d58bdc` to `main`
-- [ ] Independently verify the same build and tests on CachyOS/Linux
-
-## v0.3.0 — Reusable Engine Architecture — NEXT
-
-- [ ] Make the generic engine usable independently of the bundled test fixture
-- [ ] Define stable, documented engine-facing world creation/initialization API
-- [ ] Separate fixture world from core library logic (keep a runnable example)
-- [ ] Design and implement a **small**, reusable conditions/effects model for interactions
-- [ ] Implement conditional room/object descriptions reflecting world state
-- [ ] Add tests for at least two distinct fixture worlds and for invalid/blocked state transitions
-- [ ] Refine parser/resolver edge cases without pretending to accept arbitrary English
-- [ ] Document how a Rust developer builds a basic adventure with the current API
-
-**Not a v0.3 gate:** external story files, graphical authoring, general-purpose scripting language, or no-code creator workflow.
-
-## v0.4.x — Integration and Developer Release Preparation — PLANNED
-
-- [ ] Windows and CachyOS/Linux builds and automated tests
-- [ ] Complete offline player-package test (no network, Cargo, or Rust on player machine)
-- [ ] Developer-facing examples, API documentation, contribution workflow, and release packaging
-- [ ] Confirm license and make introductory documentation approachable
-- [ ] Incorporate the **instructor-provided CSE 310 README template**, demo/video, and accurate sprint/time documentation for course submission
-
-## Post-MVP — Data-Driven Game Creation — PLANNED, VERSION UNASSIGNED
-
-- [ ] Choose a human-readable local content format based on authoring usability
-- [ ] Introduce content loading and schema/versioning while retaining the Rust API
-- [ ] Add actionable content validation (IDs, missing references, rules, startup state)
-- [ ] Provide a starter story, step-by-step tutorial, and basic playtest workflow
-- [ ] Prototype HOWLBOUND using the same mechanisms available to outside creators
-
-## Final Creator Release — REQUIRED BEFORE CALLING LUPINE COMPLETE
-
-- [ ] A person without a programming background can create rooms, objects, and puzzles without editing Rust
-- [ ] Creators can validate and playtest with understandable errors
-- [ ] Creators can export an immediately playable offline game through an approachable workflow
-- [ ] A beginner-friendly starter project and tutorial have been usability-tested
-- [ ] Evaluate guided text authoring versus **possible** Lupine Studio graphical editor (decision open)
-
-See [`CREATOR_VISION.md`](CREATOR_VISION.md) for explicit acceptance criteria. Save/load, advanced grammar, combat, and other story mechanics remain optional until justified by a real game.
-
-## Refined milestones and locked design decisions
-
-- **v0.5.0-A (current candidate):** Owned world and game-state text/IDs; update fixtures, sample game, tests, and documentation.
-- **v0.5.0-B:** TOML game/room/item loader, mapping to the same `World` API (Rust-authored games remain supported).
-- **v0.5.0-C:** Data-driven conditions/interactions, actionable format validation and multiple example stories.
-- **v0.6.0:** Built-in **manual-only** `save`, `load`, `saves`; named per-game TOML-based `.rork` files (e.g. `forestcamp.howlbound.rork`); safety, validation and versioning. **No autosaving**.
-- **Later:** Text-only creator templates, terminal commands, testing and standalone game packaging. No graphical studio planned.
+Windows development validation is not a claim of native CachyOS/Linux release readiness. The course README template and video remain separate obligations. See `REQUIREMENTS.md`.

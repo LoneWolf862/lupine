@@ -15,7 +15,7 @@
 - Prefer stable identifiers and immutable content definitions distinct from mutable `GameState`.
 - Preserve Windows 10 and CachyOS/Linux portability; avoid machine-specific paths, commit `Cargo.lock`, and do not commit `target/`.
 - Choose the smallest maintainable implementation. Prefer the Rust standard library unless a dependency solves a concrete need.
-- Future game content should be loadable without editing engine Rust code. **No story-file schema, editor, or loader is implemented yet**; don't present future examples as supported syntax.
+- Future game content should be loadable without editing engine Rust code. **The version-1 TOML schema is approved; the v0.5.0-B loader requires validation before marking it released.**
 
 ## Development workflow
 
@@ -28,9 +28,10 @@
 
 ## Scope control
 
-- v0.3.0 priority: reusable engine API, fixture separation, generic conditions/effects, dynamic descriptions, and tests, without overbuilding an editor or authoring DSL.
-- A human-readable content format, validator, guided creation workflow, and possibly Lupine Studio are later-stage goals; see roadmap.
-- Do not add combat, NPC systems, networking, mod hosting, save compatibility, or complex parser features without an explicit milestone decision.
+- v0.5.0-A is verified and pushed; focus on v0.5.0-B TOML loading, then strengthen validation in v0.5.0-C.
+- Preserve the Rust-defined engine API and tests. Avoid story-specific parser branches.
+- `save`, `load`, and `saves` and `.rork` are planned for v0.6.0 and **not yet implemented**.
+- No graphical creator interface, autosave, network features, combat, or broad scripting language.
 
 ## Decisions locked in after v0.4.0
 
