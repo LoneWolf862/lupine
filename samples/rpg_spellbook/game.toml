@@ -1,0 +1,5 @@
+format_version = 1
+id = "rpg_spellbook_demo"
+title = "Spellbook Demonstration"
+starting_room = "camp"
+save_compatibility_version = 1

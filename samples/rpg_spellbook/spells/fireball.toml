@@ -1,0 +1,6 @@
+id = "fireball"
+name = "Fireball"
+description = "A damaging fire ability; combat targeting arrives next stage."
+mana_cost = 10
+kind = "damage"
+power = 15

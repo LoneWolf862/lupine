@@ -1,0 +1,7 @@
+id = "healing_touch"
+name = "Healing Touch"
+description = "Restore 20 HP to yourself."
+mana_cost = 8
+kind = "heal"
+power = 20
+learn_from_item = "healing_scroll"

@@ -46,3 +46,6 @@ Interactive text-only `new` wizard, static/dynamic `add art` command, creator qu
 - v0.9.0: postpone standalone distribution until core combat is tested.
 
 See `docs/COMBAT_RPG_SPEC.md` for decisions and boundaries.
+
+## v0.8.0-B candidate
+Optional weapon and spell TOML definitions; learned abilities tracked separately in RORK; healing and mana spells, item-based learning. Enemies and damage combat deferred to Stage C.

@@ -45,16 +45,13 @@ pub fn run_with_game_id_compat_and_progression(
     compatibility_version: u32,
     progression: Option<crate::rpg::Progression>,
 ) -> io::Result<()> {
-    let root = default_save_root()?;
-    run_with_io_and_saves_progression(
+    run_with_game_id_compat_progression_content(
         world,
         title,
         game_id,
-        &root,
         compatibility_version,
         progression,
-        io::stdin().lock(),
-        io::stdout().lock(),
+        crate::rpg_content::RpgContent::default(),
     )
 }
 
@@ -110,8 +107,6 @@ pub fn run_with_io_and_saves_compat<R: BufRead, W: Write>(
 }
 
 /// Optional RPG progression is activated only by a game's `character.toml`.
-// Explicit parameters preserve the existing runner APIs while adding
-// configurable RPG progression. Revisit during runner configuration cleanup.
 #[allow(clippy::too_many_arguments)]
 pub fn run_with_io_and_saves_progression<R: BufRead, W: Write>(
     world: World,
@@ -120,6 +115,55 @@ pub fn run_with_io_and_saves_progression<R: BufRead, W: Write>(
     root: &Path,
     compatibility_version: u32,
     progression: Option<crate::rpg::Progression>,
+    input: R,
+    output: W,
+) -> io::Result<()> {
+    run_with_io_and_saves_progression_content(
+        world,
+        title,
+        game_id,
+        root,
+        compatibility_version,
+        progression,
+        crate::rpg_content::RpgContent::default(),
+        input,
+        output,
+    )
+}
+
+/// Launch a TOML RPG adventure with optional weapon and ability definitions.
+pub fn run_with_game_id_compat_progression_content(
+    world: World,
+    title: &str,
+    game_id: &str,
+    compatibility_version: u32,
+    progression: Option<crate::rpg::Progression>,
+    content: crate::rpg_content::RpgContent,
+) -> io::Result<()> {
+    let root = default_save_root()?;
+    run_with_io_and_saves_progression_content(
+        world,
+        title,
+        game_id,
+        &root,
+        compatibility_version,
+        progression,
+        content,
+        io::stdin().lock(),
+        io::stdout().lock(),
+    )
+}
+
+/// Testable RPG runner with spellbook and weapon definitions.
+#[allow(clippy::too_many_arguments)]
+pub fn run_with_io_and_saves_progression_content<R: BufRead, W: Write>(
+    world: World,
+    title: &str,
+    game_id: &str,
+    root: &Path,
+    compatibility_version: u32,
+    progression: Option<crate::rpg::Progression>,
+    content: crate::rpg_content::RpgContent,
     mut input: R,
     mut output: W,
 ) -> io::Result<()> {
@@ -170,6 +214,30 @@ pub fn run_with_io_and_saves_progression<R: BufRead, W: Write>(
                 )?;
             } else {
                 writeln!(output, "This adventure has no character progression.\n")?;
+            }
+            continue;
+        }
+        if verb.eq_ignore_ascii_case("spellbook") && argument.is_empty() {
+            writeln!(output, "{}\n", content.spellbook(&state))?;
+            continue;
+        }
+        if verb.eq_ignore_ascii_case("weapons") && argument.is_empty() {
+            writeln!(output, "{}\n", content.weapons(&world, &state))?;
+            continue;
+        }
+        if verb.eq_ignore_ascii_case("learn") {
+            if argument.is_empty() {
+                writeln!(output, "Learn what? Try 'learn <scroll>'.\n")?;
+            } else {
+                writeln!(output, "{}\n", content.learn(&world, &mut state, argument))?;
+            }
+            continue;
+        }
+        if verb.eq_ignore_ascii_case("cast") {
+            if argument.is_empty() {
+                writeln!(output, "Cast what? Try 'cast <ability> [on self]'.\n")?;
+            } else {
+                writeln!(output, "{}\n", content.cast(&mut state, argument))?;
             }
             continue;
         }
@@ -281,6 +349,17 @@ pub fn run_with_io_and_saves_progression<R: BufRead, W: Write>(
                     }
                     if progression.is_none() && restored.character.is_some() {
                         writeln!(output, "Load failed: this save contains RPG character data but the game has no character.toml.\n")?;
+                        continue;
+                    }
+                    if restored
+                        .learned_abilities
+                        .iter()
+                        .any(|id| !content.abilities.contains_key(id))
+                    {
+                        writeln!(
+                            output,
+                            "Load failed: save references unknown learned ability.\n"
+                        )?;
                         continue;
                     }
                     state = restored;

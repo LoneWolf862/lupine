@@ -6,6 +6,7 @@ use crate::world::{ItemId, RoomId, World};
 pub enum ItemLocation {
     Room(RoomId),
     Inventory,
+    Consumed,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -14,6 +15,7 @@ pub struct GameState {
     pub item_locations: HashMap<ItemId, ItemLocation>,
     pub flags: HashSet<String>,
     pub character: Option<crate::rpg::Character>,
+    pub learned_abilities: HashSet<String>,
 }
 
 impl GameState {
@@ -33,6 +35,7 @@ impl GameState {
             item_locations,
             flags: HashSet::new(),
             character: None,
+            learned_abilities: HashSet::new(),
         }
     }
 
@@ -44,6 +47,7 @@ impl GameState {
         match self.location(id) {
             Some(ItemLocation::Inventory) => true,
             Some(ItemLocation::Room(room)) => room == self.current_room,
+            Some(ItemLocation::Consumed) => false,
             None => false,
         }
     }

@@ -1,0 +1,6 @@
+id = "start"
+title = "Starting Room"
+description = "You stand at the beginning of your adventure."
+# Optional ASCII art: create art/symbol.txt and set art_file = "symbol.txt"
+
+[exits]

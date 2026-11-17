@@ -69,3 +69,6 @@ Run `lupine new` for a guided terminal setup, or use `lupine new <directory> <ga
 ### Optional RPG progression (v0.8.0-A candidate)
 
 Add `character.toml` to a story to enable player HP, MP, AP, level, and XP. Enter `stats` during play. These character values are stored in manually triggered RORK saves; there is **no autosaving**. Enemies, weapons, spells and ASCII enemy health bars are planned for later v0.8 stages. Refer to `docs/CHARACTER_PROGRESS.md` and `docs/COMBAT_RPG_SPEC.md`.
+
+## v0.8.0-B RPG preview
+With `character.toml`, creators may define weapons in `weapons/*.toml` and abilities in `spells/*.toml`. Commands: `weapons`, `learn <scroll>`, `spellbook`, `cast <ability> [on self]`. Offensive attacks require the v0.8.0-C combat system. See `docs/V0_8_0_B_UPDATE.md`.

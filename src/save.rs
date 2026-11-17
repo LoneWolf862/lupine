@@ -29,6 +29,8 @@ struct SaveFile {
     item_locations: BTreeMap<String, SavedLocation>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     character: Option<crate::rpg::Character>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    learned_abilities: Vec<String>,
 }
 
 // An explicit kind prevents a room ID named "inventory" from being confused
@@ -46,6 +48,7 @@ struct SavedLocation {
 enum LocationKind {
     Inventory,
     Room,
+    Consumed,
 }
 
 /// Render a complete state snapshot as human-readable TOML for a future `.rork` file.
@@ -83,6 +86,10 @@ pub fn encode_save_with_compat(
                 kind: LocationKind::Room,
                 room: Some(room.clone()),
             },
+            ItemLocation::Consumed => SavedLocation {
+                kind: LocationKind::Consumed,
+                room: None,
+            },
         };
         item_locations.insert(item.clone(), location);
     }
@@ -97,6 +104,11 @@ pub fn encode_save_with_compat(
         flags,
         item_locations,
         character: state.character.clone(),
+        learned_abilities: {
+            let mut ids = state.learned_abilities.iter().cloned().collect::<Vec<_>>();
+            ids.sort();
+            ids
+        },
     };
     toml::to_string_pretty(&file).map_err(|e| format!("Cannot encode RORK save: {e}"))
 }
@@ -143,6 +155,12 @@ pub fn decode_save_with_compat(
     for (item, location) in file.item_locations {
         let value = match (location.kind, location.room) {
             (LocationKind::Inventory, None) => ItemLocation::Inventory,
+            (LocationKind::Consumed, None) => ItemLocation::Consumed,
+            (LocationKind::Consumed, Some(_)) => {
+                return Err(format!(
+                    "Item '{item}': consumed location must not specify a room"
+                ))
+            }
             (LocationKind::Room, Some(room)) => ItemLocation::Room(room),
             (LocationKind::Inventory, Some(_)) => {
                 return Err(format!(
@@ -159,11 +177,16 @@ pub fn decode_save_with_compat(
     if flags.len() != file.flags.len() {
         return Err("RORK save contains duplicate state flags".into());
     }
+    let learned_abilities: HashSet<String> = file.learned_abilities.iter().cloned().collect();
+    if learned_abilities.len() != file.learned_abilities.len() {
+        return Err("RORK save contains duplicate learned abilities".into());
+    }
     let state = GameState {
         current_room: file.current_room,
         item_locations,
         flags,
         character: file.character,
+        learned_abilities,
     };
     validate_state(world, &state)?;
     Ok(state)
@@ -196,6 +219,9 @@ fn validate_metadata(game_id: &str, save_name: &str) -> Result<(), String> {
 fn validate_state(world: &World, state: &GameState) -> Result<(), String> {
     if let Some(character) = &state.character {
         character.validate()?;
+    }
+    if state.character.is_none() && !state.learned_abilities.is_empty() {
+        return Err("Non-RPG saves cannot contain learned abilities".into());
     }
     if let Err(errors) = world.validate() {
         return Err(format!(

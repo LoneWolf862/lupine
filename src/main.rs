@@ -13,18 +13,36 @@ fn main() -> std::io::Result<()> {
         [_, command, path] if command == "play" => {
             let game = lupine::story_loader::load_game(path)
                 .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
-            lupine::runner::run_with_game_id_compat_and_progression(
+            let content = lupine::rpg_content::RpgContent::load(
+                std::path::Path::new(path),
+                &game.world,
+                game.progression.is_some(),
+            )
+            .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
+            lupine::runner::run_with_game_id_compat_progression_content(
                 game.world,
                 &game.title,
                 &game.id,
                 game.save_compatibility_version,
                 game.progression,
+                content,
             )
         }
         [_, command, path] if command == "validate" => {
             let game = lupine::story_loader::load_game(path)
                 .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
+            let content = lupine::rpg_content::RpgContent::load(
+                std::path::Path::new(path),
+                &game.world,
+                game.progression.is_some(),
+            )
+            .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
             println!("Valid story: {} ({})", game.title, game.id);
+            println!(
+                "{} weapon definitions, {} abilities",
+                content.weapons.len(),
+                content.abilities.len()
+            );
             println!(
                 "{} rooms, {} items, {} interactions, {} exit rules",
                 game.world.rooms.len(),

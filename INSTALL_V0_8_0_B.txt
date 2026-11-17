@@ -1,0 +1,1 @@
+Lupine v0.8.0-B candidate. Extract this ZIP over the project root. Run cargo fmt --all, cargo test, cargo clippy --all-targets -- -D warnings. Verify new RPG content in a separate generated adventure; do not replace existing saved fixtures.

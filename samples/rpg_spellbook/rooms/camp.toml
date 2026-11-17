@@ -1,0 +1,4 @@
+id = "camp"
+title = "Adventurer Camp"
+description = "A camp. A healing scroll and a rusty dagger lie nearby."
+[exits]
