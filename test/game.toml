@@ -1,5 +1,0 @@
-format_version = 1
-id = "test1"
-title = "the test adventure"
-starting_room = "start"
-save_compatibility_version = 1
