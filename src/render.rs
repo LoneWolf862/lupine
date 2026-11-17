@@ -1,5 +1,5 @@
 use crate::state::{GameState, ItemLocation};
-use crate::world::{Room, World};
+use crate::world::{select_description, Room, World};
 
 pub fn describe_room(world: &World, state: &GameState, room: &Room) -> String {
     let exits = room
@@ -21,7 +21,7 @@ pub fn describe_room(world: &World, state: &GameState, room: &Room) -> String {
     format!(
         "{}\n{}\nExits: {}\n{}",
         room.title,
-        room.description,
+        select_description(room.description, &room.descriptions, state),
         exits.join(", "),
         visible
     )

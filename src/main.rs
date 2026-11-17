@@ -3,13 +3,21 @@ use std::io::{self, Write};
 use lupine::engine::{execute_command, ActionOutcome};
 use lupine::parser::{parse_command, ParseError};
 use lupine::state::GameState;
-use lupine::world::fixture_world;
+#[path = "../examples/fixture_world.rs"]
+mod fixture_world;
+use fixture_world::fixture_world;
 
 fn main() -> io::Result<()> {
     let world = fixture_world();
+    if let Err(errors) = world.validate() {
+        for error in errors {
+            eprintln!("Invalid example world: {error}");
+        }
+        std::process::exit(1);
+    }
     let mut state = GameState::new(&world);
 
-    println!("LUPINE v0.2.0 — Interactive Fiction Engine");
+    println!("LUPINE v0.3.0 — Interactive Fiction Engine");
     println!("Temporary test world. HOWLBOUND story not yet designed.");
     println!("Type 'help' for commands.\n");
     if let Some(room) = world.room(state.current_room) {

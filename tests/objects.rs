@@ -2,7 +2,10 @@ use lupine::commands::Command;
 use lupine::engine::{execute_command, ActionOutcome};
 use lupine::parser::parse_command;
 use lupine::state::{GameState, ItemLocation};
-use lupine::world::{fixture_world, Item, World};
+use lupine::world::{Item, World};
+#[path = "../examples/fixture_world.rs"]
+mod fixture_world;
+use fixture_world::fixture_world;
 
 fn run(world: &World, state: &mut GameState, input: &str) -> String {
     let command = parse_command(input).unwrap();
@@ -73,6 +76,7 @@ fn ambiguous_aliases_do_not_mutate_state() {
         name: "iron key",
         aliases: vec!["key", "iron key"],
         description: "A second key.",
+        descriptions: vec![],
         portable: true,
         starting_room: "foyer",
     });

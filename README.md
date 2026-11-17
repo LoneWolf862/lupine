@@ -79,3 +79,8 @@ This project also supports a CSE 310 Rust module. It exercises mutable/immutable
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+
+## v0.3.0 architecture candidate
+
+The reusable engine now supports data-oriented conditional interactions, gated exits, dynamic descriptions, and `World::validate()`. The bundled example lives outside the core library in `examples/fixture_world.rs`. See [`docs/CREATING_A_GAME.md`](docs/CREATING_A_GAME.md) and [`docs/V0_3_0_UPDATE.md`](docs/V0_3_0_UPDATE.md). These changes are **pending local Cargo test and lint verification**; external story files and no-code authoring remain future work.

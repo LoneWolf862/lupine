@@ -2,7 +2,9 @@ use lupine::commands::{Command, Direction};
 use lupine::engine::{execute_command, ActionOutcome};
 use lupine::parser::parse_command;
 use lupine::state::GameState;
-use lupine::world::fixture_world;
+#[path = "../examples/fixture_world.rs"]
+mod fixture_world;
+use fixture_world::fixture_world;
 
 #[test]
 fn walkthrough_navigation_and_blocked_exit() {
@@ -21,7 +23,7 @@ fn walkthrough_navigation_and_blocked_exit() {
     let blocked = execute_command(&world, &mut state, Command::Move(Direction::North));
     assert_eq!(
         blocked,
-        ActionOutcome::Message("You cannot go north from here.".into())
+        ActionOutcome::Message("The northern passage is sealed.".to_string())
     );
     assert_eq!(state.current_room, "chamber");
 

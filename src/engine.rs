@@ -1,7 +1,7 @@
 use crate::commands::Command;
 use crate::render::{describe_room, help};
 use crate::state::{GameState, ItemLocation};
-use crate::world::{Item, World};
+use crate::world::{select_description, Effect, Item, World};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ActionOutcome {
@@ -9,7 +9,7 @@ pub enum ActionOutcome {
     Quit(String),
 }
 
-/// Resolve player-supplied names only against the objects currently accessible.
+/// Resolve player-supplied names against visible objects or inventory.
 /// Exact names/aliases win over partial matches; ambiguity never guesses.
 fn resolve<'a>(world: &'a World, state: &GameState, text: &str) -> Result<&'a Item, String> {
     let accessible: Vec<&Item> = world
@@ -50,6 +50,20 @@ fn message(text: impl Into<String>) -> ActionOutcome {
     ActionOutcome::Message(text.into())
 }
 
+fn apply_effect(effect: &Effect, state: &mut GameState) {
+    match effect {
+        Effect::SetFlag(flag) => {
+            state.flags.insert(*flag);
+        }
+        Effect::ClearFlag(flag) => {
+            state.flags.remove(flag);
+        }
+        Effect::MoveItemToRoom { item, room } => {
+            state.item_locations.insert(*item, ItemLocation::Room(room));
+        }
+    }
+}
+
 pub fn execute_command(world: &World, state: &mut GameState, command: Command) -> ActionOutcome {
     match command {
         Command::Help => message(help()),
@@ -66,6 +80,15 @@ pub fn execute_command(world: &World, state: &mut GameState, command: Command) -
             else {
                 return message(format!("You cannot go {} from here.", direction.label()));
             };
+            if let Some(rule) = world
+                .exit_rules
+                .iter()
+                .find(|rule| rule.from == room.id && rule.direction == direction)
+            {
+                if !rule.requires.iter().all(|condition| condition.met(state)) {
+                    return message(rule.blocked_text);
+                }
+            }
             if let Some(next_room) = world.room(destination) {
                 state.current_room = next_room.id;
                 message(describe_room(world, state, next_room))
@@ -87,7 +110,11 @@ pub fn execute_command(world: &World, state: &mut GameState, command: Command) -
             }
         }
         Command::Examine(target) => match resolve(world, state, &target) {
-            Ok(item) => message(item.description),
+            Ok(item) => message(select_description(
+                item.description,
+                &item.descriptions,
+                state,
+            )),
             Err(error) => message(error),
         },
         Command::Take(target) => match resolve(world, state, &target) {
@@ -136,11 +163,14 @@ pub fn execute_command(world: &World, state: &mut GameState, command: Command) -
                     "Using the {} on the {} has no effect.",
                     item.name, target.name
                 )),
-                Some(rule) if state.flags.contains(rule.flag) => {
-                    message("That interaction has already been completed.")
+                Some(rule) if !rule.requires.iter().all(|condition| condition.met(state)) => {
+                    message(rule.failure_text)
                 }
                 Some(rule) => {
-                    state.flags.insert(rule.flag);
+                    // Preconditions are checked before any state mutation.
+                    for effect in &rule.effects {
+                        apply_effect(effect, state);
+                    }
                     message(rule.success_text)
                 }
             }
