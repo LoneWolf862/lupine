@@ -504,6 +504,18 @@ pub fn run_with_io_and_saves_progression_content_encounters_wallet_shops<R: BufR
             writeln!(output, "{}\n", wallet.describe(&state))?;
             continue;
         }
+        // Opt-in creator-authored object interactions backed by atomic shop offers.
+        // These run before the legacy parser, which otherwise requires `use X on Y`.
+        if verb.eq_ignore_ascii_case("use")
+            && !argument.is_empty()
+            && !argument.to_ascii_lowercase().contains(" on ")
+        {
+            if let Some(message) = shops.use_transaction_item(&world, &mut state, &wallet, argument)
+            {
+                writeln!(output, "{message}\n")?;
+                continue;
+            }
+        }
         if verb.eq_ignore_ascii_case("shop") {
             writeln!(output, "{}\n", shops.describe(&state, &wallet, argument))?;
             continue;

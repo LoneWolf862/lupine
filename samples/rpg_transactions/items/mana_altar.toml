@@ -1,0 +1,6 @@
+id = "mana_altar"
+name = "mana altar"
+aliases = ["altar", "shrine"]
+description = "A humming altar that replenishes mana for an offering."
+portable = false
+starting_room = "camp"

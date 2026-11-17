@@ -1,0 +1,6 @@
+id = "camp"
+title = "Adventurer Camp"
+description = "A modest clearing suitable for making camp."
+
+[exits]
+south = "woods"

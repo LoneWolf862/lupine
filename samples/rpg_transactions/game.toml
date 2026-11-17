@@ -1,0 +1,17 @@
+format_version = 1
+id = "rpg_transactions_demo"
+title = "RPG Transactions Demonstration"
+starting_room = "camp"
+save_compatibility_version = 1
+
+[currency]
+id = "gold"
+name = "Gold"
+symbol = "G"
+starting_amount = 25
+
+[[currencies]]
+id = "rubies"
+name = "Rubies"
+symbol = "R"
+starting_amount = 0

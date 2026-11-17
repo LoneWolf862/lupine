@@ -1,0 +1,8 @@
+# Bind any visible object to an existing creator-defined transaction offer.
+# The offer's cost, stock, flag checks, and effects remain defined once in shops/.
+[[bindings]]
+item = "mana_altar"
+shop = "healer"
+offer = "mana"
+success_text = "The altar hums as it replenishes your mana."
+# Omit failure_text to show the exact transaction rejection (recommended).

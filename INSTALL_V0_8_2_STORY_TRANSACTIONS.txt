@@ -1,0 +1,7 @@
+Lupine v0.8.2 — Story-triggered transactions (development candidate)
+Extract this ZIP into the existing Lupine repository, preserving .git.
+Compatible with the pushed v0.8.1 shops milestone.
+Verify: cargo fmt --all && cargo test && cargo clippy --all-targets -- -D warnings
+Try: cargo run -- play samples/rpg_transactions
+This update has NOT been compiled in the packaging environment; report any warnings or failures.
+See docs/STORY_TRANSACTIONS_V0_8_2.md.

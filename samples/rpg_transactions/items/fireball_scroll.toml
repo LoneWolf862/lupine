@@ -1,0 +1,6 @@
+id = "fireball_scroll"
+name = "fireball scroll"
+aliases = ["flame scroll"]
+description = "A charred scroll teaching the Fireball spell."
+portable = true
+starting_room = "camp"

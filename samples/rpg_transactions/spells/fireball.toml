@@ -1,0 +1,7 @@
+id = "fireball"
+name = "Fireball"
+description = "Launch a ball of fire at an enemy."
+mana_cost = 10
+kind = "damage"
+power = 15
+learn_from_item = "fireball_scroll"

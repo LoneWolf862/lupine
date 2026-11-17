@@ -5,6 +5,7 @@ use crate::state::{GameState, ItemLocation};
 use crate::wallet::WalletContent;
 use crate::world::World;
 use serde::Deserialize;
+use std::collections::HashMap;
 use std::collections::{BTreeMap, HashSet};
 use std::fs;
 use std::path::Path;
@@ -41,9 +42,31 @@ pub struct Shop {
     pub room: String,
     pub offers: Vec<Offer>,
 }
+/// Optional object triggers for already defined shop offers. These use the same
+/// atomic transaction path as `buy`, including stock and RORK persistence.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TransactionBinding {
+    pub item: String,
+    pub shop: String,
+    pub offer: String,
+    #[serde(default)]
+    pub success_text: Option<String>,
+    #[serde(default)]
+    pub failure_text: Option<String>,
+}
+
+#[derive(Debug, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct TransactionBindingsFile {
+    #[serde(default)]
+    bindings: Vec<TransactionBinding>,
+}
+
 #[derive(Debug, Default, Clone)]
 pub struct ShopContent {
     pub shops: BTreeMap<String, Shop>,
+    pub transaction_bindings: HashMap<String, TransactionBinding>,
 }
 
 fn valid_id(s: &str) -> bool {
@@ -61,6 +84,11 @@ impl ShopContent {
     ) -> Result<Self, String> {
         let dir = root.join("shops");
         if !dir.exists() {
+            if root.join("transaction_interactions.toml").exists() {
+                return Err(
+                    "transaction_interactions.toml requires shops/ offer definitions".into(),
+                );
+            }
             return Ok(Self::default());
         }
         let mut result = Self::default();
@@ -169,8 +197,107 @@ impl ShopContent {
                 }
             }
         }
+        // Load reusable transaction triggers separately from legacy interactions.toml.
+        // This retains full backward compatibility with existing adventures.
+        let bindings_path = root.join("transaction_interactions.toml");
+        if bindings_path.exists() {
+            let source = fs::read_to_string(&bindings_path)
+                .map_err(|e| format!("{}: {e}", bindings_path.display()))?;
+            let file: TransactionBindingsFile =
+                toml::from_str(&source).map_err(|e| format!("{}: {e}", bindings_path.display()))?;
+            for binding in file.bindings {
+                let item = world.item(&binding.item).ok_or_else(|| {
+                    format!(
+                        "{}: unknown interaction object '{}'",
+                        bindings_path.display(),
+                        binding.item
+                    )
+                })?;
+                let shop = result.shops.get(&binding.shop).ok_or_else(|| {
+                    format!(
+                        "{}: unknown transaction shop '{}'",
+                        bindings_path.display(),
+                        binding.shop
+                    )
+                })?;
+                if item.starting_room != shop.room {
+                    return Err(format!(
+                        "{}: interaction item '{}' must start in the shop's room '{}'",
+                        bindings_path.display(),
+                        item.id,
+                        shop.room
+                    ));
+                }
+                if !shop.offers.iter().any(|offer| offer.id == binding.offer) {
+                    return Err(format!(
+                        "{}: unknown transaction offer '{}' in shop '{}'",
+                        bindings_path.display(),
+                        binding.offer,
+                        binding.shop
+                    ));
+                }
+                if result
+                    .transaction_bindings
+                    .insert(binding.item.clone(), binding)
+                    .is_some()
+                {
+                    return Err(format!(
+                        "{}: duplicate transaction binding for '{}'",
+                        bindings_path.display(),
+                        item.id
+                    ));
+                }
+            }
+        }
         Ok(result)
     }
+
+    /// Handle `use <object>` for creator-defined transaction interactions.
+    /// Returns `None` when the item has no binding, leaving the parser unchanged.
+    pub fn use_transaction_item(
+        &self,
+        world: &World,
+        state: &mut GameState,
+        wallet: &WalletContent,
+        query: &str,
+    ) -> Option<String> {
+        let visible = self
+            .transaction_bindings
+            .values()
+            .filter(|binding| {
+                let Some(item) = world.item(&binding.item) else {
+                    return false;
+                };
+                item.id.eq_ignore_ascii_case(query)
+                    || item.name.eq_ignore_ascii_case(query)
+                    || item.aliases.iter().any(|a| a.eq_ignore_ascii_case(query))
+            })
+            .collect::<Vec<_>>();
+        if visible.is_empty() {
+            return None;
+        }
+        // A configured binding must not permit remote use from another room.
+        let accessible = visible
+            .into_iter()
+            .filter(|binding| {
+                state.is_accessible(&binding.item)
+                    && self
+                        .shops
+                        .get(&binding.shop)
+                        .is_some_and(|shop| shop.room == state.current_room)
+            })
+            .collect::<Vec<_>>();
+        let binding = match accessible.as_slice() {
+            [] => return Some(format!("You cannot use '{query}' here.")),
+            [binding] => *binding,
+            _ => return Some(format!("Which '{query}' do you mean?")),
+        };
+        match self.transact(state, wallet, &binding.offer, &binding.shop) {
+            Ok(result) => Some(binding.success_text.clone().unwrap_or(result)),
+            Err(error) => Some(binding.failure_text.clone().unwrap_or(error)),
+        }
+    }
+
     /// Reserve stock merchandise: not freely obtainable as a normal room pickup.
     /// Call only for a brand-new session, never after loading a RORK save.
     pub fn prepare_inventory(&self, state: &mut GameState) {

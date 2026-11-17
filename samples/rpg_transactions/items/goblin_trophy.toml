@@ -1,0 +1,6 @@
+id = "goblin_trophy"
+name = "goblin trophy"
+aliases = ["trophy"]
+description = "Proof of a defeated goblin."
+portable = true
+starting_room = "camp"

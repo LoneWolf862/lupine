@@ -1,0 +1,6 @@
+id = "healing_scroll"
+name = "healing scroll"
+aliases = ["scroll"]
+description = "A scroll teaching a simple healing technique."
+portable = true
+starting_room = "camp"
