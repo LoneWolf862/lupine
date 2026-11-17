@@ -45,3 +45,9 @@
 - TOML story loading (`play PATH`) was verified in v0.5.0-B, commit `655a5df`.
 - `validate PATH` and the creator template are v0.5.0-C candidates, not yet user-verified.
 - Keep validation errors specific to file paths and identifiers; do not alter content automatically.
+
+## v0.6.0-A RORK boundaries
+
+- `src/save.rs` serializes and validates state; it does not write files or run the terminal save commands yet.
+- Saving must **never** run automatically. Gameplay `save`, `load`, `saves` are reserved for a later patch; maintain this distinction.
+- Validate the entire save before replacing the active state.

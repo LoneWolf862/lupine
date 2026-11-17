@@ -1,0 +1,179 @@
+//! RORK save-file format v1: explicit conversion between mutable GameState and TOML.
+//!
+//! This module does not trigger any saving. Terminal commands, save directories,
+//! confirmations, and crash-safe disk writes are subsequent v0.6 milestones.
+
+use std::collections::{BTreeMap, HashMap, HashSet};
+
+use serde::{Deserialize, Serialize};
+
+use crate::state::{GameState, ItemLocation};
+use crate::world::World;
+
+pub const SAVE_FORMAT_VERSION: u32 = 1;
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct SaveFile {
+    save_format_version: u32,
+    game_id: String,
+    save_name: String,
+    current_room: String,
+    flags: Vec<String>,
+    item_locations: BTreeMap<String, SavedLocation>,
+}
+
+// An explicit kind prevents a room ID named "inventory" from being confused
+// with the player's inventory. The optional room is checked below.
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct SavedLocation {
+    kind: LocationKind,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    room: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+enum LocationKind {
+    Inventory,
+    Room,
+}
+
+/// Render a complete state snapshot as human-readable TOML for a future `.rork` file.
+/// This function **never** writes to disk and never saves automatically.
+/// The game ID must be a stable identifier, not a display title.
+pub fn encode_save(
+    world: &World,
+    state: &GameState,
+    game_id: &str,
+    save_name: &str,
+) -> Result<String, String> {
+    validate_metadata(game_id, save_name)?;
+    validate_state(world, state)?;
+
+    let mut item_locations = BTreeMap::new();
+    for (item, location) in &state.item_locations {
+        let location = match location {
+            ItemLocation::Inventory => SavedLocation {
+                kind: LocationKind::Inventory,
+                room: None,
+            },
+            ItemLocation::Room(room) => SavedLocation {
+                kind: LocationKind::Room,
+                room: Some(room.clone()),
+            },
+        };
+        item_locations.insert(item.clone(), location);
+    }
+    let mut flags = state.flags.iter().cloned().collect::<Vec<_>>();
+    flags.sort();
+    let file = SaveFile {
+        save_format_version: SAVE_FORMAT_VERSION,
+        game_id: game_id.into(),
+        save_name: save_name.into(),
+        current_room: state.current_room.clone(),
+        flags,
+        item_locations,
+    };
+    toml::to_string_pretty(&file).map_err(|e| format!("Cannot encode RORK save: {e}"))
+}
+
+/// Decode and validate an entire snapshot before returning it. The caller can
+/// replace the active GameState *only after* this returns Ok.
+pub fn decode_save(
+    world: &World,
+    expected_game_id: &str,
+    input: &str,
+) -> Result<GameState, String> {
+    let file: SaveFile = toml::from_str(input).map_err(|e| format!("Invalid RORK TOML: {e}"))?;
+    if file.save_format_version != SAVE_FORMAT_VERSION {
+        return Err(format!(
+            "Unsupported RORK save_format_version {} (supported: {})",
+            file.save_format_version, SAVE_FORMAT_VERSION
+        ));
+    }
+    validate_metadata(&file.game_id, &file.save_name)?;
+    if file.game_id != expected_game_id {
+        return Err(format!(
+            "Save belongs to game '{}', not '{}'",
+            file.game_id, expected_game_id
+        ));
+    }
+    let mut item_locations = HashMap::new();
+    for (item, location) in file.item_locations {
+        let value = match (location.kind, location.room) {
+            (LocationKind::Inventory, None) => ItemLocation::Inventory,
+            (LocationKind::Room, Some(room)) => ItemLocation::Room(room),
+            (LocationKind::Inventory, Some(_)) => {
+                return Err(format!(
+                    "Item '{item}': inventory location must not specify a room"
+                ));
+            }
+            (LocationKind::Room, None) => {
+                return Err(format!("Item '{item}': room location requires a room ID"));
+            }
+        };
+        item_locations.insert(item, value);
+    }
+    let flags: HashSet<String> = file.flags.iter().cloned().collect();
+    if flags.len() != file.flags.len() {
+        return Err("RORK save contains duplicate state flags".into());
+    }
+    let state = GameState {
+        current_room: file.current_room,
+        item_locations,
+        flags,
+    };
+    validate_state(world, &state)?;
+    Ok(state)
+}
+
+fn validate_metadata(game_id: &str, save_name: &str) -> Result<(), String> {
+    if game_id.is_empty()
+        || !game_id
+            .chars()
+            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_' || c == '-')
+    {
+        return Err(
+            "Game ID must contain only lowercase ASCII letters, numbers, '-' or '_'".into(),
+        );
+    }
+    if save_name.trim().is_empty() {
+        return Err("Save name cannot be empty".into());
+    }
+    Ok(())
+}
+
+fn validate_state(world: &World, state: &GameState) -> Result<(), String> {
+    if let Err(errors) = world.validate() {
+        return Err(format!(
+            "Cannot use RORK with invalid world: {}",
+            errors.join("; ")
+        ));
+    }
+    if world.room(&state.current_room).is_none() {
+        return Err(format!(
+            "Save references unknown current room '{}'",
+            state.current_room
+        ));
+    }
+    for item in &world.items {
+        if !state.item_locations.contains_key(&item.id) {
+            return Err(format!("Save is missing location for item '{}'", item.id));
+        }
+    }
+    for (item_id, location) in &state.item_locations {
+        if world.item(item_id).is_none() {
+            return Err(format!("Save references unknown item '{item_id}'"));
+        }
+        if let ItemLocation::Room(room) = location {
+            if world.room(room).is_none() {
+                return Err(format!(
+                    "Item '{item_id}' is located in unknown room '{room}'"
+                ));
+            }
+        }
+    }
+    Ok(())
+}

@@ -1,17 +1,37 @@
-# RORK save files — future specification (NOT IMPLEMENTED)
+# RORK Save Format — v0.6.0-A Working Specification
 
-**Target:** v0.6.0. This document describes decisions, not a working save system.
+**Stage A: serialization only (not yet integrated into gameplay).** `src/save.rs` provides `encode_save` and `decode_save`, with TOML-based save format version 1 and validation against the currently loaded `World`. The `save`, `load`, and `saves` commands, filesystem storage, overwrite confirmation, unsaved-progress warnings and cross-platform compatibility policy remain **planned for stages B/C**.
 
-- Every Lupine game will support reserved terminal commands `save`, `load`, and `saves`.
-- Saving is **always manual**. No autosave on turns, checkpoints, exit, or background events.
-- Named slots, confirmation before overwriting existing files, and warnings before discarding unsaved changes are intended.
-- File extension `.rork`; TOML content for portability and inspectability.
-- Proposed filename: `<normalized-save-name>.<stable-game-id>.rork`; e.g. `forestcamp.howlbound.rork`.
-- Stable game ID comes from the story manifest, not the display title. Save names must be normalized safely, with collisions detected rather than silently overwritten.
-- Game-specific save directories should live in standard user-data paths. Saves can be copied to compatible Windows and Linux installations.
-- Save data will preserve mutable `GameState` (current room, item positions/inventory, flags and supported future state), alongside schema/game IDs and compatibility metadata. Immutable story content is not duplicated.
-- On load: parse, check schema/game identity and compatibility, validate references against the current world, then replace the live state only on complete success.
-- On save: write safely through a temporary file and replace/rename carefully to avoid damaging existing slots on failure.
-- Never interpret TOML save content as executable code; do not let story content choose arbitrary filesystem destinations.
+## Locked requirements
 
-**Open implementation details:** game-version policy, explicit save schema, normalization collision handling, platform-specific path selection, and how a player imports portable save files. These must be finalized and tested when v0.6.0 is implemented.
+- **Manual saves only.** No autosave, save-on-quit, checkpoint save or background save.
+- Extension: `.rork`. Filename convention: `<normalized-slot>.<game-id>.rork` (e.g. `forestcamp.howlbound.rork`); normalizing/collisions are not implemented in Stage A.
+- Use stable game ID, not game title; keep saves local and portable.
+- Three reserved terminal commands: `save`, `load`, `saves`. These are **not yet implemented**.
+- Multiple named slots and confirmation before overwriting, with safe write/replace behavior.
+- Validate metadata and complete game state before replacing the live session.
+
+## Format v1
+
+The file contains `save_format_version = 1`, `game_id`, `save_name`, `current_room`, `flags`, and an `item_locations` table keyed by stable item ID. Each location is an inline/table object with `kind = "inventory"` or `kind = "room"` and, for room locations, `room = "<room-id>"`. This avoids ambiguity if a story has a room named `inventory`. All item locations must be present exactly once; unknown rooms or items are rejected. Flags are free-form engine state identifiers (world definitions do not currently enumerate them).
+
+Example (partial):
+
+```toml
+save_format_version = 1
+game_id = "howlbound"
+save_name = "Forest Camp"
+current_room = "forest"
+flags = ["cabin_unlocked"]
+
+[item_locations.lantern]
+kind = "inventory"
+
+[item_locations.coin]
+kind = "room"
+room = "cabin"
+```
+
+**Compatibility note:** Stage A verifies save format, game ID, item and room references but does not yet identify game content revisions. The compatibility/version policy must be established before calling the complete save feature production-ready.
+
+**Important:** Do not claim that saving works interactively until stages B/C have been implemented and tested.

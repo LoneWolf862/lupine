@@ -4,6 +4,7 @@ pub mod engine;
 pub mod parser;
 pub mod render;
 pub mod runner;
+pub mod save;
 pub mod state;
 pub mod story_loader;
 pub mod world;
