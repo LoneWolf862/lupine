@@ -38,11 +38,10 @@ jobs:
             .\lupine.exe play samples\rpg_persistent
           No Rust installation needed. Saving is manual: use save and load.
           '@ | Set-Content -Path "$package/START_HERE.txt"
-          Compress-Archive -Path $package -DestinationPath 'dist/Lupine-v0.9.0-windows-x64.zip' -Force
       - uses: actions/upload-artifact@v4
         with:
           name: Lupine-v0.9.0-windows-x64
-          path: dist/Lupine-v0.9.0-windows-x64.zip
+          path: dist/Lupine-v0.9.0-windows-x64/
           if-no-files-found: error
           retention-days: 14
 
@@ -80,10 +79,9 @@ jobs:
           No Rust installation needed. Saving is manual: use save and load.
           Requires a compatible glibc-based Linux distribution.
           EOF
-          tar -czf 'dist/Lupine-v0.9.0-linux-x64.tar.gz' -C dist 'Lupine-v0.9.0-linux-x64'
       - uses: actions/upload-artifact@v4
         with:
           name: Lupine-v0.9.0-linux-x64
-          path: dist/Lupine-v0.9.0-linux-x64.tar.gz
+          path: dist/Lupine-v0.9.0-linux-x64/
           if-no-files-found: error
           retention-days: 14
