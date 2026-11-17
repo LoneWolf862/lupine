@@ -2,8 +2,10 @@
 use std::fs::{self, OpenOptions};
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::save::{decode_save, encode_save};
+use crate::save::{decode_save_with_compat, encode_save_with_compat};
 use crate::state::GameState;
 use crate::world::World;
 
@@ -88,8 +90,7 @@ fn stored_slot_name(path: &Path) -> Result<String, String> {
         .ok_or_else(|| format!("{}: missing save_name", path.display()))
 }
 
-/// Stage B uses create_new for new saves and overwrite only with explicit consent.
-/// Stage C will add atomic replacement and compatibility fingerprinting.
+/// Existing API: version 1 is the default for Rust-authored games.
 pub fn write_slot(
     root: &Path,
     world: &World,
@@ -98,9 +99,54 @@ pub fn write_slot(
     name: &str,
     overwrite_confirmed: bool,
 ) -> Result<PathBuf, String> {
+    write_slot_with_compat(root, world, state, game_id, name, overwrite_confirmed, 1)
+}
+
+pub fn write_slot_with_compat(
+    root: &Path,
+    world: &World,
+    state: &GameState,
+    game_id: &str,
+    name: &str,
+    overwrite_confirmed: bool,
+    compatibility_version: u32,
+) -> Result<PathBuf, String> {
+    write_slot_impl(
+        root,
+        world,
+        state,
+        game_id,
+        name,
+        overwrite_confirmed,
+        compatibility_version,
+        || Ok(()),
+    )
+}
+
+// A hook at the commit boundary makes the failure path reproducibly testable.
+// The public API never uses an injected hook.
+// The extra argument is intentional for testing atomic write failures.
+#[allow(clippy::too_many_arguments)]
+fn write_slot_impl<F: FnOnce() -> Result<(), String>>(
+    root: &Path,
+    world: &World,
+    state: &GameState,
+    game_id: &str,
+    name: &str,
+    overwrite_confirmed: bool,
+    compatibility_version: u32,
+    before_commit: F,
+) -> Result<PathBuf, String> {
     let path = slot_path(root, game_id, name)?;
-    let data = encode_save(world, state, game_id, name)?;
-    if path.exists() {
+    let data = encode_save_with_compat(world, state, game_id, name, compatibility_version)?;
+    let existing = fs::symlink_metadata(&path).ok();
+    if let Some(meta) = &existing {
+        if !meta.file_type().is_file() || meta.file_type().is_symlink() {
+            return Err(format!(
+                "{}: save path is not a regular file",
+                path.display()
+            ));
+        }
         let previous_name = stored_slot_name(&path)?;
         if !previous_name.eq_ignore_ascii_case(name.trim()) {
             return Err(format!(
@@ -115,19 +161,70 @@ pub fn write_slot(
     }
     let parent = path.parent().ok_or("No save directory")?;
     fs::create_dir_all(parent).map_err(|error| format!("{}: {error}", parent.display()))?;
-    if overwrite_confirmed {
-        // Intentionally not advertised as crash-safe until Stage C.
-        fs::write(&path, data).map_err(|error| format!("{}: {error}", path.display()))?;
+
+    // Create a unique sibling in the same filesystem, and never touch the destination
+    // until every byte has been written and synced. Drop cleans up failed temp writes.
+    let (temporary, mut file) = create_temp(parent, &path)?;
+    let pending = PendingTemp(temporary);
+    // Close the handle before the cleanup guard on every error path; Windows
+    // will not reliably allow deletion of an open temporary save.
+    let staged = file
+        .write_all(data.as_bytes())
+        .and_then(|_| file.sync_all());
+    drop(file);
+    staged.map_err(|error| format!("Save staging failed: {error}"))?;
+    before_commit()?;
+
+    if existing.is_some() {
+        // rename replaces the destination on supported Windows/Unix filesystems.
+        // NEVER remove the old file first: failure leaves the old slot untouched.
+        fs::rename(&pending.0, &path).map_err(|error| {
+            format!(
+                "Cannot replace {}: {error}; original save was kept",
+                path.display()
+            )
+        })?;
     } else {
-        let mut file = OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(&path)
-            .map_err(|error| format!("{}: {error}", path.display()))?;
-        file.write_all(data.as_bytes())
-            .map_err(|error| format!("{}: {error}", path.display()))?;
+        // Creating a new name with hard_link is create-only: a slot added by a
+        // second writer cannot be silently overwritten between checks.
+        fs::hard_link(&pending.0, &path)
+            .map_err(|error| format!("Cannot publish new save {}: {error}", path.display()))?;
     }
+    // Dropping pending removes the temp after a hard link, or harmlessly after rename.
     Ok(path)
+}
+
+struct PendingTemp(PathBuf);
+impl Drop for PendingTemp {
+    fn drop(&mut self) {
+        let _ = fs::remove_file(&self.0);
+    }
+}
+static TEMP_COUNTER: AtomicU64 = AtomicU64::new(0);
+fn create_temp(dir: &Path, destination: &Path) -> Result<(PathBuf, fs::File), String> {
+    let base = destination
+        .file_name()
+        .ok_or("Invalid save filename")?
+        .to_string_lossy();
+    let nanos = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|error| format!("System clock error: {error}"))?
+        .as_nanos();
+    for _ in 0..16 {
+        let counter = TEMP_COUNTER.fetch_add(1, Ordering::Relaxed);
+        let path = dir.join(format!(
+            ".{base}.{}.{}.{}.tmp",
+            std::process::id(),
+            nanos,
+            counter
+        ));
+        match OpenOptions::new().write(true).create_new(true).open(&path) {
+            Ok(file) => return Ok((path, file)),
+            Err(error) if error.kind() == io::ErrorKind::AlreadyExists => continue,
+            Err(error) => return Err(format!("Cannot create temporary save: {error}")),
+        }
+    }
+    Err("Could not create a unique temporary save file".into())
 }
 
 pub fn read_slot(
@@ -135,6 +232,16 @@ pub fn read_slot(
     world: &World,
     game_id: &str,
     name: &str,
+) -> Result<GameState, String> {
+    read_slot_with_compat(root, world, game_id, name, 1)
+}
+
+pub fn read_slot_with_compat(
+    root: &Path,
+    world: &World,
+    game_id: &str,
+    name: &str,
+    compatibility_version: u32,
 ) -> Result<GameState, String> {
     let path = slot_path(root, game_id, name)?;
     let content =
@@ -145,7 +252,7 @@ pub fn read_slot(
             "Save name refers to '{previous_name}', not '{name}'"
         ));
     }
-    decode_save(world, game_id, &content)
+    decode_save_with_compat(world, game_id, &content, compatibility_version)
 }
 
 pub fn list_slots(root: &Path, game_id: &str) -> Result<Vec<String>, String> {
@@ -176,4 +283,88 @@ pub fn list_slots(root: &Path, game_id: &str) -> Result<Vec<String>, String> {
     }
     names.sort_by_key(|a| a.to_lowercase());
     Ok(names)
+}
+
+#[cfg(test)]
+mod atomic_tests {
+    use super::*;
+    use crate::story_loader::load_game;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    fn setup() -> (PathBuf, World, GameState) {
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let root =
+            std::env::temp_dir().join(format!("lupine_atomic_{}_{}", std::process::id(), nanos));
+        let game = load_game(Path::new(env!("CARGO_MANIFEST_DIR")).join("story_example")).unwrap();
+        let state = GameState::new(&game.world);
+        (root, game.world, state)
+    }
+
+    #[test]
+    fn failed_overwrite_keeps_old_file_byte_for_byte() {
+        let (root, world, mut state) = setup();
+        let path = write_slot(
+            &root,
+            &world,
+            &state,
+            "example_adventure",
+            "Forest Camp",
+            false,
+        )
+        .unwrap();
+        let old = fs::read(&path).unwrap();
+        state.current_room = "workshop".into();
+        let error = write_slot_impl(
+            &root,
+            &world,
+            &state,
+            "example_adventure",
+            "Forest Camp",
+            true,
+            1,
+            || Err("simulated failure before commit".into()),
+        )
+        .unwrap_err();
+        assert!(error.contains("simulated failure"));
+        assert_eq!(fs::read(&path).unwrap(), old);
+        let contents = fs::read_dir(path.parent().unwrap()).unwrap().count();
+        assert_eq!(contents, 1, "failed writes should remove temporary files");
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn atomic_overwrite_replaces_existing_slot_and_cleans_temp() {
+        let (root, world, mut state) = setup();
+        let path = write_slot(&root, &world, &state, "example_adventure", "Camp", false).unwrap();
+        state.current_room = "workshop".into();
+        write_slot(&root, &world, &state, "example_adventure", "Camp", true).unwrap();
+        let loaded = read_slot(&root, &world, "example_adventure", "Camp").unwrap();
+        assert_eq!(loaded.current_room, "workshop");
+        assert_eq!(fs::read_dir(path.parent().unwrap()).unwrap().count(), 1);
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn failure_creating_new_slot_leaves_no_partial_save() {
+        let (root, world, state) = setup();
+        let err = write_slot_impl(
+            &root,
+            &world,
+            &state,
+            "example_adventure",
+            "Camp",
+            false,
+            1,
+            || Err("simulated failure".into()),
+        )
+        .unwrap_err();
+        assert!(err.contains("simulated failure"));
+        let path = slot_path(&root, "example_adventure", "Camp").unwrap();
+        assert!(!path.exists());
+        assert_eq!(fs::read_dir(path.parent().unwrap()).unwrap().count(), 0);
+        fs::remove_dir_all(root).unwrap();
+    }
 }

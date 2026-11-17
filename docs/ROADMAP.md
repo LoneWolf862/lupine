@@ -27,3 +27,10 @@ Windows development validation is not a claim of native CachyOS/Linux release re
 - Per-game user-data save folders and `.rork` slot names.
 - Confirm existing save overwrite and loss of unsaved progress.
 - v0.6.0-C remains the planned filesystem robustness and game-compatibility stage.
+
+## v0.6.0-C implementation candidate — awaiting local verification
+
+- Stage B interactive RORK commands passed 41 automated Windows tests and manual cross-session gameplay checks; user reported publishing the commit.
+- Stage C adds synchronized temporary writes, publish/replace operations, and injected-failure tests.
+- New optional game manifest field: `save_compatibility_version` (defaults to 1). RORK v1 saves without it remain compatible at revision 1.
+- Verify Windows and Linux filesystem behavior before claiming cross-platform reliability. No autosaving under any circumstances.

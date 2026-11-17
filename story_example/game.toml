@@ -2,3 +2,4 @@ format_version = 1
 id = "example_adventure"
 title = "Example Adventure"
 starting_room = "foyer"
+save_compatibility_version = 1

@@ -5,7 +5,9 @@ use std::path::Path;
 use crate::engine::{execute_command, ActionOutcome};
 use crate::parser::{parse_command, ParseError};
 use crate::render::describe_room;
-use crate::save_files::{default_save_root, list_slots, read_slot, slot_exists, write_slot};
+use crate::save_files::{
+    default_save_root, list_slots, read_slot_with_compat, slot_exists, write_slot_with_compat,
+};
 use crate::state::GameState;
 use crate::world::World;
 
@@ -22,12 +24,23 @@ pub fn run(world: World, title: &str) -> io::Result<()> {
 
 /// Launch with an explicit stable game ID used to isolate saves.
 pub fn run_with_game_id(world: World, title: &str, game_id: &str) -> io::Result<()> {
+    run_with_game_id_and_compat(world, title, game_id, 1)
+}
+
+/// Run with a stable game ID and explicit save compatibility revision.
+pub fn run_with_game_id_and_compat(
+    world: World,
+    title: &str,
+    game_id: &str,
+    compatibility_version: u32,
+) -> io::Result<()> {
     let root = default_save_root()?;
-    run_with_io_and_saves(
+    run_with_io_and_saves_compat(
         world,
         title,
         game_id,
         &root,
+        compatibility_version,
         io::stdin().lock(),
         io::stdout().lock(),
     )
@@ -56,9 +69,28 @@ pub fn run_with_io_and_saves<R: BufRead, W: Write>(
     title: &str,
     game_id: &str,
     root: &Path,
+    input: R,
+    output: W,
+) -> io::Result<()> {
+    run_with_io_and_saves_compat(world, title, game_id, root, 1, input, output)
+}
+
+/// Testable terminal runner that also enforces content compatibility versions.
+pub fn run_with_io_and_saves_compat<R: BufRead, W: Write>(
+    world: World,
+    title: &str,
+    game_id: &str,
+    root: &Path,
+    compatibility_version: u32,
     mut input: R,
     mut output: W,
 ) -> io::Result<()> {
+    if compatibility_version == 0 {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "save compatibility version must be at least 1",
+        ));
+    }
     if let Err(errors) = world.validate() {
         return Err(io::Error::new(
             io::ErrorKind::InvalidData,
@@ -116,7 +148,15 @@ pub fn run_with_io_and_saves<R: BufRead, W: Write>(
                 writeln!(output, "Save canceled.\n")?;
                 continue;
             }
-            match write_slot(root, &world, &state, game_id, &name, overwrite) {
+            match write_slot_with_compat(
+                root,
+                &world,
+                &state,
+                game_id,
+                &name,
+                overwrite,
+                compatibility_version,
+            ) {
                 Ok(path) => {
                     last_saved = state.clone();
                     writeln!(
@@ -160,7 +200,7 @@ pub fn run_with_io_and_saves<R: BufRead, W: Write>(
                 continue;
             }
             // Validate the entire file before offering to discard the current session.
-            match read_slot(root, &world, game_id, &name) {
+            match read_slot_with_compat(root, &world, game_id, &name, compatibility_version) {
                 Ok(restored) => {
                     if state != last_saved {
                         match confirm(

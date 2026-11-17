@@ -12,11 +12,17 @@ use crate::world::World;
 
 pub const SAVE_FORMAT_VERSION: u32 = 1;
 
+fn default_save_compatibility_version() -> u32 {
+    1
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct SaveFile {
     save_format_version: u32,
     game_id: String,
+    #[serde(default = "default_save_compatibility_version")]
+    save_compatibility_version: u32,
     save_name: String,
     current_room: String,
     flags: Vec<String>,
@@ -49,6 +55,18 @@ pub fn encode_save(
     game_id: &str,
     save_name: &str,
 ) -> Result<String, String> {
+    encode_save_with_compat(world, state, game_id, save_name, 1)
+}
+
+/// Explicit story compatibility revision; 1 preserves legacy RORK v1 saves.
+pub fn encode_save_with_compat(
+    world: &World,
+    state: &GameState,
+    game_id: &str,
+    save_name: &str,
+    compatibility_version: u32,
+) -> Result<String, String> {
+    validate_compat_version(compatibility_version)?;
     validate_metadata(game_id, save_name)?;
     validate_state(world, state)?;
 
@@ -71,6 +89,7 @@ pub fn encode_save(
     let file = SaveFile {
         save_format_version: SAVE_FORMAT_VERSION,
         game_id: game_id.into(),
+        save_compatibility_version: compatibility_version,
         save_name: save_name.into(),
         current_room: state.current_room.clone(),
         flags,
@@ -86,6 +105,17 @@ pub fn decode_save(
     expected_game_id: &str,
     input: &str,
 ) -> Result<GameState, String> {
+    decode_save_with_compat(world, expected_game_id, input, 1)
+}
+
+/// Decode using a game's declared compatibility revision. No partial state mutation.
+pub fn decode_save_with_compat(
+    world: &World,
+    expected_game_id: &str,
+    input: &str,
+    compatibility_version: u32,
+) -> Result<GameState, String> {
+    validate_compat_version(compatibility_version)?;
     let file: SaveFile = toml::from_str(input).map_err(|e| format!("Invalid RORK TOML: {e}"))?;
     if file.save_format_version != SAVE_FORMAT_VERSION {
         return Err(format!(
@@ -98,6 +128,12 @@ pub fn decode_save(
         return Err(format!(
             "Save belongs to game '{}', not '{}'",
             file.game_id, expected_game_id
+        ));
+    }
+    if file.save_compatibility_version != compatibility_version {
+        return Err(format!(
+            "RORK save compatibility version {} does not match game compatibility version {}. Use a compatible game revision.",
+            file.save_compatibility_version, compatibility_version
         ));
     }
     let mut item_locations = HashMap::new();
@@ -127,6 +163,14 @@ pub fn decode_save(
     };
     validate_state(world, &state)?;
     Ok(state)
+}
+
+fn validate_compat_version(version: u32) -> Result<(), String> {
+    if version == 0 {
+        Err("save_compatibility_version must be at least 1".into())
+    } else {
+        Ok(())
+    }
 }
 
 fn validate_metadata(game_id: &str, save_name: &str) -> Result<(), String> {

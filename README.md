@@ -78,3 +78,9 @@ MIT — see [LICENSE](LICENSE).
 ### Manual save commands (v0.6.0-B candidate)
 
 During gameplay, use `save Forest Camp`, `load Forest Camp`, or `saves`. Bare `save` and `load` ask for a slot name. Files are human-readable TOML with `.rork` extension, stored outside the game directory under the per-user Lupine save location. Existing saves require overwrite confirmation. **Lupine never autosaves.** This stage still requires filesystem hardening in v0.6.0-C; see `docs/SAVE_FORMAT.md`.
+
+### RORK save compatibility (v0.6.0-C candidate)
+
+Game creators may set `save_compatibility_version = 1` in `game.toml`. If omitted it defaults to 1. Increment it when changing a game's state schema incompatibly (for example, deleting rooms/items referenced by saved games). RORK saves remain TOML files named like `forestcamp.example_adventure.rork`. Existing Stage B saves without the compatibility field remain readable at revision 1. Saving is manual only: `save`, `load`, `saves`; no autosaving.
+
+Save replacement now stages data to a synced temporary file before renaming, protecting existing saves from ordinary write errors. Crash/power-loss reliability still depends on the filesystem. This candidate must pass local Cargo tests before publication.

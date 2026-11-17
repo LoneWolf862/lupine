@@ -138,3 +138,7 @@ For v0.5 the minimum is: malformed TOML with file name; duplicate IDs; missing r
 ## Approved decisions
 
 **TOML + one file per room/item + a central interactions file** is the initial versioned format. Creators may edit files in any text editor; future optional terminal helpers do not introduce a GUI. `interactions.toml` is optional when the story defines no rules. The v0.5.0-B implementation must be tested before its syntax is described as released.
+
+## Save compatibility version (v0.6.0-C)
+
+Optional `save_compatibility_version = 1` in `game.toml` defaults to 1. Increase only for breaking changes to previously saved state. The RORK save loader compares this value to the save's content compatibility revision and then validates the referenced room/item IDs. It is distinct from `format_version` and the Lupine engine Cargo version. This does not provide automatic migrations.

@@ -16,6 +16,7 @@ use crate::world::{
 pub struct LoadedGame {
     pub id: String,
     pub title: String,
+    pub save_compatibility_version: u32,
     pub world: World,
 }
 
@@ -26,6 +27,12 @@ struct Manifest {
     id: String,
     title: String,
     starting_room: String,
+    #[serde(default = "default_save_compatibility_version")]
+    save_compatibility_version: u32,
+}
+
+fn default_save_compatibility_version() -> u32 {
+    1
 }
 
 #[derive(Debug, Deserialize)]
@@ -231,6 +238,12 @@ pub fn load_game(directory: impl AsRef<Path>) -> Result<LoadedGame, String> {
             directory.join("game.toml").display()
         ));
     }
+    if manifest.save_compatibility_version == 0 {
+        return Err(format!(
+            "{}: save_compatibility_version must be at least 1",
+            directory.join("game.toml").display()
+        ));
+    }
     if manifest.title.trim().is_empty() {
         return Err(format!(
             "{}: game title must not be empty",
@@ -331,6 +344,7 @@ pub fn load_game(directory: impl AsRef<Path>) -> Result<LoadedGame, String> {
     Ok(LoadedGame {
         id: manifest.id,
         title: manifest.title,
+        save_compatibility_version: manifest.save_compatibility_version,
         world,
     })
 }

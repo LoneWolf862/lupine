@@ -58,3 +58,10 @@
 - Explicit game IDs (`run_with_game_id`) should be used for stable per-game save paths.
 - Preserve **no autosaving**, including on quit, EOF, command execution or game loading.
 - v0.6.0-B filesystem overwrite is not atomic; Stage C must harden this before calling RORK production-ready.
+
+## v0.6.0-C RORK reliability
+
+- Preserve manual-only `save`/`load`/`saves`, `forestcamp.<game-id>.rork`, compatibility with Stage B files that omit the content revision (defaults to 1), and the existing 41 tests.
+- `save_compatibility_version` is independent of save serialization `save_format_version`. Mismatch is a load error; never partially alter current state.
+- Do not truncate existing RORK save files; stage, sync, and publish. No implicit automatic saves.
+- New stage is a candidate until `cargo fmt`, `cargo test`, and strict Clippy pass on the target platform.
