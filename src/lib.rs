@@ -4,6 +4,7 @@ pub mod creator;
 pub mod engine;
 pub mod parser;
 pub mod render;
+pub mod rpg;
 pub mod runner;
 pub mod save;
 pub mod save_files;

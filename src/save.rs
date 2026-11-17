@@ -27,6 +27,8 @@ struct SaveFile {
     current_room: String,
     flags: Vec<String>,
     item_locations: BTreeMap<String, SavedLocation>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    character: Option<crate::rpg::Character>,
 }
 
 // An explicit kind prevents a room ID named "inventory" from being confused
@@ -94,6 +96,7 @@ pub fn encode_save_with_compat(
         current_room: state.current_room.clone(),
         flags,
         item_locations,
+        character: state.character.clone(),
     };
     toml::to_string_pretty(&file).map_err(|e| format!("Cannot encode RORK save: {e}"))
 }
@@ -160,6 +163,7 @@ pub fn decode_save_with_compat(
         current_room: file.current_room,
         item_locations,
         flags,
+        character: file.character,
     };
     validate_state(world, &state)?;
     Ok(state)
@@ -190,6 +194,9 @@ fn validate_metadata(game_id: &str, save_name: &str) -> Result<(), String> {
 }
 
 fn validate_state(world: &World, state: &GameState) -> Result<(), String> {
+    if let Some(character) = &state.character {
+        character.validate()?;
+    }
     if let Err(errors) = world.validate() {
         return Err(format!(
             "Cannot use RORK with invalid world: {}",

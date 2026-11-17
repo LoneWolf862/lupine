@@ -65,3 +65,7 @@ Use `cargo run -- add room <story-directory> <room-id>` and `cargo run -- add it
 ## Creator improvements (v0.7.0-C test candidate)
 
 Run `lupine new` for a guided terminal setup, or use `lupine new <directory> <game-id> <title...>` for scripting. Use `lupine add art <directory> <id>` to generate a static ASCII `.txt` file or append `--dynamic` for two files driven by an optional flag variant. Copy the generated instructions into the room TOML; no automatic story rewriting. See [`docs/CREATOR_QUICKSTART.md`](docs/CREATOR_QUICKSTART.md) and [`docs/ROOM_ART.md`](docs/ROOM_ART.md). This is not a GUI, and the engine never autosaves.
+
+### Optional RPG progression (v0.8.0-A candidate)
+
+Add `character.toml` to a story to enable player HP, MP, AP, level, and XP. Enter `stats` during play. These character values are stored in manually triggered RORK saves; there is **no autosaving**. Enemies, weapons, spells and ASCII enemy health bars are planned for later v0.8 stages. Refer to `docs/CHARACTER_PROGRESS.md` and `docs/COMBAT_RPG_SPEC.md`.

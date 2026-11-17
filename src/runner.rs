@@ -34,13 +34,25 @@ pub fn run_with_game_id_and_compat(
     game_id: &str,
     compatibility_version: u32,
 ) -> io::Result<()> {
+    run_with_game_id_compat_and_progression(world, title, game_id, compatibility_version, None)
+}
+
+/// Launch a data-driven adventure with optional RPG character progression.
+pub fn run_with_game_id_compat_and_progression(
+    world: World,
+    title: &str,
+    game_id: &str,
+    compatibility_version: u32,
+    progression: Option<crate::rpg::Progression>,
+) -> io::Result<()> {
     let root = default_save_root()?;
-    run_with_io_and_saves_compat(
+    run_with_io_and_saves_progression(
         world,
         title,
         game_id,
         &root,
         compatibility_version,
+        progression,
         io::stdin().lock(),
         io::stdout().lock(),
     )
@@ -82,6 +94,32 @@ pub fn run_with_io_and_saves_compat<R: BufRead, W: Write>(
     game_id: &str,
     root: &Path,
     compatibility_version: u32,
+    input: R,
+    output: W,
+) -> io::Result<()> {
+    run_with_io_and_saves_progression(
+        world,
+        title,
+        game_id,
+        root,
+        compatibility_version,
+        None,
+        input,
+        output,
+    )
+}
+
+/// Optional RPG progression is activated only by a game's `character.toml`.
+// Explicit parameters preserve the existing runner APIs while adding
+// configurable RPG progression. Revisit during runner configuration cleanup.
+#[allow(clippy::too_many_arguments)]
+pub fn run_with_io_and_saves_progression<R: BufRead, W: Write>(
+    world: World,
+    title: &str,
+    game_id: &str,
+    root: &Path,
+    compatibility_version: u32,
+    progression: Option<crate::rpg::Progression>,
     mut input: R,
     mut output: W,
 ) -> io::Result<()> {
@@ -98,6 +136,9 @@ pub fn run_with_io_and_saves_compat<R: BufRead, W: Write>(
         ));
     }
     let mut state = GameState::new(&world);
+    if let Some(config) = &progression {
+        state.character = Some(config.create_character().map_err(io::Error::other)?);
+    }
     let mut last_saved = state.clone();
     writeln!(output, "{title}")?;
     writeln!(output, "Powered by Lupine. Type 'help' for commands.\n")?;
@@ -114,6 +155,24 @@ pub fn run_with_io_and_saves_compat<R: BufRead, W: Write>(
         let (verb, argument) = command
             .split_once(char::is_whitespace)
             .map_or((command, ""), |(verb, rest)| (verb, rest.trim()));
+        if verb.eq_ignore_ascii_case("stats") && argument.is_empty() {
+            if let Some(character) = &state.character {
+                writeln!(
+                    output,
+                    "Level {} | XP {} | HP {}/{} | MP {}/{} | AP {:.2}\n",
+                    character.level,
+                    character.experience,
+                    character.hp,
+                    character.max_hp,
+                    character.mp,
+                    character.max_mp,
+                    f64::from(character.ap) / 100.0
+                )?;
+            } else {
+                writeln!(output, "This adventure has no character progression.\n")?;
+            }
+            continue;
+        }
         if verb.eq_ignore_ascii_case("save") {
             let name = if argument.is_empty() {
                 match prompt(&mut input, &mut output, "Save name: ")? {
@@ -215,6 +274,14 @@ pub fn run_with_io_and_saves_compat<R: BufRead, W: Write>(
                             }
                             None => break,
                         }
+                    }
+                    if progression.is_some() && restored.character.is_none() {
+                        writeln!(output, "Load failed: this legacy save predates character progression. Keep the old game revision to load it, or migrate this save.\n")?;
+                        continue;
+                    }
+                    if progression.is_none() && restored.character.is_some() {
+                        writeln!(output, "Load failed: this save contains RPG character data but the game has no character.toml.\n")?;
+                        continue;
                     }
                     state = restored;
                     last_saved = state.clone();

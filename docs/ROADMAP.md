@@ -36,3 +36,13 @@ Windows verification does not establish Linux/CachyOS portability or completed s
 ## v0.7.0-C implementation candidate (awaiting local tests)
 
 Interactive text-only `new` wizard, static/dynamic `add art` command, creator quickstart guide, and additional tests. Previous `add room`, `add item`, `play`, `validate`, and manual RORK saves retained. All new creator commands refuse existing files. See `docs/V0_7_0_C_UPDATE.md`.
+
+## v0.8 RPG systems (new)
+
+- v0.8.0-A: optional player progression, stats command and RORK character snapshot (candidate; requires local Windows test).
+- v0.8.0-B: weapons, abilities and spellbook.
+- v0.8.0-C: enemies, weighted encounters, player/enemy combat, **hidden exact enemy HP and ASCII health bars**.
+- v0.8.0-D: persistence and game migration integration.
+- v0.9.0: postpone standalone distribution until core combat is tested.
+
+See `docs/COMBAT_RPG_SPEC.md` for decisions and boundaries.

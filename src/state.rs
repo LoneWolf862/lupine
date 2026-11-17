@@ -13,6 +13,7 @@ pub struct GameState {
     pub current_room: RoomId,
     pub item_locations: HashMap<ItemId, ItemLocation>,
     pub flags: HashSet<String>,
+    pub character: Option<crate::rpg::Character>,
 }
 
 impl GameState {
@@ -31,6 +32,7 @@ impl GameState {
             current_room: world.starting_room.clone(),
             item_locations,
             flags: HashSet::new(),
+            character: None,
         }
     }
 

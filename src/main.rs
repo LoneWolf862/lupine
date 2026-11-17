@@ -13,11 +13,12 @@ fn main() -> std::io::Result<()> {
         [_, command, path] if command == "play" => {
             let game = lupine::story_loader::load_game(path)
                 .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
-            lupine::runner::run_with_game_id_and_compat(
+            lupine::runner::run_with_game_id_compat_and_progression(
                 game.world,
                 &game.title,
                 &game.id,
                 game.save_compatibility_version,
+                game.progression,
             )
         }
         [_, command, path] if command == "validate" => {

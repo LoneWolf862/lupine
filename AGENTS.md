@@ -74,3 +74,7 @@
 - Do not treat artwork as mutable or write it into RORK; RORK already saves the flags and inventory that control art selection.
 - Enforce relative, confined art paths; reject terminal control characters and overly large art.
 - Creating room/item templates must never overwrite existing content or leave the game folder.
+
+## RPG roadmap
+
+Build an optional TOML-configured RPG system, detailed in `docs/COMBAT_RPG_SPEC.md`. Keep exact enemy HP PRIVATE by default; show approximate ASCII health bars, not numeric enemy HP. A future explicitly learned inspection ability (Arcane Eye) may reveal exact values. Never autosave. Progress through v0.8-A character foundations, B weapons/abilities, C encounters/combat, D RORK integration.

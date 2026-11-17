@@ -1,0 +1,7 @@
+Lupine v0.8.0-A incremental patch: copy files into the repository root.
+Run: cargo fmt --all
+Run: cargo test
+Run: cargo clippy --all-targets -- -D warnings
+Do NOT commit before local tests and interactive validation pass.
+The existing games remain narrative-only unless character.toml is added.
+See docs/CHARACTER_PROGRESS.md and docs/COMBAT_RPG_SPEC.md.
