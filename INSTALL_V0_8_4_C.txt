@@ -1,0 +1,9 @@
+Lupine v0.8.4-C — final gameplay cleanup candidate
+
+1. Confirm that v0.8.4-B is installed and passing on your machine.
+2. Extract this ZIP at C:\Users\Rex\Code\Lupine, allowing listed files to overwrite.
+3. Run: cargo fmt --all && cargo test && cargo clippy --all-targets -- -D warnings
+4. Validate and play: cargo run -- play samples/rpg_persistent
+5. See docs/V0_8_4_C_RELEASE_CHECK.md for the manual verification plan.
+
+This is an incremental patch, not a complete source checkout. It does not modify saved RORK files, game IDs, or per-story save compatibility versions. It never autosaves.

@@ -242,11 +242,8 @@ pub fn retaliate(
             character.max_hp
         ));
         if character.hp == 0 {
-            lines.push(
-                "You have been defeated. You cannot attack until restored or a save is loaded."
-                    .into(),
-            );
-        }
+            break;
+        } // The runner displays the single defeat screen.
     }
     lines.join("\n")
 }

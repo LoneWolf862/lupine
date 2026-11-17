@@ -80,3 +80,7 @@
 Build an optional TOML-configured RPG system, detailed in `docs/COMBAT_RPG_SPEC.md`. Keep exact enemy HP PRIVATE by default; show approximate ASCII health bars, not numeric enemy HP. A future explicitly learned inspection ability (Arcane Eye) may reveal exact values. Never autosave. Progress through v0.8-A character foundations, B weapons/abilities, C encounters/combat, D RORK integration.
 
 - v0.8.0-B: RPG abilities in `src/rpg_content.rs`; RORK includes `learned_abilities`; `ItemLocation::Consumed` for one-use teaching scrolls. Never autosave. Do not imply damage spells currently attack enemies.
+
+## Current handoff — v0.8.4-C (2026-11-17 candidate)
+
+Prior sections are historical milestone instructions, not the current feature inventory. v0.8.4-A and v0.8.4-B were verified by the user on Windows. The v0.8.4-C candidate consolidates defeat text, moves the test module to end-of-file for Clippy, updates documentation and Cargo version, and adds sample-loading regression coverage. Before marking C released, verify with `cargo fmt --all && cargo test && cargo clippy --all-targets -- -D warnings` and interactive play on the user's Windows setup. **Do not change save format or game save compatibility versions just to change the Cargo crate version.** Never autosave. Target v0.9 for standalone Windows/Linux packaging, and do not claim Linux native testing before actually running it.

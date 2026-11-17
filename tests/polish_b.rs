@@ -92,6 +92,13 @@ fn defeat_blocks_gameplay_but_allows_manual_load_and_quit() {
     .unwrap();
     let text = String::from_utf8(output).unwrap();
     assert!(text.contains("YOU HAVE BEEN DEFEATED"), "{text}");
+    assert_eq!(text.matches("YOU HAVE BEEN DEFEATED").count(), 1, "{text}");
+    let after_death = text.split_once("YOU HAVE BEEN DEFEATED").unwrap().1;
+    assert!(
+        !after_death.contains("Enemies:"),
+        "defeat must end combat output: {text}"
+    );
+    assert!(!text.contains("You cannot attack until restored"), "{text}");
     assert!(
         text.matches("You have been defeated. Use").count() >= 3,
         "{text}"

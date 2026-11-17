@@ -7,7 +7,7 @@ fn main() -> std::io::Result<()> {
     match args.as_slice() {
         [_] => lupine::runner::run_with_game_id(
             fixture_world::fixture_world(),
-            "LUPINE v0.7.0-alpha.3 — Engine Test Adventure",
+            "LUPINE v0.8.4 — Engine Test Adventure",
             "lupine_fixture",
         ),
         [_, command, path] if command == "play" => {

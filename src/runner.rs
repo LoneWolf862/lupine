@@ -470,7 +470,7 @@ pub fn run_with_io_and_saves_progression_content_encounters_wallet_shops<R: BufR
                         "\nYOU HAVE BEEN DEFEATED\nAvailable commands: saves, load <name>, quit.\n"
                     )?;
                 }
-                if !state.active_enemies.is_empty() {
+                if !is_defeated(&state) && !state.active_enemies.is_empty() {
                     writeln!(output, "{}\n", encounters.describe(&state.active_enemies))?;
                 }
             }
@@ -516,7 +516,7 @@ pub fn run_with_io_and_saves_progression_content_encounters_wallet_shops<R: BufR
                         "\nYOU HAVE BEEN DEFEATED\nAvailable commands: saves, load <name>, quit.\n"
                     )?;
                 }
-                if !state.active_enemies.is_empty() {
+                if !is_defeated(&state) && !state.active_enemies.is_empty() {
                     writeln!(output, "{}\n", encounters.describe(&state.active_enemies))?;
                 }
             }
