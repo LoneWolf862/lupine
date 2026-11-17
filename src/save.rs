@@ -31,6 +31,8 @@ struct SaveFile {
     character: Option<crate::rpg::Character>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     learned_abilities: Vec<String>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    wallet: BTreeMap<String, u64>,
 }
 
 // An explicit kind prevents a room ID named "inventory" from being confused
@@ -109,6 +111,7 @@ pub fn encode_save_with_compat(
             ids.sort();
             ids
         },
+        wallet: state.wallet.clone(),
     };
     toml::to_string_pretty(&file).map_err(|e| format!("Cannot encode RORK save: {e}"))
 }
@@ -187,6 +190,7 @@ pub fn decode_save_with_compat(
         flags,
         character: file.character,
         learned_abilities,
+        wallet: file.wallet,
     };
     validate_state(world, &state)?;
     Ok(state)
@@ -219,6 +223,17 @@ fn validate_metadata(game_id: &str, save_name: &str) -> Result<(), String> {
 fn validate_state(world: &World, state: &GameState) -> Result<(), String> {
     if let Some(character) = &state.character {
         character.validate()?;
+    }
+    if state.wallet.keys().any(|id| {
+        id.is_empty()
+            || !id
+                .bytes()
+                .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == b'_' || c == b'-')
+    }) {
+        return Err("RORK wallet has an invalid currency ID".into());
+    }
+    if state.character.is_none() && !state.wallet.is_empty() {
+        return Err("Non-RPG saves cannot contain a wallet".into());
     }
     if state.character.is_none() && !state.learned_abilities.is_empty() {
         return Err("Non-RPG saves cannot contain learned abilities".into());

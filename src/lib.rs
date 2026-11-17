@@ -13,6 +13,7 @@ pub mod save;
 pub mod save_files;
 pub mod state;
 pub mod story_loader;
+pub mod wallet;
 pub mod world;
 
 pub use runner::run;

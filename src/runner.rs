@@ -11,6 +11,7 @@ use crate::save_files::{
     default_save_root, list_slots, read_slot_with_compat, slot_exists, write_slot_with_compat,
 };
 use crate::state::GameState;
+use crate::wallet::WalletContent;
 use crate::world::World;
 
 /// Launch a Rust-authored game, using a stable ID derived from its title.
@@ -163,8 +164,32 @@ pub fn run_with_game_id_compat_progression_content_encounters(
     content: crate::rpg_content::RpgContent,
     encounters: EncounterContent,
 ) -> io::Result<()> {
+    run_with_game_id_compat_progression_content_encounters_wallet(
+        world,
+        title,
+        game_id,
+        compatibility_version,
+        progression,
+        content,
+        encounters,
+        WalletContent::default(),
+    )
+}
+
+/// Launch an RPG adventure with its optional story-configured wallet.
+#[allow(clippy::too_many_arguments)]
+pub fn run_with_game_id_compat_progression_content_encounters_wallet(
+    world: World,
+    title: &str,
+    game_id: &str,
+    compatibility_version: u32,
+    progression: Option<crate::rpg::Progression>,
+    content: crate::rpg_content::RpgContent,
+    encounters: EncounterContent,
+    wallet: WalletContent,
+) -> io::Result<()> {
     let root = default_save_root()?;
-    run_with_io_and_saves_progression_content_encounters(
+    run_with_io_and_saves_progression_content_encounters_wallet(
         world,
         title,
         game_id,
@@ -173,6 +198,7 @@ pub fn run_with_game_id_compat_progression_content_encounters(
         progression,
         content,
         encounters,
+        wallet,
         io::stdin().lock(),
         io::stdout().lock(),
     )
@@ -216,6 +242,36 @@ pub fn run_with_io_and_saves_progression_content_encounters<R: BufRead, W: Write
     progression: Option<crate::rpg::Progression>,
     content: crate::rpg_content::RpgContent,
     encounters: EncounterContent,
+    input: R,
+    output: W,
+) -> io::Result<()> {
+    run_with_io_and_saves_progression_content_encounters_wallet(
+        world,
+        title,
+        game_id,
+        root,
+        compatibility_version,
+        progression,
+        content,
+        encounters,
+        WalletContent::default(),
+        input,
+        output,
+    )
+}
+
+/// Isolated testable runner that manages optional currency balances.
+#[allow(clippy::too_many_arguments)]
+pub fn run_with_io_and_saves_progression_content_encounters_wallet<R: BufRead, W: Write>(
+    world: World,
+    title: &str,
+    game_id: &str,
+    root: &Path,
+    compatibility_version: u32,
+    progression: Option<crate::rpg::Progression>,
+    content: crate::rpg_content::RpgContent,
+    encounters: EncounterContent,
+    wallet: WalletContent,
     mut input: R,
     mut output: W,
 ) -> io::Result<()> {
@@ -231,7 +287,21 @@ pub fn run_with_io_and_saves_progression_content_encounters<R: BufRead, W: Write
             errors.join("\n"),
         ));
     }
+    encounters
+        .validate_loot(&world)
+        .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
+    wallet
+        .validate_encounters(&encounters)
+        .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
+    if progression.is_none() && !wallet.currencies.is_empty() {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            "Wallet requires RPG progression",
+        ));
+    }
     let mut state = GameState::new(&world);
+    state.wallet = wallet.initial_balances();
+    encounters.prepare_loot(&mut state);
     if let Some(config) = &progression {
         state.character = Some(config.create_character().map_err(io::Error::other)?);
     }
@@ -294,6 +364,23 @@ pub fn run_with_io_and_saves_progression_content_encounters<R: BufRead, W: Write
                 &physical,
             );
             writeln!(output, "{}\n", action.message)?;
+            if let Some(defeated) = &action.defeated {
+                let reward = combat::award_defeat(
+                    &encounters,
+                    &world,
+                    progression.as_ref(),
+                    &mut state,
+                    defeated,
+                    &mut rng,
+                );
+                if !reward.is_empty() {
+                    writeln!(output, "{reward}\n")?;
+                }
+                let coins = wallet.award(&encounters, &defeated.enemy_id, &mut state, &mut rng);
+                if !coins.is_empty() {
+                    writeln!(output, "{coins}\n")?;
+                }
+            }
             if action.turn_spent {
                 let retaliation =
                     combat::retaliate(&encounters, &mut state, &visible_enemies, &mut rng);
@@ -319,6 +406,23 @@ pub fn run_with_io_and_saves_progression_content_encounters<R: BufRead, W: Write
                 argument,
             );
             writeln!(output, "{}\n", action.message)?;
+            if let Some(defeated) = &action.defeated {
+                let reward = combat::award_defeat(
+                    &encounters,
+                    &world,
+                    progression.as_ref(),
+                    &mut state,
+                    defeated,
+                    &mut rng,
+                );
+                if !reward.is_empty() {
+                    writeln!(output, "{reward}\n")?;
+                }
+                let coins = wallet.award(&encounters, &defeated.enemy_id, &mut state, &mut rng);
+                if !coins.is_empty() {
+                    writeln!(output, "{coins}\n")?;
+                }
+            }
             if action.turn_spent {
                 let retaliation =
                     combat::retaliate(&encounters, &mut state, &visible_enemies, &mut rng);
@@ -329,6 +433,14 @@ pub fn run_with_io_and_saves_progression_content_encounters<R: BufRead, W: Write
                     writeln!(output, "{}\n", encounters.describe(&visible_enemies))?;
                 }
             }
+            continue;
+        }
+        if ["wallet", "money", "balance"]
+            .iter()
+            .any(|v| verb.eq_ignore_ascii_case(v))
+            && argument.is_empty()
+        {
+            writeln!(output, "{}\n", wallet.describe(&state))?;
             continue;
         }
         if verb.eq_ignore_ascii_case("stats") && argument.is_empty() {
@@ -494,7 +606,16 @@ pub fn run_with_io_and_saves_progression_content_encounters<R: BufRead, W: Write
                         )?;
                         continue;
                     }
+                    if let Err(e) = wallet.validate_balances(&restored) {
+                        writeln!(output, "Load failed: {e}\n")?;
+                        continue;
+                    }
                     state = restored;
+                    // Pre-wallet RORK saves have no wallet field: missing balances default to zero,
+                    // preventing a configured starting grant from being silently replayed.
+                    for id in wallet.currencies.keys() {
+                        state.wallet.entry(id.clone()).or_insert(0);
+                    }
                     // C1 preview encounters are transient; no reroll on load.
                     visible_enemies.clear();
                     last_saved = state.clone();

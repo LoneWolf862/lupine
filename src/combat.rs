@@ -1,6 +1,7 @@
 //! v0.8.0-C2: voluntary physical and offensive spell combat. No XP or loot yet.
 //! Enemies remain transient in C2 and are intentionally excluded from RORK saves.
 use crate::encounters::{EncounterContent, EnemyInstance, RandomSource};
+use crate::rpg::Progression;
 use crate::rpg_content::{AbilityKind, RpgContent};
 use crate::state::{GameState, ItemLocation};
 use crate::world::World;
@@ -8,18 +9,22 @@ use crate::world::World;
 pub struct CombatAction {
     pub message: String,
     pub turn_spent: bool,
+    /// Removed enemy instance, available for a one-time XP/loot payout.
+    pub defeated: Option<EnemyInstance>,
 }
 impl CombatAction {
     fn free(message: impl Into<String>) -> Self {
         Self {
             message: message.into(),
             turn_spent: false,
+            defeated: None,
         }
     }
     fn spent(message: impl Into<String>) -> Self {
         Self {
             message: message.into(),
             turn_spent: true,
+            defeated: None,
         }
     }
 }
@@ -79,8 +84,13 @@ fn hit(
     let name = format!("{} #{}", definition.name, active[index].instance_id);
     let mut msg = format!("{label} {name} for {damage} damage.");
     if active[index].current_hp == 0 {
-        active.remove(index);
+        let defeated = active.remove(index);
         msg.push_str(&format!(" {name} is defeated."));
+        return CombatAction {
+            message: msg,
+            turn_spent: true,
+            defeated: Some(defeated),
+        };
     }
     CombatAction::spent(msg)
 }
@@ -237,6 +247,53 @@ pub fn retaliate(
     lines.join("\n")
 }
 
+/// Award a defeated enemy exactly once. The caller must supply the removed instance
+/// from `CombatAction::defeated`; misses and repeat attacks cannot award rewards.
+/// Each TOML item ID is unique: loot drops only while that item is unavailable
+/// (`Consumed`), never while it is already on the ground or in inventory.
+pub fn award_defeat(
+    encounters: &EncounterContent,
+    world: &World,
+    progression: Option<&Progression>,
+    state: &mut GameState,
+    defeated: &EnemyInstance,
+    rng: &mut impl RandomSource,
+) -> String {
+    let Some(enemy) = encounters.enemies.get(&defeated.enemy_id) else {
+        return String::new();
+    };
+    let mut messages = Vec::new();
+    if let (Some(progression), Some(character)) = (progression, state.character.as_mut()) {
+        if enemy.experience > 0 {
+            let levels = progression.award_xp(character, enemy.experience);
+            messages.push(format!("You gain {} XP.", enemy.experience));
+            if levels > 0 {
+                messages.push(format!(
+                    "Level up! Now level {}. HP and MP restored.",
+                    character.level
+                ));
+            }
+        }
+    }
+    for loot in &enemy.loot {
+        if rng.below(100) >= loot.chance {
+            continue;
+        }
+        if state.location(&loot.item) != Some(ItemLocation::Consumed) {
+            continue;
+        }
+        let Some(item) = world.item(&loot.item) else {
+            continue;
+        };
+        state.item_locations.insert(
+            loot.item.clone(),
+            ItemLocation::Room(state.current_room.clone()),
+        );
+        messages.push(format!("{} drops {}.", enemy.name, item.name));
+    }
+    messages.join("\n")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -252,6 +309,8 @@ mod tests {
             attack_power: 100,
             defense: 2,
             experience: 0,
+            loot: vec![],
+            currency_rewards: vec![],
             attacks: vec![EnemyAttack {
                 name: "Stab".into(),
                 damage: 4,

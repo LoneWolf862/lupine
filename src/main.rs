@@ -31,7 +31,12 @@ fn main() -> std::io::Result<()> {
                 game.progression.is_some(),
             )
             .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
-            lupine::runner::run_with_game_id_compat_progression_content_encounters(
+            let wallet = lupine::wallet::WalletContent::load(
+                std::path::Path::new(path),
+                game.progression.is_some(),
+            )
+            .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
+            lupine::runner::run_with_game_id_compat_progression_content_encounters_wallet(
                 game.world,
                 &game.title,
                 &game.id,
@@ -39,6 +44,7 @@ fn main() -> std::io::Result<()> {
                 game.progression,
                 content,
                 encounters,
+                wallet,
             )
         }
         [_, command, path] if command == "validate" => {
@@ -62,6 +68,18 @@ fn main() -> std::io::Result<()> {
                 game.progression.is_some(),
             )
             .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
+            encounters
+                .validate_loot(&game.world)
+                .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
+            let wallet = lupine::wallet::WalletContent::load(
+                std::path::Path::new(path),
+                game.progression.is_some(),
+            )
+            .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
+            wallet
+                .validate_encounters(&encounters)
+                .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
+            println!("{} configured currencies", wallet.currencies.len());
             println!("Valid story: {} ({})", game.title, game.id);
             println!(
                 "{} enemy definitions, {} encounter tables",

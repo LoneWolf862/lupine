@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 use crate::world::{ItemId, RoomId, World};
 
@@ -16,6 +16,7 @@ pub struct GameState {
     pub flags: HashSet<String>,
     pub character: Option<crate::rpg::Character>,
     pub learned_abilities: HashSet<String>,
+    pub wallet: BTreeMap<String, u64>,
 }
 
 impl GameState {
@@ -36,6 +37,7 @@ impl GameState {
             flags: HashSet::new(),
             character: None,
             learned_abilities: HashSet::new(),
+            wallet: BTreeMap::new(),
         }
     }
 

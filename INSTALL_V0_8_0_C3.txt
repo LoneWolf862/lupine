@@ -1,0 +1,6 @@
+Lupine v0.8.0-C3: XP and loot. Extract this ZIP over your existing v0.8.0-C2 repository. Do not delete .git or existing files.
+Run: cargo fmt --all && cargo test && cargo clippy --all-targets -- -D warnings
+Test: cargo run -- validate samples/rpg_rewards
+Play: cargo run -- play samples/rpg_rewards
+Move south, defeat goblin, inspect `stats`, `look`, `take trophy`, `inventory`; use explicit save/load.
+This candidate has NOT been compiled in the packaging environment. Do not commit until verification.

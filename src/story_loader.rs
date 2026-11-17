@@ -30,6 +30,11 @@ struct Manifest {
     starting_room: String,
     #[serde(default = "default_save_compatibility_version")]
     save_compatibility_version: u32,
+    #[serde(default)]
+    #[serde(rename = "currency")]
+    _currency: Option<toml::Value>,
+    #[serde(default, rename = "currencies")]
+    _currencies: Vec<toml::Value>,
 }
 
 fn default_save_compatibility_version() -> u32 {

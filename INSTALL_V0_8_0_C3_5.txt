@@ -1,0 +1,7 @@
+LUPINE C3.5 WALLET UPDATE (incremental; apply AFTER C3)
+Extract into your current Lupine repo and overwrite matching files. Do not replace your .git directory.
+This update assumes v0.8.0-C3 tests/combat_rewards.rs has the local Clippy struct-initialization fix already applied.
+Run: cargo fmt --all && cargo test && cargo clippy --all-targets -- -D warnings
+Then: cargo run -- play samples/rpg_rewards
+Try wallet, south (after taking dagger + fireball scroll), defeat the goblin, wallet, save Wallet Test, quit, restart, load Wallet Test, wallet.
+Do not commit until Windows compilation, tests, Clippy and manual save/load tests succeed.

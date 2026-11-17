@@ -1,5 +1,6 @@
 //! Data-driven encounter definitions and deterministic sampling. Combat resolution follows in C2.
-use crate::state::GameState;
+use crate::state::{GameState, ItemLocation};
+use crate::world::World;
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
 use std::fs;
@@ -20,7 +21,27 @@ pub struct Enemy {
     #[serde(default)]
     pub experience: u64,
     #[serde(default)]
+    pub loot: Vec<EnemyLoot>,
+    #[serde(default)]
+    pub currency_rewards: Vec<EnemyCurrencyReward>,
+    #[serde(default)]
     pub attacks: Vec<EnemyAttack>,
+}
+/// Independent percent chance of dropping a unique world item on defeat.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct EnemyLoot {
+    pub item: String,
+    pub chance: u32,
+}
+/// Independent roll for one configured currency. Awards are stored as balances.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct EnemyCurrencyReward {
+    pub currency: String,
+    pub chance: u32,
+    pub min: u64,
+    pub max: u64,
 }
 fn default_ap() -> u32 {
     100
@@ -99,6 +120,39 @@ fn valid_id(id: &str) -> bool {
             .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_' || b == b'-')
 }
 impl EncounterContent {
+    /// Loot is authored as ordinary portable game items; reject unknown or fixed items.
+    pub fn validate_loot(&self, world: &World) -> Result<(), String> {
+        for enemy in self.enemies.values() {
+            for drop in &enemy.loot {
+                let Some(item) = world.item(&drop.item) else {
+                    return Err(format!(
+                        "Enemy '{}' loot refers to unknown item '{}'",
+                        enemy.id, drop.item
+                    ));
+                };
+                if !item.portable {
+                    return Err(format!(
+                        "Enemy '{}' loot item '{}' must be portable",
+                        enemy.id, drop.item
+                    ));
+                }
+            }
+        }
+        Ok(())
+    }
+
+    /// Hide loot-only items at the start of a new session. They become ordinary
+    /// room items when dropped; subsequent saves use standard RORK item locations.
+    pub fn prepare_loot(&self, state: &mut GameState) {
+        for enemy in self.enemies.values() {
+            for drop in &enemy.loot {
+                state
+                    .item_locations
+                    .insert(drop.item.clone(), ItemLocation::Consumed);
+            }
+        }
+    }
+
     pub fn load(root: &Path, room_ids: &[String], rpg_enabled: bool) -> Result<Self, String> {
         let mut result = Self::default();
         let enemy_dir = root.join("enemies");
@@ -139,6 +193,16 @@ impl EncounterContent {
                 {
                     return Err(format!(
                         "{}: enemy attacks need name, positive damage and weight",
+                        path.display()
+                    ));
+                }
+                if enemy
+                    .loot
+                    .iter()
+                    .any(|drop| !valid_id(&drop.item) || drop.chance > 100)
+                {
+                    return Err(format!(
+                        "{}: loot needs a valid item id and chance 0..=100",
                         path.display()
                     ));
                 }
