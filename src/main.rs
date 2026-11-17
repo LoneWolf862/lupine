@@ -5,14 +5,15 @@ mod fixture_world;
 fn main() -> std::io::Result<()> {
     let args: Vec<String> = std::env::args().collect();
     match args.as_slice() {
-        [_] => lupine::run(
+        [_] => lupine::runner::run_with_game_id(
             fixture_world::fixture_world(),
-            "LUPINE v0.5.0-alpha.3 — Engine Test Adventure",
+            "LUPINE v0.6.0-alpha.2 — Engine Test Adventure",
+            "lupine_fixture",
         ),
         [_, command, path] if command == "play" => {
             let game = lupine::story_loader::load_game(path)
                 .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
-            lupine::run(game.world, &game.title)
+            lupine::runner::run_with_game_id(game.world, &game.title, &game.id)
         }
         [_, command, path] if command == "validate" => {
             let game = lupine::story_loader::load_game(path)

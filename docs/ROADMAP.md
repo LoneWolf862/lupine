@@ -20,3 +20,10 @@ Milestones are aspirational unless explicitly marked verified. HOWLBOUND remains
 Final creator release requires a person unfamiliar with Rust to author, validate, playtest, and package a complete adventure without modifying Rust or using a GUI. A separate graphical Studio is **not planned**. See `CREATOR_VISION.md`.
 
 Windows development validation is not a claim of native CachyOS/Linux release readiness. The course README template and video remain separate obligations. See `REQUIREMENTS.md`.
+
+## v0.6.0-B implementation candidate (awaiting local verification)
+
+- `save [name]`, `load [name]`, `saves`: reserved manual commands in the terminal runner.
+- Per-game user-data save folders and `.rork` slot names.
+- Confirm existing save overwrite and loss of unsaved progress.
+- v0.6.0-C remains the planned filesystem robustness and game-compatibility stage.

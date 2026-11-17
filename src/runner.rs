@@ -1,27 +1,61 @@
-//! Standard terminal interface for games that use Lupine.
-//!
-//! Game authors can call [`run`] to launch a terminal game without implementing
-//! command parsing, a read/evaluate/print loop, or error formatting themselves.
+//! Standard terminal interface with engine-owned manual RORK commands.
 use std::io::{self, BufRead, Write};
+use std::path::Path;
 
 use crate::engine::{execute_command, ActionOutcome};
 use crate::parser::{parse_command, ParseError};
 use crate::render::describe_room;
+use crate::save_files::{default_save_root, list_slots, read_slot, slot_exists, write_slot};
 use crate::state::GameState;
 use crate::world::World;
 
-/// Run a validated world using the process terminal. All gameplay is offline.
+/// Launch a Rust-authored game, using a stable ID derived from its title.
+/// For durable save compatibility, prefer [`run_with_game_id`] with an explicit ID.
 pub fn run(world: World, title: &str) -> io::Result<()> {
-    let stdin = io::stdin();
-    let stdout = io::stdout();
-    run_with_io(world, title, stdin.lock(), stdout.lock())
+    let id = title
+        .to_ascii_lowercase()
+        .chars()
+        .filter(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || *c == '_' || *c == '-')
+        .collect::<String>();
+    run_with_game_id(world, title, &id)
 }
 
-/// Run against supplied input/output streams, enabling scripted tests and
-/// alternative terminal hosts. Invalid worlds are rejected before play begins.
+/// Launch with an explicit stable game ID used to isolate saves.
+pub fn run_with_game_id(world: World, title: &str, game_id: &str) -> io::Result<()> {
+    let root = default_save_root()?;
+    run_with_io_and_saves(
+        world,
+        title,
+        game_id,
+        &root,
+        io::stdin().lock(),
+        io::stdout().lock(),
+    )
+}
+
+/// Scriptable runner, preserving the original API. Its game ID is based on the title.
 pub fn run_with_io<R: BufRead, W: Write>(
     world: World,
     title: &str,
+    input: R,
+    output: W,
+) -> io::Result<()> {
+    let id = title
+        .to_ascii_lowercase()
+        .chars()
+        .filter(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || *c == '_' || *c == '-')
+        .collect::<String>();
+    // The default directory is only touched when a save-related command runs.
+    let root = default_save_root()?;
+    run_with_io_and_saves(world, title, &id, &root, input, output)
+}
+
+/// Scriptable and isolated save-root API; suitable for host apps and unit tests.
+pub fn run_with_io_and_saves<R: BufRead, W: Write>(
+    world: World,
+    title: &str,
+    game_id: &str,
+    root: &Path,
     mut input: R,
     mut output: W,
 ) -> io::Result<()> {
@@ -32,11 +66,10 @@ pub fn run_with_io<R: BufRead, W: Write>(
         ));
     }
     let mut state = GameState::new(&world);
+    let mut last_saved = state.clone();
     writeln!(output, "{title}")?;
     writeln!(output, "Powered by Lupine. Type 'help' for commands.\n")?;
-    if let Some(room) = world.room(&state.current_room) {
-        writeln!(output, "{}\n", describe_room(&world, &state, room))?;
-    }
+    show_room(&world, &state, &mut output)?;
     loop {
         write!(output, "> ")?;
         output.flush()?;
@@ -45,7 +78,131 @@ pub fn run_with_io<R: BufRead, W: Write>(
             writeln!(output, "\nGoodbye!")?;
             break;
         }
+        let command = line.trim();
+        let (verb, argument) = command
+            .split_once(char::is_whitespace)
+            .map_or((command, ""), |(verb, rest)| (verb, rest.trim()));
+        if verb.eq_ignore_ascii_case("save") {
+            let name = if argument.is_empty() {
+                match prompt(&mut input, &mut output, "Save name: ")? {
+                    Some(name) => name,
+                    None => break,
+                }
+            } else {
+                argument.to_owned()
+            };
+            if name.trim().is_empty() {
+                writeln!(output, "Save canceled.\n")?;
+                continue;
+            }
+            let overwrite = match slot_exists(root, game_id, &name) {
+                Ok(true) => {
+                    match confirm(
+                        &mut input,
+                        &mut output,
+                        "Save exists. Overwrite? (yes/no): ",
+                    )? {
+                        Some(value) => value,
+                        None => break,
+                    }
+                }
+                Ok(false) => false,
+                Err(error) => {
+                    writeln!(output, "Save failed: {error}\n")?;
+                    continue;
+                }
+            };
+            if !overwrite && slot_exists(root, game_id, &name).unwrap_or(false) {
+                writeln!(output, "Save canceled.\n")?;
+                continue;
+            }
+            match write_slot(root, &world, &state, game_id, &name, overwrite) {
+                Ok(path) => {
+                    last_saved = state.clone();
+                    writeln!(
+                        output,
+                        "Saved: {}\n",
+                        path.file_name().map_or_else(
+                            || "unknown".into(),
+                            |name| name.to_string_lossy().into_owned()
+                        )
+                    )?;
+                }
+                Err(error) => writeln!(output, "Save failed: {error}\n")?,
+            }
+            continue;
+        }
+        if verb.eq_ignore_ascii_case("saves") && argument.is_empty() {
+            match list_slots(root, game_id) {
+                Ok(names) if names.is_empty() => writeln!(output, "No saved games.\n")?,
+                Ok(names) => {
+                    writeln!(output, "Saved games:")?;
+                    for name in names {
+                        writeln!(output, "  {name}")?;
+                    }
+                    writeln!(output)?;
+                }
+                Err(error) => writeln!(output, "Could not list saves: {error}\n")?,
+            }
+            continue;
+        }
+        if verb.eq_ignore_ascii_case("load") {
+            let name = if argument.is_empty() {
+                match prompt(&mut input, &mut output, "Load save name: ")? {
+                    Some(name) => name,
+                    None => break,
+                }
+            } else {
+                argument.to_owned()
+            };
+            if name.trim().is_empty() {
+                writeln!(output, "Load canceled.\n")?;
+                continue;
+            }
+            // Validate the entire file before offering to discard the current session.
+            match read_slot(root, &world, game_id, &name) {
+                Ok(restored) => {
+                    if state != last_saved {
+                        match confirm(
+                            &mut input,
+                            &mut output,
+                            "Discard unsaved progress and load? (yes/no): ",
+                        )? {
+                            Some(true) => {}
+                            Some(false) => {
+                                writeln!(output, "Load canceled.\n")?;
+                                continue;
+                            }
+                            None => break,
+                        }
+                    }
+                    state = restored;
+                    last_saved = state.clone();
+                    writeln!(output, "Loaded: {name}\n")?;
+                    show_room(&world, &state, &mut output)?;
+                }
+                Err(error) => writeln!(output, "Load failed: {error}\n")?,
+            }
+            continue;
+        }
         match parse_command(&line) {
+            Ok(crate::commands::Command::Quit) if state != last_saved => {
+                match confirm(
+                    &mut input,
+                    &mut output,
+                    "Unsaved progress. Quit without saving? (yes/no): ",
+                )? {
+                    Some(true) => {
+                        writeln!(output, "Goodbye!")?;
+                        break;
+                    }
+                    Some(false) => continue,
+                    None => {
+                        writeln!(output, "Goodbye!")?;
+                        break;
+                    }
+                }
+            }
             Ok(command) => match execute_command(&world, &mut state, command) {
                 ActionOutcome::Message(message) => writeln!(output, "{message}\n")?,
                 ActionOutcome::Quit(message) => {
@@ -55,21 +212,55 @@ pub fn run_with_io<R: BufRead, W: Write>(
             },
             Err(ParseError::Empty) => continue,
             Err(ParseError::MissingDirection) => {
-                writeln!(output, "Where would you like to go? Try 'go north'.\n")?;
+                writeln!(output, "Where would you like to go? Try 'go north'.\n")?
             }
-            Err(ParseError::MissingTarget(action)) => {
-                writeln!(
-                    output,
-                    "Please specify a target. Try 'help' for the syntax of {action}.\n"
-                )?;
-            }
-            Err(ParseError::Unknown(command)) => {
-                writeln!(
-                    output,
-                    "I don't understand '{command}'. Type 'help' for commands.\n"
-                )?;
-            }
+            Err(ParseError::MissingTarget(action)) => writeln!(
+                output,
+                "Please specify a target. Try 'help' for the syntax of {action}.\n"
+            )?,
+            Err(ParseError::Unknown(command)) => writeln!(
+                output,
+                "I don't understand '{command}'. Type 'help' for commands.\n"
+            )?,
         }
+    }
+    Ok(())
+}
+
+fn prompt<R: BufRead, W: Write>(
+    input: &mut R,
+    output: &mut W,
+    text: &str,
+) -> io::Result<Option<String>> {
+    write!(output, "{text}")?;
+    output.flush()?;
+    let mut line = String::new();
+    if input.read_line(&mut line)? == 0 {
+        return Ok(None);
+    }
+    Ok(Some(line.trim().to_owned()))
+}
+
+fn confirm<R: BufRead, W: Write>(
+    input: &mut R,
+    output: &mut W,
+    text: &str,
+) -> io::Result<Option<bool>> {
+    loop {
+        let Some(answer) = prompt(input, output, text)? else {
+            return Ok(None);
+        };
+        match answer.to_ascii_lowercase().as_str() {
+            "yes" | "y" => return Ok(Some(true)),
+            "no" | "n" => return Ok(Some(false)),
+            _ => writeln!(output, "Please answer yes or no.")?,
+        }
+    }
+}
+
+fn show_room<W: Write>(world: &World, state: &GameState, output: &mut W) -> io::Result<()> {
+    if let Some(room) = world.room(&state.current_room) {
+        writeln!(output, "{}\n", describe_room(world, state, room))?;
     }
     Ok(())
 }

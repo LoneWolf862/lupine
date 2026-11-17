@@ -74,3 +74,7 @@ Lupine is also a Rust programming course project. The instructor-provided README
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+### Manual save commands (v0.6.0-B candidate)
+
+During gameplay, use `save Forest Camp`, `load Forest Camp`, or `saves`. Bare `save` and `load` ask for a slot name. Files are human-readable TOML with `.rork` extension, stored outside the game directory under the per-user Lupine save location. Existing saves require overwrite confirmation. **Lupine never autosaves.** This stage still requires filesystem hardening in v0.6.0-C; see `docs/SAVE_FORMAT.md`.

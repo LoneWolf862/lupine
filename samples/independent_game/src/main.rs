@@ -51,5 +51,5 @@ fn world() -> World {
 }
 
 fn main() -> std::io::Result<()> {
-    lupine::run(world(), "Independent Sample Adventure")
+    lupine::runner::run_with_game_id(world(), "Independent Sample Adventure", "independent_sample")
 }

@@ -51,3 +51,10 @@
 - `src/save.rs` serializes and validates state; it does not write files or run the terminal save commands yet.
 - Saving must **never** run automatically. Gameplay `save`, `load`, `saves` are reserved for a later patch; maintain this distinction.
 - Validate the entire save before replacing the active state.
+
+## v0.6.0-B implementation notes
+
+- The terminal runner intercepts reserved save verbs; never implement them in story-specific rules.
+- Explicit game IDs (`run_with_game_id`) should be used for stable per-game save paths.
+- Preserve **no autosaving**, including on quit, EOF, command execution or game loading.
+- v0.6.0-B filesystem overwrite is not atomic; Stage C must harden this before calling RORK production-ready.

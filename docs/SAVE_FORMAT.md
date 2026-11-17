@@ -35,3 +35,9 @@ room = "cabin"
 **Compatibility note:** Stage A verifies save format, game ID, item and room references but does not yet identify game content revisions. The compatibility/version policy must be established before calling the complete save feature production-ready.
 
 **Important:** Do not claim that saving works interactively until stages B/C have been implemented and tested.
+
+## Stage B implementation candidate — interactive commands
+
+`src/save_files.rs` and `src/runner.rs` now implement manual-only `save [name]`, `load [name]`, and `saves` in the terminal interface. Named slots are confined to per-game user-data directories and use normalized `.rork` filenames. An overwrite requires an explicit confirmation, and loading an existing slot checks all saved state before changing the session. If gameplay state changed since the last save/load, quitting or loading asks for confirmation to discard those changes. No implicit saving occurs.
+
+**Stage B is not production-ready persistence:** overwriting still writes directly to the existing file. Atomic writes, robust crash safety, and game-content compatibility checks are reserved for v0.6.0-C. See `docs/V0_6_0_B_UPDATE.md`.
