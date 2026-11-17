@@ -34,7 +34,7 @@ pub fn run_with_io<R: BufRead, W: Write>(
     let mut state = GameState::new(&world);
     writeln!(output, "{title}")?;
     writeln!(output, "Powered by Lupine. Type 'help' for commands.\n")?;
-    if let Some(room) = world.room(state.current_room) {
+    if let Some(room) = world.room(&state.current_room) {
         writeln!(output, "{}\n", describe_room(&world, &state, room))?;
     }
     loop {

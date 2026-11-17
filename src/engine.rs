@@ -15,12 +15,12 @@ fn resolve<'a>(world: &'a World, state: &GameState, text: &str) -> Result<&'a It
     let accessible: Vec<&Item> = world
         .items
         .iter()
-        .filter(|item| state.is_accessible(item.id))
+        .filter(|item| state.is_accessible(&item.id))
         .collect();
     let exact: Vec<&Item> = accessible
         .iter()
         .copied()
-        .filter(|item| item.name == text || item.aliases.contains(&text))
+        .filter(|item| item.name == text || item.aliases.iter().any(|alias| alias.as_str() == text))
         .collect();
     let candidates = if exact.is_empty() {
         accessible
@@ -39,7 +39,7 @@ fn resolve<'a>(world: &'a World, state: &GameState, text: &str) -> Result<&'a It
             "Which {text} do you mean: {}?",
             candidates
                 .iter()
-                .map(|item| item.name)
+                .map(|item| item.name.as_str())
                 .collect::<Vec<_>>()
                 .join(" or ")
         )),
@@ -53,13 +53,15 @@ fn message(text: impl Into<String>) -> ActionOutcome {
 fn apply_effect(effect: &Effect, state: &mut GameState) {
     match effect {
         Effect::SetFlag(flag) => {
-            state.flags.insert(*flag);
+            state.flags.insert(flag.clone());
         }
         Effect::ClearFlag(flag) => {
             state.flags.remove(flag);
         }
         Effect::MoveItemToRoom { item, room } => {
-            state.item_locations.insert(*item, ItemLocation::Room(room));
+            state
+                .item_locations
+                .insert(item.clone(), ItemLocation::Room(room.clone()));
         }
     }
 }
@@ -68,12 +70,12 @@ pub fn execute_command(world: &World, state: &mut GameState, command: Command) -
     match command {
         Command::Help => message(help()),
         Command::Quit => ActionOutcome::Quit("Goodbye!".into()),
-        Command::Look => match world.room(state.current_room) {
+        Command::Look => match world.room(&state.current_room) {
             Some(room) => message(describe_room(world, state, room)),
             None => message("The current room could not be found."),
         },
         Command::Move(direction) => {
-            let Some(room) = world.room(state.current_room) else {
+            let Some(room) = world.room(&state.current_room) else {
                 return message("The current room could not be found.");
             };
             let Some((_, destination)) = room.exits.iter().find(|(exit, _)| *exit == direction)
@@ -86,11 +88,11 @@ pub fn execute_command(world: &World, state: &mut GameState, command: Command) -
                 .find(|rule| rule.from == room.id && rule.direction == direction)
             {
                 if !rule.requires.iter().all(|condition| condition.met(state)) {
-                    return message(rule.blocked_text);
+                    return message(&rule.blocked_text);
                 }
             }
             if let Some(next_room) = world.room(destination) {
-                state.current_room = next_room.id;
+                state.current_room = next_room.id.clone();
                 message(describe_room(world, state, next_room))
             } else {
                 message("That exit leads to an unknown room.")
@@ -100,8 +102,8 @@ pub fn execute_command(world: &World, state: &mut GameState, command: Command) -
             let carried = world
                 .items
                 .iter()
-                .filter(|item| state.location(item.id) == Some(ItemLocation::Inventory))
-                .map(|item| item.name)
+                .filter(|item| state.location(&item.id) == Some(ItemLocation::Inventory))
+                .map(|item| item.name.as_str())
                 .collect::<Vec<_>>();
             if carried.is_empty() {
                 message("You are carrying nothing.")
@@ -111,7 +113,7 @@ pub fn execute_command(world: &World, state: &mut GameState, command: Command) -
         }
         Command::Examine(target) => match resolve(world, state, &target) {
             Ok(item) => message(select_description(
-                item.description,
+                &item.description,
                 &item.descriptions,
                 state,
             )),
@@ -119,26 +121,27 @@ pub fn execute_command(world: &World, state: &mut GameState, command: Command) -
         },
         Command::Take(target) => match resolve(world, state, &target) {
             Err(error) => message(error),
-            Ok(item) if state.location(item.id) == Some(ItemLocation::Inventory) => {
+            Ok(item) if state.location(&item.id) == Some(ItemLocation::Inventory) => {
                 message(format!("You are already carrying the {}.", item.name))
             }
             Ok(item) if !item.portable => message(format!("The {} cannot be moved.", item.name)),
             Ok(item) => {
                 state
                     .item_locations
-                    .insert(item.id, ItemLocation::Inventory);
+                    .insert(item.id.clone(), ItemLocation::Inventory);
                 message(format!("You take the {}.", item.name))
             }
         },
         Command::Drop(target) => match resolve(world, state, &target) {
             Err(error) => message(error),
-            Ok(item) if state.location(item.id) != Some(ItemLocation::Inventory) => {
+            Ok(item) if state.location(&item.id) != Some(ItemLocation::Inventory) => {
                 message(format!("You are not carrying the {}.", item.name))
             }
             Ok(item) => {
-                state
-                    .item_locations
-                    .insert(item.id, ItemLocation::Room(state.current_room));
+                state.item_locations.insert(
+                    item.id.clone(),
+                    ItemLocation::Room(state.current_room.clone()),
+                );
                 message(format!("You drop the {}.", item.name))
             }
         },
@@ -151,7 +154,7 @@ pub fn execute_command(world: &World, state: &mut GameState, command: Command) -
                 Ok(target) => target,
                 Err(error) => return message(error),
             };
-            if state.location(item.id) != Some(ItemLocation::Inventory) {
+            if state.location(&item.id) != Some(ItemLocation::Inventory) {
                 return message(format!("You must be carrying the {} to use it.", item.name));
             }
             match world
@@ -164,14 +167,13 @@ pub fn execute_command(world: &World, state: &mut GameState, command: Command) -
                     item.name, target.name
                 )),
                 Some(rule) if !rule.requires.iter().all(|condition| condition.met(state)) => {
-                    message(rule.failure_text)
+                    message(&rule.failure_text)
                 }
                 Some(rule) => {
-                    // Preconditions are checked before any state mutation.
                     for effect in &rule.effects {
                         apply_effect(effect, state);
                     }
-                    message(rule.success_text)
+                    message(&rule.success_text)
                 }
             }
         }

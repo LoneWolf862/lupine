@@ -10,8 +10,8 @@ pub fn describe_room(world: &World, state: &GameState, room: &Room) -> String {
     let objects = world
         .items
         .iter()
-        .filter(|item| state.location(item.id) == Some(ItemLocation::Room(room.id)))
-        .map(|item| item.name)
+        .filter(|item| state.location(&item.id) == Some(ItemLocation::Room(room.id.clone())))
+        .map(|item| item.name.as_str())
         .collect::<Vec<_>>();
     let visible = if objects.is_empty() {
         "Objects: none".to_string()
@@ -21,7 +21,7 @@ pub fn describe_room(world: &World, state: &GameState, room: &Room) -> String {
     format!(
         "{}\n{}\nExits: {}\n{}",
         room.title,
-        select_description(room.description, &room.descriptions, state),
+        select_description(&room.description, &room.descriptions, state),
         exits.join(", "),
         visible
     )

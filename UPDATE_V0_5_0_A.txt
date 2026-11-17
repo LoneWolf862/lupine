@@ -1,0 +1,9 @@
+Lupine v0.5.0-A — source update
+
+Extract this ZIP into the root of your existing Lupine repository.
+Do not delete the Git repository or replace it with an entirely new project.
+This is an uncompiled development candidate: verify locally using the commands in
+ docs/V0_5_0_A_UPDATE.md before staging or committing.
+
+The next update will implement external TOML loading. The .rork manual save system
+is an accepted design requirement, NOT included in this update.

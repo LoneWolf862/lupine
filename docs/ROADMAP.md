@@ -56,3 +56,11 @@
 - [ ] Evaluate guided text authoring versus **possible** Lupine Studio graphical editor (decision open)
 
 See [`CREATOR_VISION.md`](CREATOR_VISION.md) for explicit acceptance criteria. Save/load, advanced grammar, combat, and other story mechanics remain optional until justified by a real game.
+
+## Refined milestones and locked design decisions
+
+- **v0.5.0-A (current candidate):** Owned world and game-state text/IDs; update fixtures, sample game, tests, and documentation.
+- **v0.5.0-B:** TOML game/room/item loader, mapping to the same `World` API (Rust-authored games remain supported).
+- **v0.5.0-C:** Data-driven conditions/interactions, actionable format validation and multiple example stories.
+- **v0.6.0:** Built-in **manual-only** `save`, `load`, `saves`; named per-game TOML-based `.rork` files (e.g. `forestcamp.howlbound.rork`); safety, validation and versioning. **No autosaving**.
+- **Later:** Text-only creator templates, terminal commands, testing and standalone game packaging. No graphical studio planned.

@@ -5,47 +5,47 @@ use lupine::world::{Condition, DescriptionVariant, Effect, ExitRule, Interaction
 
 fn world() -> World {
     World {
-        starting_room: "porch",
+        starting_room: "porch".into(),
         rooms: vec![
             Room {
-                id: "porch", title: "Sample Porch",
-                description: "A small porch faces a locked workshop to the north.",
+                id: "porch".into(), title: "Sample Porch".into(),
+                description: "A small porch faces a locked workshop to the north.".into(),
                 descriptions: vec![DescriptionVariant {
-                    when: vec![Condition::FlagSet("door_open")],
-                    text: "The workshop door stands open to the north.",
+                    when: vec![Condition::FlagSet("door_open".into())],
+                    text: "The workshop door stands open to the north.".into(),
                 }],
-                exits: vec![(Direction::North, "workshop")],
+                exits: vec![(Direction::North, "workshop".into())],
             },
             Room {
-                id: "workshop", title: "Sample Workshop",
-                description: "A quiet workshop. A doorway leads south.",
+                id: "workshop".into(), title: "Sample Workshop".into(),
+                description: "A quiet workshop. A doorway leads south.".into(),
                 descriptions: vec![],
-                exits: vec![(Direction::South, "porch")],
+                exits: vec![(Direction::South, "porch".into())],
             },
         ],
         items: vec![
             Item {
-                id: "copper_token", name: "copper token", aliases: vec!["token"],
-                description: "A small copper token with a gear stamped on it.",
-                descriptions: vec![], portable: true, starting_room: "porch",
+                id: "copper_token".into(), name: "copper token".into(), aliases: vec!["token".into()],
+                description: "A small copper token with a gear stamped on it.".into(),
+                descriptions: vec![], portable: true, starting_room: "porch".into(),
             },
             Item {
-                id: "door", name: "workshop door", aliases: vec!["door"],
-                description: "A door with a token-sized mechanism.",
-                descriptions: vec![], portable: false, starting_room: "porch",
+                id: "door".into(), name: "workshop door".into(), aliases: vec!["door".into()],
+                description: "A door with a token-sized mechanism.".into(),
+                descriptions: vec![], portable: false, starting_room: "porch".into(),
             },
         ],
         interactions: vec![Interaction {
-            item: "copper_token", target: "door",
-            requires: vec![Condition::FlagUnset("door_open")],
-            effects: vec![Effect::SetFlag("door_open")],
-            failure_text: "The door is already unlocked.",
-            success_text: "The token clicks into place and the door unlocks.",
+            item: "copper_token".into(), target: "door".into(),
+            requires: vec![Condition::FlagUnset("door_open".into())],
+            effects: vec![Effect::SetFlag("door_open".into())],
+            failure_text: "The door is already unlocked.".into(),
+            success_text: "The token clicks into place and the door unlocks.".into(),
         }],
         exit_rules: vec![ExitRule {
-            from: "porch", direction: Direction::North,
-            requires: vec![Condition::FlagSet("door_open")],
-            blocked_text: "The workshop door is still locked.",
+            from: "porch".into(), direction: Direction::North,
+            requires: vec![Condition::FlagSet("door_open".into())],
+            blocked_text: "The workshop door is still locked.".into(),
         }],
     }
 }

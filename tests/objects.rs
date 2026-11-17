@@ -29,7 +29,7 @@ fn take_examine_drop_and_return_to_room() {
     assert!(run(&world, &mut state, "drop key").contains("You drop"));
     assert_eq!(
         state.location("brass_key"),
-        Some(ItemLocation::Room("corridor"))
+        Some(ItemLocation::Room("corridor".into()))
     );
     run(&world, &mut state, "south");
     assert!(run(&world, &mut state, "inventory").contains("nothing"));
@@ -45,7 +45,7 @@ fn fixed_or_inaccessible_objects_cannot_move() {
     assert!(run(&world, &mut state, "take table").contains("cannot be moved"));
     assert_eq!(
         state.location("stone_table"),
-        Some(ItemLocation::Room("foyer"))
+        Some(ItemLocation::Room("foyer".into()))
     );
     assert!(run(&world, &mut state, "drop key").contains("not carrying"));
     assert!(run(&world, &mut state, "examine panel").contains("don't see"));
@@ -72,13 +72,13 @@ fn stateful_interaction_requires_item_and_persists() {
 fn ambiguous_aliases_do_not_mutate_state() {
     let mut world = fixture_world();
     world.items.push(Item {
-        id: "iron_key",
-        name: "iron key",
-        aliases: vec!["key", "iron key"],
-        description: "A second key.",
+        id: "iron_key".into(),
+        name: "iron key".into(),
+        aliases: vec!["key".into(), "iron key".into()],
+        description: "A second key.".into(),
         descriptions: vec![],
         portable: true,
-        starting_room: "foyer",
+        starting_room: "foyer".into(),
     });
     let mut state = GameState::new(&world);
     let before = state.clone();

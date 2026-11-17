@@ -1,0 +1,10 @@
+id = "foyer"
+title = "Test Foyer"
+description = "A plain room. A passage leads north."
+
+[exits]
+north = "workshop"
+
+[[descriptions]]
+when = [{ flag_set = "door_open" }]
+text = "The doorway to the north stands open."

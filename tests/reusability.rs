@@ -41,44 +41,44 @@ fn fixture_dynamic_descriptions_and_unlock() {
 /// A completely unrelated adventure uses the same engine APIs and parser.
 fn alternate_world() -> World {
     World {
-        starting_room: "pier",
+        starting_room: "pier".into(),
         rooms: vec![Room {
-            id: "pier",
-            title: "Sample Pier",
-            description: "The water is calm.",
+            id: "pier".into(),
+            title: "Sample Pier".into(),
+            description: "The water is calm.".into(),
             descriptions: vec![DescriptionVariant {
-                when: vec![Condition::FlagSet("lamp_lit")],
-                text: "A bright lantern lights the pier.",
+                when: vec![Condition::FlagSet("lamp_lit".into())],
+                text: "A bright lantern lights the pier.".into(),
             }],
             exits: vec![],
         }],
         items: vec![
             Item {
-                id: "match",
-                name: "match",
-                aliases: vec!["match"],
-                description: "A match.",
+                id: "match".into(),
+                name: "match".into(),
+                aliases: vec!["match".into()],
+                description: "A match.".into(),
                 descriptions: vec![],
                 portable: true,
-                starting_room: "pier",
+                starting_room: "pier".into(),
             },
             Item {
-                id: "lamp",
-                name: "lamp",
-                aliases: vec!["lamp"],
-                description: "An unlit lamp.",
+                id: "lamp".into(),
+                name: "lamp".into(),
+                aliases: vec!["lamp".into()],
+                description: "An unlit lamp.".into(),
                 descriptions: vec![],
                 portable: false,
-                starting_room: "pier",
+                starting_room: "pier".into(),
             },
         ],
         interactions: vec![Interaction {
-            item: "match",
-            target: "lamp",
-            requires: vec![Condition::FlagUnset("lamp_lit")],
-            effects: vec![Effect::SetFlag("lamp_lit")],
-            failure_text: "The lamp is already lit.",
-            success_text: "The lamp lights.",
+            item: "match".into(),
+            target: "lamp".into(),
+            requires: vec![Condition::FlagUnset("lamp_lit".into())],
+            effects: vec![Effect::SetFlag("lamp_lit".into())],
+            failure_text: "The lamp is already lit.".into(),
+            success_text: "The lamp lights.".into(),
         }],
         exit_rules: vec![],
     }
@@ -115,16 +115,18 @@ fn different_world_reuses_engine_without_modifications() {
 #[test]
 fn invalid_world_reports_references_and_duplicates() {
     let mut world = alternate_world();
-    world.rooms[0].exits.push((Direction::East, "missing_room"));
-    world.items[0].starting_room = "missing_room";
+    world.rooms[0]
+        .exits
+        .push((Direction::East, "missing_room".into()));
+    world.items[0].starting_room = "missing_room".into();
     world.items.push(Item {
-        id: "match",
-        name: "match two",
+        id: "match".into(),
+        name: "match two".into(),
         aliases: vec![],
-        description: "Duplicate",
+        description: "Duplicate".into(),
         descriptions: vec![],
         portable: true,
-        starting_room: "pier",
+        starting_room: "pier".into(),
     });
     let errors = world.validate().unwrap_err().join("\n");
     assert!(errors.contains("Duplicate or empty item id"));
@@ -135,8 +137,8 @@ fn invalid_world_reports_references_and_duplicates() {
 fn invalid_effect_is_rejected_before_play() {
     let mut world = alternate_world();
     world.interactions[0].effects.push(Effect::MoveItemToRoom {
-        item: "missing",
-        room: "pier",
+        item: "missing".into(),
+        room: "pier".into(),
     });
     assert!(world
         .validate()

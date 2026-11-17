@@ -5,6 +5,6 @@ mod fixture_world;
 fn main() -> std::io::Result<()> {
     lupine::run(
         fixture_world::fixture_world(),
-        "LUPINE v0.4.0 — Engine Test Adventure",
+        "LUPINE v0.5.0-alpha.1 — Engine Test Adventure",
     )
 }

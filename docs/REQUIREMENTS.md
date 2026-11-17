@@ -147,3 +147,16 @@ This requirements document intentionally does **not** choose the setting, plot, 
 - **Not yet verified:** CachyOS/Linux build, packaged executable operating without build tools, course README template/video.
 - **Not implemented yet:** external story files, general conditions/effects system, state-dependent descriptions, nontechnical creator workflow, visual editor.
 - **Next milestone:** v0.3.0 reusable engine architecture; see `ROADMAP.md`.
+
+## Engine-level manual save/load — confirmed post-v0.5.0 requirement
+
+This section supersedes earlier descriptions of save/load as optional for Lupine's final release; it remains **out of scope for v0.5.0-A**.
+
+- Every Lupine game supports the built-in player commands `save`, `load`, and `saves`, including named slots. These are reserved engine commands.
+- Saving is exclusively player-initiated: **no autosaving, checkpoint saving, or automatic saving on quit**.
+- Saves preserve mutable `GameState` (room, item locations/inventory, flags and future supported state), not static world definitions.
+- Native extension: `.rork`, encoded as TOML; proposed filename `<normalized-save-name>.<stable-game-id>.rork`, e.g., `forestcamp.howlbound.rork`.
+- Save naming must handle collisions and request confirmation before overwriting an existing slot.
+- Load validation checks format/schema version, game identity, references, and compatibility **before mutating current state**.
+- Store per-game saves in user-data locations, independent of installation paths. The file contents must be portable across Windows/Linux when the same game version is compatible.
+- Protect against partial writes and report corrupt or incompatible saves without panics or accidental overwrites.

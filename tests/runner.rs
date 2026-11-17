@@ -26,7 +26,7 @@ fn terminal_runner_executes_a_full_script() {
 #[test]
 fn terminal_runner_rejects_invalid_world_before_any_output() {
     let world = World {
-        starting_room: "missing",
+        starting_room: "missing".into(),
         rooms: vec![],
         items: vec![],
         interactions: vec![],

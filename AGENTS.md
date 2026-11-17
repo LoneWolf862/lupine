@@ -31,3 +31,10 @@
 - v0.3.0 priority: reusable engine API, fixture separation, generic conditions/effects, dynamic descriptions, and tests, without overbuilding an editor or authoring DSL.
 - A human-readable content format, validator, guided creation workflow, and possibly Lupine Studio are later-stage goals; see roadmap.
 - Do not add combat, NPC systems, networking, mod hosting, save compatibility, or complex parser features without an explicit milestone decision.
+
+## Decisions locked in after v0.4.0
+
+- v0.5.0-A owns world/state strings in preparation for TOML loading; migrate existing sample worlds with `.into()` and keep the public engine story-independent.
+- The creator interface is text-based (TOML templates and terminal utilities), **not** a GUI.
+- Engine-level manual `save`, `load`, and `saves` will use TOML-based `.rork` saves. No autosaving under any circumstances.
+- Protect compatibility and avoid claiming a save loader or TOML story loader exists before implemented and tested.

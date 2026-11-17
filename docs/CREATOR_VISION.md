@@ -71,3 +71,9 @@ HOWLBOUND should be authored as a separate game using public Lupine mechanisms a
 - NPC dialogue trees, combat, quests, broad scripting languages, or cloud collaboration.
 
 **Exit condition:** The final release is *not* complete solely because the Rust library is extensible. It must demonstrate the nontechnical creator workflow described above, in addition to reliable offline gameplay.
+
+## Text-only creator workflow and manual save design (confirmed)
+
+Lupine will remain text-based throughout: games play in the terminal, game content is authored using TOML templates and examples, and future project creation/validation tools are terminal commands. A graphical Lupine Studio is **not** a planned requirement.
+
+Game creators do not implement saving. Lupine provides engine-owned manual `save`, `load`, and `saves` commands, with multiple named slots and portable TOML-based `.rork` files. No autosaving, save-on-quit or checkpoints. Any game creation templates should have a stable `game_id` to isolate save files and keep them compatible across title changes.

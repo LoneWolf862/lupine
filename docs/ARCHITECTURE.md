@@ -107,3 +107,9 @@ A future text format must describe *content* and supported rules; it should not 
 ## Open choices
 
 The precise v0.3 API, interaction rule variants, content format, save/load milestone, packaging workflow, and authoring interface all remain open. HOWLBOUND's story and final title also remain undecided. Keep changes incremental and testable.
+
+## v0.5.0 architecture and future persistence
+
+The v0.5.0-A transition changes world and mutable state identifiers and text from static string references to owned `String` values. Lookups should borrow with `&str`; the loader should later produce the same `World` type used by Rust-authored games. No story-specific parser changes are needed.
+
+Save/load is an **engine-level** future subsystem. Serialize only `GameState` and the metadata necessary for checking schema and game compatibility. The native `.rork` extension denotes TOML-based manual save files. `save`, `load`, and `saves` will be reserved commands handled by the runner/save subsystem, not by game-specific puzzles. No automatic gameplay writes. Validate the entire loaded state before replacing the active state; use robust file replacement and per-game save storage.

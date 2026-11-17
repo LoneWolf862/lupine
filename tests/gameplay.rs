@@ -23,7 +23,7 @@ fn walkthrough_navigation_and_blocked_exit() {
     let blocked = execute_command(&world, &mut state, Command::Move(Direction::North));
     assert_eq!(
         blocked,
-        ActionOutcome::Message("The northern passage is sealed.".to_string())
+        ActionOutcome::Message("The northern passage is sealed.".into())
     );
     assert_eq!(state.current_room, "chamber");
 

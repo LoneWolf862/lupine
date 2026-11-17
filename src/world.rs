@@ -1,13 +1,13 @@
 use std::collections::HashSet;
 
 use crate::commands::Direction;
-use crate::state::GameState;
+use crate::state::{GameState, ItemLocation};
 
-/// Stable identifiers, separate from player-facing names.
-/// This first Rust-authored API uses string literals; a file loader is a later milestone.
-pub type RoomId = &'static str;
-pub type ItemId = &'static str;
-pub type FlagId = &'static str;
+/// IDs are owned so worlds can eventually be constructed from disk-loaded text.
+/// They remain stable identifiers, not player-facing names.
+pub type RoomId = String;
+pub type ItemId = String;
+pub type FlagId = String;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Condition {
@@ -19,7 +19,7 @@ pub enum Condition {
 impl Condition {
     pub fn met(&self, state: &GameState) -> bool {
         match self {
-            Self::HasItem(id) => state.location(id) == Some(crate::state::ItemLocation::Inventory),
+            Self::HasItem(id) => state.location(id) == Some(ItemLocation::Inventory),
             Self::FlagSet(flag) => state.flags.contains(flag),
             Self::FlagUnset(flag) => !state.flags.contains(flag),
         }
@@ -36,7 +36,7 @@ pub enum Effect {
 #[derive(Debug, Clone)]
 pub struct DescriptionVariant {
     pub when: Vec<Condition>,
-    pub text: &'static str,
+    pub text: String,
 }
 
 pub fn select_description<'a>(
@@ -47,14 +47,14 @@ pub fn select_description<'a>(
     variants
         .iter()
         .find(|variant| variant.when.iter().all(|condition| condition.met(state)))
-        .map_or(default, |variant| variant.text)
+        .map_or(default, |variant| variant.text.as_str())
 }
 
 #[derive(Debug)]
 pub struct Room {
     pub id: RoomId,
-    pub title: &'static str,
-    pub description: &'static str,
+    pub title: String,
+    pub description: String,
     pub descriptions: Vec<DescriptionVariant>,
     pub exits: Vec<(Direction, RoomId)>,
 }
@@ -62,9 +62,9 @@ pub struct Room {
 #[derive(Debug)]
 pub struct Item {
     pub id: ItemId,
-    pub name: &'static str,
-    pub aliases: Vec<&'static str>,
-    pub description: &'static str,
+    pub name: String,
+    pub aliases: Vec<String>,
+    pub description: String,
     pub descriptions: Vec<DescriptionVariant>,
     pub portable: bool,
     pub starting_room: RoomId,
@@ -75,7 +75,7 @@ pub struct ExitRule {
     pub from: RoomId,
     pub direction: Direction,
     pub requires: Vec<Condition>,
-    pub blocked_text: &'static str,
+    pub blocked_text: String,
 }
 
 #[derive(Debug)]
@@ -84,8 +84,8 @@ pub struct Interaction {
     pub target: ItemId,
     pub requires: Vec<Condition>,
     pub effects: Vec<Effect>,
-    pub failure_text: &'static str,
-    pub success_text: &'static str,
+    pub failure_text: String,
+    pub success_text: String,
 }
 
 #[derive(Debug)]
@@ -98,31 +98,30 @@ pub struct World {
 }
 
 impl World {
-    pub fn room(&self, id: RoomId) -> Option<&Room> {
+    pub fn room(&self, id: &str) -> Option<&Room> {
         self.rooms.iter().find(|room| room.id == id)
     }
 
-    pub fn item(&self, id: ItemId) -> Option<&Item> {
+    pub fn item(&self, id: &str) -> Option<&Item> {
         self.items.iter().find(|item| item.id == id)
     }
 
-    /// Check data authored by a game developer before starting a session.
-    /// Returns every detected issue, rather than failing at the first one.
+    /// Validate an authored world before play; reports all detected problems.
     pub fn validate(&self) -> Result<(), Vec<String>> {
         let mut errors = Vec::new();
         let mut rooms = HashSet::new();
         let mut items = HashSet::new();
         for room in &self.rooms {
-            if room.id.is_empty() || !rooms.insert(room.id) {
+            if room.id.is_empty() || !rooms.insert(room.id.as_str()) {
                 errors.push(format!("Duplicate or empty room id: '{}'", room.id));
             }
         }
         for item in &self.items {
-            if item.id.is_empty() || !items.insert(item.id) {
+            if item.id.is_empty() || !items.insert(item.id.as_str()) {
                 errors.push(format!("Duplicate or empty item id: '{}'", item.id));
             }
         }
-        if !rooms.contains(self.starting_room) {
+        if !rooms.contains(self.starting_room.as_str()) {
             errors.push(format!(
                 "Starting room '{}' does not exist",
                 self.starting_room
@@ -138,7 +137,7 @@ impl World {
                         direction.label()
                     ));
                 }
-                if !rooms.contains(destination) {
+                if !rooms.contains(destination.as_str()) {
                     errors.push(format!(
                         "Room '{}' points to missing room '{}'",
                         room.id, destination
@@ -150,7 +149,7 @@ impl World {
             }
         }
         for item in &self.items {
-            if !rooms.contains(item.starting_room) {
+            if !rooms.contains(item.starting_room.as_str()) {
                 errors.push(format!(
                     "Item '{}' starts in missing room '{}'",
                     item.id, item.starting_room
@@ -162,13 +161,15 @@ impl World {
         }
         let mut interactions = HashSet::new();
         for interaction in &self.interactions {
-            if !items.contains(interaction.item) || !items.contains(interaction.target) {
+            if !items.contains(interaction.item.as_str())
+                || !items.contains(interaction.target.as_str())
+            {
                 errors.push(format!(
                     "Interaction '{} -> {}' references an unknown item",
                     interaction.item, interaction.target
                 ));
             }
-            if !interactions.insert((interaction.item, interaction.target)) {
+            if !interactions.insert((interaction.item.as_str(), interaction.target.as_str())) {
                 errors.push(format!(
                     "Duplicate interaction '{} -> {}'",
                     interaction.item, interaction.target
@@ -177,7 +178,7 @@ impl World {
             check_conditions(&interaction.requires, &items, &mut errors);
             for effect in &interaction.effects {
                 if let Effect::MoveItemToRoom { item, room } = effect {
-                    if !items.contains(item) || !rooms.contains(room) {
+                    if !items.contains(item.as_str()) || !rooms.contains(room.as_str()) {
                         errors.push(format!(
                             "Move effect references missing item '{}' or room '{}'",
                             item, room
@@ -188,9 +189,9 @@ impl World {
         }
         let mut exit_rules = HashSet::new();
         for rule in &self.exit_rules {
-            if !rooms.contains(rule.from)
+            if !rooms.contains(rule.from.as_str())
                 || !self
-                    .room(rule.from)
+                    .room(&rule.from)
                     .is_some_and(|room| room.exits.iter().any(|(dir, _)| *dir == rule.direction))
             {
                 errors.push(format!(
@@ -199,7 +200,7 @@ impl World {
                     rule.from
                 ));
             }
-            if !exit_rules.insert((rule.from, rule.direction)) {
+            if !exit_rules.insert((rule.from.as_str(), rule.direction)) {
                 errors.push(format!(
                     "Duplicate exit rule {} from '{}'",
                     rule.direction.label(),
@@ -216,10 +217,10 @@ impl World {
     }
 }
 
-fn check_conditions(conditions: &[Condition], items: &HashSet<ItemId>, errors: &mut Vec<String>) {
+fn check_conditions(conditions: &[Condition], items: &HashSet<&str>, errors: &mut Vec<String>) {
     for condition in conditions {
         if let Condition::HasItem(id) = condition {
-            if !items.contains(id) {
+            if !items.contains(id.as_str()) {
                 errors.push(format!("Condition references missing item '{id}'"));
             }
         }
