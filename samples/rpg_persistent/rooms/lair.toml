@@ -1,0 +1,16 @@
+id = "lair"
+title = "Guardian's Lair"
+description = "A stone guardian blocks the entrance to an ancient vault."
+
+[exits]
+west = "woods"
+
+[encounters]
+chance = 100
+persistence = "unique"
+min_enemies = 1
+max_enemies = 1
+
+[[encounters.enemies]]
+enemy = "stone_guardian"
+weight = 100

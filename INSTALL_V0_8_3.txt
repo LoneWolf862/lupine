@@ -1,0 +1,15 @@
+Lupine v0.8.3 — Persistent rooms / unique bosses (DEVELOPMENT CANDIDATE)
+
+Prerequisite: committed Lupine v0.8.2.
+Extract this ZIP at the root of your existing Lupine repository. It replaces ONLY
+src/encounters.rs, src/runner.rs, src/save.rs and src/state.rs, and adds a new
+standalone sample and test file. Do not delete your other sources or .git directory.
+
+Verify:
+  cargo fmt --all && cargo test && cargo clippy --all-targets -- -D warnings
+
+Manual test:
+  cargo run -- play samples/rpg_persistent
+
+This candidate has NOT been compiled in the packaging environment.
+Review docs/PERSISTENT_ROOMS_V0_8_3.md for expected semantics.

@@ -1,0 +1,28 @@
+id = "healer"
+name = "Camp Healer"
+room = "camp"
+
+[[offers]]
+id = "healing"
+name = "Healing Service"
+type = "restore_hp"
+amount = 50
+currency = "gold"
+price = 10
+
+[[offers]]
+id = "mana"
+name = "Mana Service"
+type = "restore_mp"
+amount = 30
+currency = "gold"
+price = 8
+
+[[offers]]
+id = "camp_permit"
+name = "Camp Permit"
+type = "set_flag"
+flag = "camp_permit"
+currency = "rubies"
+price = 0
+stock = 1

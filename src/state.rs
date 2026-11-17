@@ -21,6 +21,10 @@ pub struct GameState {
     pub shop_purchases: BTreeMap<String, u32>,
     /// Active encounter only; cleared when moving to another room.
     pub active_enemies: Vec<crate::encounters::EnemyInstance>,
+    /// Surviving enemies retained in rooms configured with room/unique persistence.
+    pub room_encounters: BTreeMap<String, Vec<crate::encounters::EnemyInstance>>,
+    /// Unique rooms whose encounters have been defeated permanently.
+    pub completed_unique_encounters: HashSet<String>,
     /// Monotonically increasing ID for unique enemy targets within this session/save.
     pub next_enemy_id: u64,
 }
@@ -47,6 +51,8 @@ impl GameState {
             shop_purchases: BTreeMap::new(),
             active_enemies: Vec::new(),
             next_enemy_id: 1,
+            room_encounters: BTreeMap::new(),
+            completed_unique_encounters: HashSet::new(),
         }
     }
 

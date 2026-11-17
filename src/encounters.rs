@@ -56,6 +56,9 @@ pub struct EnemyAttack {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct EncounterTable {
+    /// What happens when a player leaves this room. Defaults to legacy behavior.
+    #[serde(default)]
+    pub persistence: EncounterPersistence,
     /// Percent chance on every successful room entry (0–100).
     pub chance: u32,
     #[serde(default = "default_one")]
@@ -64,6 +67,16 @@ pub struct EncounterTable {
     pub max_enemies: u32,
     #[serde(default)]
     pub enemies: Vec<EncounterEntry>,
+}
+/// `temporary` rerolls on entry; `room` retains living enemies between visits;
+/// `unique` retains living enemies and permanently clears once defeated.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum EncounterPersistence {
+    #[default]
+    Temporary,
+    Room,
+    Unique,
 }
 fn default_one() -> u32 {
     1
@@ -292,6 +305,114 @@ impl EncounterContent {
         }
         Ok(result)
     }
+    /// Preserve surviving enemies on exit, or discard a temporary encounter.
+    /// The engine calls this only after a *successful* room change.
+    pub fn leave_room(&self, room_id: &str, state: &mut GameState) {
+        let active = std::mem::take(&mut state.active_enemies);
+        match self.tables.get(room_id).map(|table| table.persistence) {
+            Some(EncounterPersistence::Room | EncounterPersistence::Unique)
+                if !active.is_empty() =>
+            {
+                state.room_encounters.insert(room_id.to_owned(), active);
+            }
+            _ => {
+                state.room_encounters.remove(room_id);
+            }
+        }
+    }
+
+    /// Restore a remembered encounter before considering a new spawn.
+    /// No random roll is made for a completed unique encounter.
+    pub fn enter_room(&self, room_id: &str, state: &mut GameState, rng: &mut impl RandomSource) {
+        if let Some(remembered) = state.room_encounters.remove(room_id) {
+            state.active_enemies = remembered;
+            return;
+        }
+        if self.tables.get(room_id).is_some_and(|table| {
+            table.persistence == EncounterPersistence::Unique
+                && state.completed_unique_encounters.contains(room_id)
+        }) {
+            state.active_enemies.clear();
+            return;
+        }
+        let mut next_id = state.next_enemy_id;
+        let rolled = self.roll(room_id, state, rng, &mut next_id);
+        state.next_enemy_id = next_id;
+        state.active_enemies = rolled;
+    }
+
+    /// Final victory in a unique room permanently prevents respawning.
+    /// Only call after a real enemy defeat, never after a failed roll.
+    pub fn record_defeat(&self, state: &mut GameState) {
+        if state.active_enemies.is_empty()
+            && self
+                .tables
+                .get(&state.current_room)
+                .is_some_and(|table| table.persistence == EncounterPersistence::Unique)
+        {
+            state
+                .completed_unique_encounters
+                .insert(state.current_room.clone());
+        }
+    }
+
+    /// Verify story-specific encounters before replacing a live session on load.
+    pub fn validate_restored(&self, state: &GameState) -> Result<(), String> {
+        let mut seen = HashSet::new();
+        let check_enemy = |instance: &EnemyInstance, seen: &mut HashSet<u64>| {
+            let enemy = self
+                .enemies
+                .get(&instance.enemy_id)
+                .ok_or_else(|| format!("save refers to unknown enemy '{}'", instance.enemy_id))?;
+            if instance.current_hp > enemy.max_hp || instance.current_hp == 0 {
+                return Err(format!("save enemy '{}' has invalid HP", instance.enemy_id));
+            }
+            if !seen.insert(instance.instance_id) {
+                return Err("save contains duplicate enemy instance IDs across rooms".into());
+            }
+            Ok(())
+        };
+        if !state.active_enemies.is_empty() && !self.tables.contains_key(&state.current_room) {
+            return Err("save contains an active encounter without a room table".into());
+        }
+        for enemy in &state.active_enemies {
+            check_enemy(enemy, &mut seen)?;
+        }
+        for (room, enemies) in &state.room_encounters {
+            if room == &state.current_room {
+                return Err("save stores the current room encounter twice".into());
+            }
+            let Some(table) = self.tables.get(room) else {
+                return Err(format!("save references unknown encounter room '{room}'"));
+            };
+            if table.persistence == EncounterPersistence::Temporary
+                || enemies.is_empty()
+                || enemies.len() > 12
+            {
+                return Err(format!("save has invalid remembered encounter in '{room}'"));
+            }
+            for enemy in enemies {
+                check_enemy(enemy, &mut seen)?;
+            }
+        }
+        for room in &state.completed_unique_encounters {
+            let Some(table) = self.tables.get(room) else {
+                return Err(format!(
+                    "save completed encounter refers to unknown room '{room}'"
+                ));
+            };
+            if table.persistence != EncounterPersistence::Unique
+                || state.room_encounters.contains_key(room)
+                || (room == &state.current_room && !state.active_enemies.is_empty())
+            {
+                return Err(format!(
+                    "save has conflicting unique-encounter state for '{room}'"
+                ));
+            }
+        }
+        Ok(())
+    }
+
     /// Caller injects RNG; allows deterministic tests and keeps sampling isolated.
     pub fn roll(
         &self,

@@ -1,0 +1,6 @@
+id = "rusty_dagger"
+name = "rusty dagger"
+aliases = ["dagger"]
+description = "An ordinary but usable dagger."
+portable = true
+starting_room = "camp"

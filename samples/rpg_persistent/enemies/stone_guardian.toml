@@ -1,0 +1,13 @@
+id = "stone_guardian"
+name = "Stone Guardian"
+description = "An ancient, animated stone sentinel."
+level = 3
+max_hp = 35
+attack_power = 100
+defense = 2
+experience = 40
+
+[[attacks]]
+name = "Stone Fist"
+damage = 4
+weight = 100

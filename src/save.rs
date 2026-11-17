@@ -40,6 +40,10 @@ struct SaveFile {
     shop_purchases: BTreeMap<String, u32>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     active_enemies: Vec<crate::encounters::EnemyInstance>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    room_encounters: BTreeMap<String, Vec<crate::encounters::EnemyInstance>>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    completed_unique_encounters: Vec<String>,
     #[serde(default = "default_next_enemy_id")]
     next_enemy_id: u64,
 }
@@ -124,6 +128,16 @@ pub fn encode_save_with_compat(
         shop_purchases: state.shop_purchases.clone(),
         active_enemies: state.active_enemies.clone(),
         next_enemy_id: state.next_enemy_id,
+        room_encounters: state.room_encounters.clone(),
+        completed_unique_encounters: {
+            let mut rooms = state
+                .completed_unique_encounters
+                .iter()
+                .cloned()
+                .collect::<Vec<_>>();
+            rooms.sort();
+            rooms
+        },
     };
     toml::to_string_pretty(&file).map_err(|e| format!("Cannot encode RORK save: {e}"))
 }
@@ -196,6 +210,11 @@ pub fn decode_save_with_compat(
     if learned_abilities.len() != file.learned_abilities.len() {
         return Err("RORK save contains duplicate learned abilities".into());
     }
+    let completed_unique_encounters: HashSet<String> =
+        file.completed_unique_encounters.iter().cloned().collect();
+    if completed_unique_encounters.len() != file.completed_unique_encounters.len() {
+        return Err("RORK save has duplicate completed unique encounters".into());
+    }
     let state = GameState {
         current_room: file.current_room,
         item_locations,
@@ -205,6 +224,8 @@ pub fn decode_save_with_compat(
         wallet: file.wallet,
         shop_purchases: file.shop_purchases,
         active_enemies: file.active_enemies,
+        room_encounters: file.room_encounters,
+        completed_unique_encounters,
         next_enemy_id: file.next_enemy_id,
     };
     validate_state(world, &state)?;
@@ -245,11 +266,37 @@ fn validate_state(world: &World, state: &GameState) -> Result<(), String> {
     if state.active_enemies.len() > 12 {
         return Err("RORK active encounter exceeds 12 enemies".into());
     }
-    if state.character.is_none() && !state.active_enemies.is_empty() {
+    if state.character.is_none()
+        && (!state.active_enemies.is_empty()
+            || !state.room_encounters.is_empty()
+            || !state.completed_unique_encounters.is_empty())
+    {
         return Err("RORK non-RPG state cannot contain active enemies".into());
     }
     let mut seen = HashSet::new();
-    for enemy in &state.active_enemies {
+    for (room, stored) in &state.room_encounters {
+        if room == &state.current_room
+            || world.room(room).is_none()
+            || stored.is_empty()
+            || stored.len() > 12
+        {
+            return Err(format!(
+                "RORK has invalid remembered encounter room '{room}'"
+            ));
+        }
+    }
+    for room in &state.completed_unique_encounters {
+        if world.room(room).is_none() {
+            return Err(format!(
+                "RORK has unknown completed encounter room '{room}'"
+            ));
+        }
+    }
+    for enemy in state
+        .active_enemies
+        .iter()
+        .chain(state.room_encounters.values().flatten())
+    {
         if enemy.instance_id == 0
             || enemy.instance_id >= state.next_enemy_id
             || enemy.current_hp == 0
