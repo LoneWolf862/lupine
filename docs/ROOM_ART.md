@@ -57,3 +57,21 @@ lupine play MyAdventure
 The generator creates editable files and refuses to overwrite files that already exist. A generated room is not automatically connected to the map—edit an existing room's `[exits]` and optionally your new room's exits. An item starts in the adventure's starting room; edit `starting_room` as desired.
 
 See `story_example/` for a fully functional room that changes its artwork when a door unlocks.
+
+## Generate artwork from the terminal (v0.7.0-C)
+
+```sh
+lupine add art MyAdventure sigil
+lupine add art MyAdventure door --dynamic
+```
+
+The first command creates `art/sigil.txt`; add `art_file = "sigil.txt"` near the top of your room TOML (before `[exits]`). The second creates `art/door_inactive.txt` and `art/door_active.txt`. Configure your room with:
+
+```toml
+art_file = "door_inactive.txt"
+[[art_variants]]
+when = [{ flag_set = "door_active" }]
+file = "door_active.txt"
+```
+
+Add `{ set_flag = "door_active" }` to the relevant interaction's `effects` array. The new files are templates; edit them with your preferred text editor. An existing file is never overwritten, and the generator does not edit your room TOML automatically.

@@ -1,0 +1,1 @@
+Lupine v0.7.0-C incremental patch. Extract over the repository root. Run cargo fmt --all, cargo test, cargo clippy --all-targets -- -D warnings. See docs/V0_7_0_C_UPDATE.md. Do not overwrite personal adventure directories.

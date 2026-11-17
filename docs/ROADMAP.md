@@ -31,3 +31,8 @@ Windows verification does not establish Linux/CachyOS portability or completed s
 - Inline artwork via `art` or variant `text` is also supported. No GUI or autosaving.
 - `story_example` demonstrates art changing on `door_open`; tests verify look/entry, flag changes, paths, and saved-state rendering.
 - This is **not verified on Windows/Linux yet**; run tests and review interactive behavior before committing.
+
+
+## v0.7.0-C implementation candidate (awaiting local tests)
+
+Interactive text-only `new` wizard, static/dynamic `add art` command, creator quickstart guide, and additional tests. Previous `add room`, `add item`, `play`, `validate`, and manual RORK saves retained. All new creator commands refuse existing files. See `docs/V0_7_0_C_UPDATE.md`.

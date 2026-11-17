@@ -290,14 +290,19 @@ mod atomic_tests {
     use super::*;
     use crate::story_loader::load_game;
     use std::time::{SystemTime, UNIX_EPOCH};
+    static TEST_COUNTER: AtomicU64 = AtomicU64::new(0);
 
     fn setup() -> (PathBuf, World, GameState) {
         let nanos = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_nanos();
-        let root =
-            std::env::temp_dir().join(format!("lupine_atomic_{}_{}", std::process::id(), nanos));
+        let root = std::env::temp_dir().join(format!(
+            "lupine_atomic_{}_{}_{}",
+            std::process::id(),
+            nanos,
+            TEST_COUNTER.fetch_add(1, Ordering::Relaxed)
+        ));
         let game = load_game(Path::new(env!("CARGO_MANIFEST_DIR")).join("story_example")).unwrap();
         let state = GameState::new(&game.world);
         (root, game.world, state)

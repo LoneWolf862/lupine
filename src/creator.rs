@@ -1,6 +1,6 @@
 //! Text-only project scaffolding. Nothing here runs a game or creates saves.
 use std::fs::{self, OpenOptions};
-use std::io::{self, Write};
+use std::io::{self, BufRead, Write};
 use std::path::{Path, PathBuf};
 
 use serde::Serialize;
@@ -121,4 +121,129 @@ fn entity_path(directory: &Path, folder: &str, id: &str) -> Result<PathBuf, Stri
         return Err(format!("{folder}/ must be inside the adventure"));
     }
     Ok(target_dir.join(format!("{id}.toml")))
+}
+
+/// Generate static or flag-controlled UTF-8 ASCII art in the game's art/ folder.
+/// The templates contain ordinary text; no terminal formatting is required.
+/// Existing files are never overwritten. If writing a later file fails, any
+/// files created by this call are removed, preserving existing content.
+pub fn add_art(directory: &Path, id: &str, dynamic: bool) -> Result<Vec<PathBuf>, String> {
+    validate_id(id)?;
+    crate::story_loader::load_game(directory)?;
+    let root = directory
+        .canonicalize()
+        .map_err(|e| format!("{}: {e}", directory.display()))?;
+    let art_dir = directory.join("art");
+    let created_dir = if !art_dir.exists() {
+        fs::create_dir(&art_dir).map_err(|e| format!("{}: {e}", art_dir.display()))?;
+        true
+    } else {
+        false
+    };
+    let result = (|| -> Result<Vec<PathBuf>, String> {
+        let actual = art_dir.canonicalize().map_err(|e| e.to_string())?;
+        if !actual.starts_with(&root) {
+            return Err("art/ must be inside the adventure directory".into());
+        }
+        let names = if dynamic {
+            vec![format!("{id}_inactive.txt"), format!("{id}_active.txt")]
+        } else {
+            vec![format!("{id}.txt")]
+        };
+        let paths = names
+            .iter()
+            .map(|name| art_dir.join(name))
+            .collect::<Vec<_>>();
+        // Preflight is advisory only. create_new protects against races.
+        for path in &paths {
+            if path.exists() {
+                return Err(format!(
+                    "{} already exists; nothing was overwritten",
+                    path.display()
+                ));
+            }
+        }
+        let mut created = Vec::new();
+        for (index, path) in paths.iter().enumerate() {
+            let art = if dynamic {
+                if index == 0 {
+                    "  +----------+\n  | INACTIVE |\n  +----------+\n"
+                } else {
+                    "  +----------+\n  |  ACTIVE  |\n  +----------+\n"
+                }
+            } else {
+                "  /\\\n /  \\\n/____\\\n"
+            };
+            match create_file(path, art) {
+                Ok(()) => created.push(path.clone()),
+                Err(error) => {
+                    // create_file might have created a partial target; remove only
+                    // this call's files, not unrelated or existing user files.
+                    for file in &created {
+                        let _ = fs::remove_file(file);
+                    }
+                    return Err(error);
+                }
+            }
+        }
+        Ok(paths)
+    })();
+    if created_dir && result.is_err() {
+        let _ = fs::remove_dir(&art_dir);
+    }
+    result
+}
+
+fn validate_id(id: &str) -> Result<(), String> {
+    if id.is_empty()
+        || id.len() > 100
+        || !id
+            .bytes()
+            .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_' || b == b'-')
+    {
+        return Err("ID must be 1–100 characters, lowercase ASCII a-z, 0-9, '-' or '_'".into());
+    }
+    Ok(())
+}
+
+/// Interactive wizard for the existing `new_game` generator. No files are
+/// created until every prompt has been answered and validated.
+pub fn new_game_wizard<R: BufRead, W: Write>(
+    input: &mut R,
+    output: &mut W,
+) -> Result<PathBuf, String> {
+    fn ask<R: BufRead, W: Write>(
+        input: &mut R,
+        output: &mut W,
+        label: &str,
+    ) -> Result<String, String> {
+        write!(output, "{label}").map_err(|e| e.to_string())?;
+        output.flush().map_err(|e| e.to_string())?;
+        let mut answer = String::new();
+        if input.read_line(&mut answer).map_err(|e| e.to_string())? == 0 {
+            return Err("Setup canceled (end of input); no files created".into());
+        }
+        Ok(answer.trim().to_owned())
+    }
+    writeln!(output, "Lupine adventure setup — no Rust required.").map_err(|e| e.to_string())?;
+    let dest = ask(input, output, "New project folder: ")?;
+    if dest.is_empty() {
+        return Err("Project folder cannot be empty".into());
+    }
+    let id = ask(
+        input,
+        output,
+        "Game ID (lowercase letters, numbers, - or _): ",
+    )?;
+    validate_id(&id)?;
+    let title = ask(input, output, "Adventure title: ")?;
+    if title.trim().is_empty() {
+        return Err("Adventure title cannot be empty".into());
+    }
+    let path = PathBuf::from(dest);
+    new_game(&path, &id, &title)?;
+    writeln!(output, "Created: {}", path.display()).map_err(|e| e.to_string())?;
+    writeln!(output, "Next: lupine validate {}", path.display()).map_err(|e| e.to_string())?;
+    writeln!(output, "Then: lupine play {}", path.display()).map_err(|e| e.to_string())?;
+    Ok(path)
 }

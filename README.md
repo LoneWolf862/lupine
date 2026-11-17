@@ -60,3 +60,8 @@ MIT — see [LICENSE](LICENSE).
 ### v0.7.0-B candidate: room and item creation + dynamic artwork
 
 Use `cargo run -- add room <story-directory> <room-id>` and `cargo run -- add item <story-directory> <item-id>` to generate editable TOML files. Use `art_file = "symbol.txt"` in a room to load ASCII/UTF-8 art from the game-local `art/` folder. Conditional `[[art_variants]]` can choose different text files based on flags or inventory. Run `cargo run -- play story_example` to test the locked/open door artwork. See [Room Art](docs/ROOM_ART.md) for full instructions. This update is pending local tests.
+
+
+## Creator improvements (v0.7.0-C test candidate)
+
+Run `lupine new` for a guided terminal setup, or use `lupine new <directory> <game-id> <title...>` for scripting. Use `lupine add art <directory> <id>` to generate a static ASCII `.txt` file or append `--dynamic` for two files driven by an optional flag variant. Copy the generated instructions into the room TOML; no automatic story rewriting. See [`docs/CREATOR_QUICKSTART.md`](docs/CREATOR_QUICKSTART.md) and [`docs/ROOM_ART.md`](docs/ROOM_ART.md). This is not a GUI, and the engine never autosaves.
