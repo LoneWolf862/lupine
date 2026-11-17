@@ -2,6 +2,7 @@
 use std::io::{self, BufRead, Write};
 use std::path::Path;
 
+use crate::combat;
 use crate::encounters::{EncounterContent, EncounterRng};
 use crate::engine::{execute_command, ActionOutcome};
 use crate::parser::{parse_command, ParseError};
@@ -259,6 +260,75 @@ pub fn run_with_io_and_saves_progression_content_encounters<R: BufRead, W: Write
             .map_or((command, ""), |(verb, rest)| (verb, rest.trim()));
         if verb.eq_ignore_ascii_case("enemies") && argument.is_empty() {
             writeln!(output, "{}\n", encounters.describe(&visible_enemies))?;
+            continue;
+        }
+        // Combat commands are handled before the legacy object parser. Invalid actions
+        // are explicitly free; successful attacks trigger one enemy retaliation phase.
+        let physical = if verb.eq_ignore_ascii_case("attack") {
+            Some(argument.to_owned())
+        } else if verb.eq_ignore_ascii_case("use") {
+            // Do not hijack ordinary object interactions such as 'use key on door'.
+            argument.split_once(" on ").and_then(|(weapon, target)| {
+                let known_weapon = content.weapons.values().any(|w| {
+                    world.item(&w.item).is_some_and(|item| {
+                        item.id.eq_ignore_ascii_case(weapon.trim())
+                            || item.name.eq_ignore_ascii_case(weapon.trim())
+                            || item
+                                .aliases
+                                .iter()
+                                .any(|a| a.eq_ignore_ascii_case(weapon.trim()))
+                    })
+                });
+                known_weapon.then(|| format!("{} with {}", target.trim(), weapon.trim()))
+            })
+        } else {
+            None
+        };
+        if let Some(physical) = physical {
+            let action = combat::physical_attack(
+                &world,
+                &content,
+                &encounters,
+                &mut state,
+                &mut visible_enemies,
+                &physical,
+            );
+            writeln!(output, "{}\n", action.message)?;
+            if action.turn_spent {
+                let retaliation =
+                    combat::retaliate(&encounters, &mut state, &visible_enemies, &mut rng);
+                if !retaliation.is_empty() {
+                    writeln!(output, "{retaliation}\n")?;
+                }
+                if !visible_enemies.is_empty() {
+                    writeln!(output, "{}\n", encounters.describe(&visible_enemies))?;
+                }
+            }
+            continue;
+        }
+        if verb.eq_ignore_ascii_case("cast")
+            && argument.to_ascii_lowercase().contains(" on ")
+            && !argument.to_ascii_lowercase().ends_with(" on self")
+            && !argument.to_ascii_lowercase().ends_with(" on me")
+        {
+            let action = combat::offensive_spell(
+                &content,
+                &encounters,
+                &mut state,
+                &mut visible_enemies,
+                argument,
+            );
+            writeln!(output, "{}\n", action.message)?;
+            if action.turn_spent {
+                let retaliation =
+                    combat::retaliate(&encounters, &mut state, &visible_enemies, &mut rng);
+                if !retaliation.is_empty() {
+                    writeln!(output, "{retaliation}\n")?;
+                }
+                if !visible_enemies.is_empty() {
+                    writeln!(output, "{}\n", encounters.describe(&visible_enemies))?;
+                }
+            }
             continue;
         }
         if verb.eq_ignore_ascii_case("stats") && argument.is_empty() {

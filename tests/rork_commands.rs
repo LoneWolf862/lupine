@@ -4,17 +4,28 @@ use lupine::state::{GameState, ItemLocation};
 use std::fs;
 use std::io::Cursor;
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 #[path = "../examples/fixture_world.rs"]
 mod fixture_world;
+
+static NEXT_TEMP_ID: AtomicU64 = AtomicU64::new(0);
 
 fn temporary_root() -> PathBuf {
     let nanos = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap()
         .as_nanos();
-    std::env::temp_dir().join(format!("lupine_rork_{}_{}", std::process::id(), nanos))
+
+    let unique_id = NEXT_TEMP_ID.fetch_add(1, Ordering::Relaxed);
+
+    std::env::temp_dir().join(format!(
+        "lupine_rork_{}_{}_{}",
+        std::process::id(),
+        nanos,
+        unique_id
+    ))
 }
 fn play(root: &std::path::Path, script: &str) -> String {
     let mut output = Vec::new();
