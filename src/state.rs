@@ -17,6 +17,10 @@ pub struct GameState {
     pub character: Option<crate::rpg::Character>,
     pub learned_abilities: HashSet<String>,
     pub wallet: BTreeMap<String, u64>,
+    /// Active encounter only; cleared when moving to another room.
+    pub active_enemies: Vec<crate::encounters::EnemyInstance>,
+    /// Monotonically increasing ID for unique enemy targets within this session/save.
+    pub next_enemy_id: u64,
 }
 
 impl GameState {
@@ -38,6 +42,8 @@ impl GameState {
             character: None,
             learned_abilities: HashSet::new(),
             wallet: BTreeMap::new(),
+            active_enemies: Vec::new(),
+            next_enemy_id: 1,
         }
     }
 

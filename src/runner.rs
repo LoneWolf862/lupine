@@ -309,12 +309,13 @@ pub fn run_with_io_and_saves_progression_content_encounters_wallet<R: BufRead, W
     writeln!(output, "{title}")?;
     writeln!(output, "Powered by Lupine. Type 'help' for commands.\n")?;
     let mut rng = EncounterRng::from_clock();
-    let mut next_enemy_id = 1_u64;
-    let mut visible_enemies =
-        encounters.roll(&state.current_room, &state, &mut rng, &mut next_enemy_id);
+    let room = state.current_room.clone();
+    let roll_state = state.clone();
+    state.active_enemies = encounters.roll(&room, &roll_state, &mut rng, &mut state.next_enemy_id);
+    // Starting an encounter is an in-memory state mutation, never an autosave.
     show_room(&world, &state, &mut output)?;
-    if !visible_enemies.is_empty() {
-        writeln!(output, "{}\n", encounters.describe(&visible_enemies))?;
+    if !state.active_enemies.is_empty() {
+        writeln!(output, "{}\n", encounters.describe(&state.active_enemies))?;
     }
     loop {
         write!(output, "> ")?;
@@ -329,7 +330,7 @@ pub fn run_with_io_and_saves_progression_content_encounters_wallet<R: BufRead, W
             .split_once(char::is_whitespace)
             .map_or((command, ""), |(verb, rest)| (verb, rest.trim()));
         if verb.eq_ignore_ascii_case("enemies") && argument.is_empty() {
-            writeln!(output, "{}\n", encounters.describe(&visible_enemies))?;
+            writeln!(output, "{}\n", encounters.describe(&state.active_enemies))?;
             continue;
         }
         // Combat commands are handled before the legacy object parser. Invalid actions
@@ -355,14 +356,16 @@ pub fn run_with_io_and_saves_progression_content_encounters_wallet<R: BufRead, W
             None
         };
         if let Some(physical) = physical {
+            let mut current = std::mem::take(&mut state.active_enemies);
             let action = combat::physical_attack(
                 &world,
                 &content,
                 &encounters,
                 &mut state,
-                &mut visible_enemies,
+                &mut current,
                 &physical,
             );
+            state.active_enemies = current;
             writeln!(output, "{}\n", action.message)?;
             if let Some(defeated) = &action.defeated {
                 let reward = combat::award_defeat(
@@ -382,13 +385,13 @@ pub fn run_with_io_and_saves_progression_content_encounters_wallet<R: BufRead, W
                 }
             }
             if action.turn_spent {
-                let retaliation =
-                    combat::retaliate(&encounters, &mut state, &visible_enemies, &mut rng);
+                let surviving = state.active_enemies.clone();
+                let retaliation = combat::retaliate(&encounters, &mut state, &surviving, &mut rng);
                 if !retaliation.is_empty() {
                     writeln!(output, "{retaliation}\n")?;
                 }
-                if !visible_enemies.is_empty() {
-                    writeln!(output, "{}\n", encounters.describe(&visible_enemies))?;
+                if !state.active_enemies.is_empty() {
+                    writeln!(output, "{}\n", encounters.describe(&state.active_enemies))?;
                 }
             }
             continue;
@@ -398,13 +401,10 @@ pub fn run_with_io_and_saves_progression_content_encounters_wallet<R: BufRead, W
             && !argument.to_ascii_lowercase().ends_with(" on self")
             && !argument.to_ascii_lowercase().ends_with(" on me")
         {
-            let action = combat::offensive_spell(
-                &content,
-                &encounters,
-                &mut state,
-                &mut visible_enemies,
-                argument,
-            );
+            let mut current = std::mem::take(&mut state.active_enemies);
+            let action =
+                combat::offensive_spell(&content, &encounters, &mut state, &mut current, argument);
+            state.active_enemies = current;
             writeln!(output, "{}\n", action.message)?;
             if let Some(defeated) = &action.defeated {
                 let reward = combat::award_defeat(
@@ -424,13 +424,13 @@ pub fn run_with_io_and_saves_progression_content_encounters_wallet<R: BufRead, W
                 }
             }
             if action.turn_spent {
-                let retaliation =
-                    combat::retaliate(&encounters, &mut state, &visible_enemies, &mut rng);
+                let surviving = state.active_enemies.clone();
+                let retaliation = combat::retaliate(&encounters, &mut state, &surviving, &mut rng);
                 if !retaliation.is_empty() {
                     writeln!(output, "{retaliation}\n")?;
                 }
-                if !visible_enemies.is_empty() {
-                    writeln!(output, "{}\n", encounters.describe(&visible_enemies))?;
+                if !state.active_enemies.is_empty() {
+                    writeln!(output, "{}\n", encounters.describe(&state.active_enemies))?;
                 }
             }
             continue;
@@ -573,6 +573,11 @@ pub fn run_with_io_and_saves_progression_content_encounters_wallet<R: BufRead, W
             // Validate the entire file before offering to discard the current session.
             match read_slot_with_compat(root, &world, game_id, &name, compatibility_version) {
                 Ok(restored) => {
+                    // Validate all story-specific encounter data before any confirmation or mutation.
+                    if let Err(e) = validate_restored_encounter(&restored, &encounters) {
+                        writeln!(output, "Load failed: {e}\n")?;
+                        continue;
+                    }
                     if state != last_saved {
                         match confirm(
                             &mut input,
@@ -616,8 +621,8 @@ pub fn run_with_io_and_saves_progression_content_encounters_wallet<R: BufRead, W
                     for id in wallet.currencies.keys() {
                         state.wallet.entry(id.clone()).or_insert(0);
                     }
-                    // C1 preview encounters are transient; no reroll on load.
-                    visible_enemies.clear();
+                    // C4: the validated encounter is restored directly from RORK;
+                    // never reroll on load, since that could regenerate defeated enemies.
                     last_saved = state.clone();
                     writeln!(output, "Loaded: {name}\n")?;
                     show_room(&world, &state, &mut output)?;
@@ -651,17 +656,21 @@ pub fn run_with_io_and_saves_progression_content_encounters_wallet<R: BufRead, W
                     ActionOutcome::Message(message) => {
                         writeln!(output, "{message}\n")?;
                         if state.current_room != old_room {
-                            visible_enemies = encounters.roll(
-                                &state.current_room,
-                                &state,
+                            // Leaving a room ends its encounter; re-entry may roll anew.
+                            state.active_enemies.clear();
+                            let room = state.current_room.clone();
+                            let roll_state = state.clone();
+                            state.active_enemies = encounters.roll(
+                                &room,
+                                &roll_state,
                                 &mut rng,
-                                &mut next_enemy_id,
+                                &mut state.next_enemy_id,
                             );
                         }
                         if (state.current_room != old_room || is_look)
-                            && !visible_enemies.is_empty()
+                            && !state.active_enemies.is_empty()
                         {
-                            writeln!(output, "{}\n", encounters.describe(&visible_enemies))?;
+                            writeln!(output, "{}\n", encounters.describe(&state.active_enemies))?;
                         }
                     }
                     ActionOutcome::Quit(message) => {
@@ -721,6 +730,30 @@ fn confirm<R: BufRead, W: Write>(
 fn show_room<W: Write>(world: &World, state: &GameState, output: &mut W) -> io::Result<()> {
     if let Some(room) = world.room(&state.current_room) {
         writeln!(output, "{}\n", describe_room(world, state, room))?;
+    }
+    Ok(())
+}
+
+/// Validate against this game's enemy definitions before replacing live state.
+/// RORK's general decoder validates the shape, but only the runner knows the game content.
+fn validate_restored_encounter(
+    state: &GameState,
+    content: &EncounterContent,
+) -> Result<(), String> {
+    for instance in &state.active_enemies {
+        let enemy = content
+            .enemies
+            .get(&instance.enemy_id)
+            .ok_or_else(|| format!("save refers to unknown enemy '{}'", instance.enemy_id))?;
+        if instance.current_hp > enemy.max_hp {
+            return Err(format!(
+                "save enemy '{}' exceeds its configured maximum HP",
+                instance.enemy_id
+            ));
+        }
+        if !content.tables.contains_key(&state.current_room) {
+            return Err("save contains an encounter in a room without an encounter table".into());
+        }
     }
     Ok(())
 }

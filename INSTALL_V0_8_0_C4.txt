@@ -1,0 +1,6 @@
+Lupine v0.8.0-C4 — Active Encounter RORK Persistence
+
+Copy the contents of this archive over the Lupine repository. Do not replace .git or your game files.
+Run: cargo fmt --all && cargo test && cargo clippy --all-targets -- -D warnings
+Then follow docs/V0_8_0_C4_PERSISTENT_ENCOUNTERS.md.
+No automatic save is introduced. This patch is uncompiled in the packaging environment; test before committing.

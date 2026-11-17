@@ -1,7 +1,7 @@
 //! Data-driven encounter definitions and deterministic sampling. Combat resolution follows in C2.
 use crate::state::{GameState, ItemLocation};
 use crate::world::World;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::Path;
@@ -101,7 +101,8 @@ impl EncounterCondition {
                 .is_none_or(|f| !state.flags.contains(f))
     }
 }
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct EnemyInstance {
     pub instance_id: u64,
     pub enemy_id: String,

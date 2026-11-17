@@ -15,6 +15,9 @@ pub const SAVE_FORMAT_VERSION: u32 = 1;
 fn default_save_compatibility_version() -> u32 {
     1
 }
+fn default_next_enemy_id() -> u64 {
+    1
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -33,6 +36,10 @@ struct SaveFile {
     learned_abilities: Vec<String>,
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     wallet: BTreeMap<String, u64>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    active_enemies: Vec<crate::encounters::EnemyInstance>,
+    #[serde(default = "default_next_enemy_id")]
+    next_enemy_id: u64,
 }
 
 // An explicit kind prevents a room ID named "inventory" from being confused
@@ -112,6 +119,8 @@ pub fn encode_save_with_compat(
             ids
         },
         wallet: state.wallet.clone(),
+        active_enemies: state.active_enemies.clone(),
+        next_enemy_id: state.next_enemy_id,
     };
     toml::to_string_pretty(&file).map_err(|e| format!("Cannot encode RORK save: {e}"))
 }
@@ -191,6 +200,8 @@ pub fn decode_save_with_compat(
         character: file.character,
         learned_abilities,
         wallet: file.wallet,
+        active_enemies: file.active_enemies,
+        next_enemy_id: file.next_enemy_id,
     };
     validate_state(world, &state)?;
     Ok(state)
@@ -221,6 +232,32 @@ fn validate_metadata(game_id: &str, save_name: &str) -> Result<(), String> {
 }
 
 fn validate_state(world: &World, state: &GameState) -> Result<(), String> {
+    if state.next_enemy_id == 0 {
+        return Err("RORK next_enemy_id must be positive".into());
+    }
+    if state.active_enemies.len() > 12 {
+        return Err("RORK active encounter exceeds 12 enemies".into());
+    }
+    if state.character.is_none() && !state.active_enemies.is_empty() {
+        return Err("RORK non-RPG state cannot contain active enemies".into());
+    }
+    let mut seen = HashSet::new();
+    for enemy in &state.active_enemies {
+        if enemy.instance_id == 0
+            || enemy.instance_id >= state.next_enemy_id
+            || enemy.current_hp == 0
+            || !seen.insert(enemy.instance_id)
+            || enemy.enemy_id.is_empty()
+            || !enemy
+                .enemy_id
+                .bytes()
+                .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == b'_' || c == b'-')
+        {
+            return Err(
+                "RORK active encounter contains invalid or duplicate enemy instance".into(),
+            );
+        }
+    }
     if let Some(character) = &state.character {
         character.validate()?;
     }
