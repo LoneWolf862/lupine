@@ -1,4 +1,6 @@
 id = "camp"
 title = "Adventurer Camp"
-description = "A camp. A healing scroll and a rusty dagger lie nearby."
+description = "A modest clearing suitable for making camp."
+
 [exits]
+south = "woods"

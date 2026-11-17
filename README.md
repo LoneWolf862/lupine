@@ -72,3 +72,7 @@ Add `character.toml` to a story to enable player HP, MP, AP, level, and XP. Ente
 
 ## v0.8.0-B RPG preview
 With `character.toml`, creators may define weapons in `weapons/*.toml` and abilities in `spells/*.toml`. Commands: `weapons`, `learn <scroll>`, `spellbook`, `cast <ability> [on self]`. Offensive attacks require the v0.8.0-C combat system. See `docs/V0_8_0_B_UPDATE.md`.
+
+### v0.8.0-C1 encounter preview (candidate)
+
+Room `[encounters]` tables and `enemies/*.toml` declarations support weighted groups and hidden-health ASCII bars; see `docs/V0_8_0_C1_ENCOUNTERS.md`. C1 encounters are **visual, transient previews**, not combat and not yet persisted in RORK.

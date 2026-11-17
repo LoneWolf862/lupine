@@ -1,0 +1,11 @@
+id = "wolf"
+name = "Wolf"
+description = "A lean wolf watches you carefully."
+level = 2
+max_hp = 30
+experience = 12
+
+[[attacks]]
+name = "Bite"
+damage = 6
+weight = 100

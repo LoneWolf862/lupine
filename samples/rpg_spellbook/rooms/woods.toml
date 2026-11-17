@@ -1,0 +1,19 @@
+id = "woods"
+title = "Southern Woods"
+description = "Pines crowd around a narrow path. Something stirs in the brush."
+
+[exits]
+north = "camp"
+
+[encounters]
+chance = 25
+min_enemies = 1
+max_enemies = 2
+
+[[encounters.enemies]]
+enemy = "goblin"
+weight = 50
+
+[[encounters.enemies]]
+enemy = "wolf"
+weight = 50

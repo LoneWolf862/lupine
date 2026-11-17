@@ -52,6 +52,8 @@ struct RoomData {
     art_file: Option<String>,
     #[serde(default)]
     art_variants: Vec<ArtVariantData>,
+    #[serde(default)]
+    encounters: Option<toml::Value>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -391,6 +393,7 @@ pub fn load_game(directory: impl AsRef<Path>) -> Result<LoadedGame, String> {
                 destination,
             ));
         }
+        let _ = &data.encounters; // Parsed and validated by EncounterContent.
         let art = resolve_art(directory, data.art, data.art_file, &origin)?;
         let art_variants = resolve_art_variants(directory, data.art_variants, &origin)?;
         room_paths.push(path.clone());

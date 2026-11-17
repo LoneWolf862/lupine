@@ -1,0 +1,6 @@
+Apply this incremental ZIP over Lupine v0.8.0-B (commit 138fe31). Preserve .git and local game projects.
+Run: cargo fmt --all && cargo test && cargo clippy --all-targets -- -D warnings
+Run: cargo run -- validate samples/rpg_spellbook
+Run: cargo run -- play samples/rpg_spellbook
+In game, type south, look, enemies, north, south, quit. Spawn chance is 25% per entry; repeat to observe encounters.
+No autosaving. Enemy encounters are ephemeral previews until C2–D; do not rely on save/load to preserve them yet.

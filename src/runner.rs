@@ -2,6 +2,7 @@
 use std::io::{self, BufRead, Write};
 use std::path::Path;
 
+use crate::encounters::{EncounterContent, EncounterRng};
 use crate::engine::{execute_command, ActionOutcome};
 use crate::parser::{parse_command, ParseError};
 use crate::render::describe_room;
@@ -140,8 +141,29 @@ pub fn run_with_game_id_compat_progression_content(
     progression: Option<crate::rpg::Progression>,
     content: crate::rpg_content::RpgContent,
 ) -> io::Result<()> {
+    run_with_game_id_compat_progression_content_encounters(
+        world,
+        title,
+        game_id,
+        compatibility_version,
+        progression,
+        content,
+        EncounterContent::default(),
+    )
+}
+
+/// Run a TOML story with validated encounter definitions (C1 preview).
+pub fn run_with_game_id_compat_progression_content_encounters(
+    world: World,
+    title: &str,
+    game_id: &str,
+    compatibility_version: u32,
+    progression: Option<crate::rpg::Progression>,
+    content: crate::rpg_content::RpgContent,
+    encounters: EncounterContent,
+) -> io::Result<()> {
     let root = default_save_root()?;
-    run_with_io_and_saves_progression_content(
+    run_with_io_and_saves_progression_content_encounters(
         world,
         title,
         game_id,
@@ -149,6 +171,7 @@ pub fn run_with_game_id_compat_progression_content(
         compatibility_version,
         progression,
         content,
+        encounters,
         io::stdin().lock(),
         io::stdout().lock(),
     )
@@ -164,6 +187,34 @@ pub fn run_with_io_and_saves_progression_content<R: BufRead, W: Write>(
     compatibility_version: u32,
     progression: Option<crate::rpg::Progression>,
     content: crate::rpg_content::RpgContent,
+    input: R,
+    output: W,
+) -> io::Result<()> {
+    run_with_io_and_saves_progression_content_encounters(
+        world,
+        title,
+        game_id,
+        root,
+        compatibility_version,
+        progression,
+        content,
+        EncounterContent::default(),
+        input,
+        output,
+    )
+}
+
+/// Isolated runner with optional encounter tables; C1 enemies are preview-only.
+#[allow(clippy::too_many_arguments)]
+pub fn run_with_io_and_saves_progression_content_encounters<R: BufRead, W: Write>(
+    world: World,
+    title: &str,
+    game_id: &str,
+    root: &Path,
+    compatibility_version: u32,
+    progression: Option<crate::rpg::Progression>,
+    content: crate::rpg_content::RpgContent,
+    encounters: EncounterContent,
     mut input: R,
     mut output: W,
 ) -> io::Result<()> {
@@ -186,7 +237,14 @@ pub fn run_with_io_and_saves_progression_content<R: BufRead, W: Write>(
     let mut last_saved = state.clone();
     writeln!(output, "{title}")?;
     writeln!(output, "Powered by Lupine. Type 'help' for commands.\n")?;
+    let mut rng = EncounterRng::from_clock();
+    let mut next_enemy_id = 1_u64;
+    let mut visible_enemies =
+        encounters.roll(&state.current_room, &state, &mut rng, &mut next_enemy_id);
     show_room(&world, &state, &mut output)?;
+    if !visible_enemies.is_empty() {
+        writeln!(output, "{}\n", encounters.describe(&visible_enemies))?;
+    }
     loop {
         write!(output, "> ")?;
         output.flush()?;
@@ -199,6 +257,10 @@ pub fn run_with_io_and_saves_progression_content<R: BufRead, W: Write>(
         let (verb, argument) = command
             .split_once(char::is_whitespace)
             .map_or((command, ""), |(verb, rest)| (verb, rest.trim()));
+        if verb.eq_ignore_ascii_case("enemies") && argument.is_empty() {
+            writeln!(output, "{}\n", encounters.describe(&visible_enemies))?;
+            continue;
+        }
         if verb.eq_ignore_ascii_case("stats") && argument.is_empty() {
             if let Some(character) = &state.character {
                 writeln!(
@@ -363,6 +425,8 @@ pub fn run_with_io_and_saves_progression_content<R: BufRead, W: Write>(
                         continue;
                     }
                     state = restored;
+                    // C1 preview encounters are transient; no reroll on load.
+                    visible_enemies.clear();
                     last_saved = state.clone();
                     writeln!(output, "Loaded: {name}\n")?;
                     show_room(&world, &state, &mut output)?;
@@ -389,13 +453,32 @@ pub fn run_with_io_and_saves_progression_content<R: BufRead, W: Write>(
                     }
                 }
             }
-            Ok(command) => match execute_command(&world, &mut state, command) {
-                ActionOutcome::Message(message) => writeln!(output, "{message}\n")?,
-                ActionOutcome::Quit(message) => {
-                    writeln!(output, "{message}")?;
-                    break;
+            Ok(command) => {
+                let old_room = state.current_room.clone();
+                let is_look = matches!(&command, crate::commands::Command::Look);
+                match execute_command(&world, &mut state, command) {
+                    ActionOutcome::Message(message) => {
+                        writeln!(output, "{message}\n")?;
+                        if state.current_room != old_room {
+                            visible_enemies = encounters.roll(
+                                &state.current_room,
+                                &state,
+                                &mut rng,
+                                &mut next_enemy_id,
+                            );
+                        }
+                        if (state.current_room != old_room || is_look)
+                            && !visible_enemies.is_empty()
+                        {
+                            writeln!(output, "{}\n", encounters.describe(&visible_enemies))?;
+                        }
+                    }
+                    ActionOutcome::Quit(message) => {
+                        writeln!(output, "{message}")?;
+                        break;
+                    }
                 }
-            },
+            }
             Err(ParseError::Empty) => continue,
             Err(ParseError::MissingDirection) => {
                 writeln!(output, "Where would you like to go? Try 'go north'.\n")?

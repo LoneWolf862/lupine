@@ -1,0 +1,18 @@
+id = "goblin"
+name = "Goblin"
+description = "A small goblin armed with a chipped blade."
+level = 2
+max_hp = 25
+attack_power = 100
+defense = 2
+experience = 15
+
+[[attacks]]
+name = "Slash"
+damage = 5
+weight = 70
+
+[[attacks]]
+name = "Heavy Strike"
+damage = 9
+weight = 30

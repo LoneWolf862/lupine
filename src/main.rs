@@ -19,13 +19,26 @@ fn main() -> std::io::Result<()> {
                 game.progression.is_some(),
             )
             .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
-            lupine::runner::run_with_game_id_compat_progression_content(
+            let room_ids = game
+                .world
+                .rooms
+                .iter()
+                .map(|r| r.id.clone())
+                .collect::<Vec<_>>();
+            let encounters = lupine::encounters::EncounterContent::load(
+                std::path::Path::new(path),
+                &room_ids,
+                game.progression.is_some(),
+            )
+            .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
+            lupine::runner::run_with_game_id_compat_progression_content_encounters(
                 game.world,
                 &game.title,
                 &game.id,
                 game.save_compatibility_version,
                 game.progression,
                 content,
+                encounters,
             )
         }
         [_, command, path] if command == "validate" => {
@@ -37,7 +50,24 @@ fn main() -> std::io::Result<()> {
                 game.progression.is_some(),
             )
             .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
+            let room_ids = game
+                .world
+                .rooms
+                .iter()
+                .map(|r| r.id.clone())
+                .collect::<Vec<_>>();
+            let encounters = lupine::encounters::EncounterContent::load(
+                std::path::Path::new(path),
+                &room_ids,
+                game.progression.is_some(),
+            )
+            .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
             println!("Valid story: {} ({})", game.title, game.id);
+            println!(
+                "{} enemy definitions, {} encounter tables",
+                encounters.enemies.len(),
+                encounters.tables.len()
+            );
             println!(
                 "{} weapon definitions, {} abilities",
                 content.weapons.len(),
