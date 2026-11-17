@@ -1,0 +1,5 @@
+id = "start"
+title = "Starting Room"
+description = "You stand at the beginning of your adventure."
+
+[exits]

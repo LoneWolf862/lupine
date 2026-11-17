@@ -1,0 +1,5 @@
+format_version = 1
+id = "my_first_adventure"
+title = "My First Adventure"
+starting_room = "start"
+save_compatibility_version = 1

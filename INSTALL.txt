@@ -1,0 +1,11 @@
+Lupine v0.7.0-A incremental update — install into your existing Lupine source folder.
+
+This ZIP contains only changed/new files. Do not delete your .git directory.
+Run cargo fmt --all, cargo test, cargo clippy --all-targets -- -D warnings.
+Then run:
+  cargo run -- new my_first_adventure my_first_adventure My First Adventure
+  cargo run -- validate my_first_adventure
+  cargo run -- play my_first_adventure
+
+The generated my_first_adventure folder is local test content. Do not commit it unintentionally.
+This code has not been compiled in the assistant's environment; review before committing.

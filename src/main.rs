@@ -7,7 +7,7 @@ fn main() -> std::io::Result<()> {
     match args.as_slice() {
         [_] => lupine::runner::run_with_game_id(
             fixture_world::fixture_world(),
-            "LUPINE v0.6.0-alpha.3 — Engine Test Adventure",
+            "LUPINE v0.7.0-alpha.1 — Engine Test Adventure",
             "lupine_fixture",
         ),
         [_, command, path] if command == "play" => {
@@ -33,8 +33,26 @@ fn main() -> std::io::Result<()> {
             );
             Ok(())
         }
+        [_, command, destination, id, title @ ..] if command == "new" && !title.is_empty() => {
+            let title = title.join(" ");
+            lupine::creator::new_game(std::path::Path::new(destination), id, &title)
+                .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidInput, error))?;
+            println!("Created adventure: {destination}");
+            println!("Edit {destination}/rooms/start.toml, then run:");
+            println!("  lupine validate {destination}");
+            println!("  lupine play {destination}");
+            Ok(())
+        }
+        [_, command] if command == "help" => {
+            println!("Lupine authoring commands:");
+            println!("  lupine new <directory> <game-id> <title words...>");
+            println!("  lupine validate <directory>");
+            println!("  lupine play <directory>");
+            println!("Running `lupine` without arguments launches the test adventure.");
+            Ok(())
+        }
         _ => {
-            eprintln!("Usage: lupine [play <story-directory> | validate <story-directory>]");
+            eprintln!("Usage: lupine [new <directory> <game-id> <title...> | play <directory> | validate <directory> | help]");
             Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidInput,
                 "invalid arguments",

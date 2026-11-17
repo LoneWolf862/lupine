@@ -1,86 +1,58 @@
 # Lupine
 
-**Lupine** is an open-source, lightweight Rust engine for offline terminal-based interactive fiction. Its parser-driven interface is inspired by classic adventure games such as Zork; game content and mechanics are original. **HOWLBOUND** is the tentative title of a separate future game, not the built-in fixture.
+Lupine is a lightweight, offline, terminal-only Rust interactive fiction engine inspired by classic command-based adventures. The engine is reusable and story-independent. HOWLBOUND is a tentative future game title, not engine content.
 
-## Development status
+## Current state
 
-- **v0.5.0-A verified on Windows:** owned world/state data, reusable conditions and effects, state-dependent descriptions, independent Rust-authored games and reusable terminal runner. 18 tests passed, interactive testing passed, strict Clippy passed. Commit `97b9476`.
-- **v0.5.0-B verified on Windows:** versioned TOML story loading, example adventure, 24 passing tests, strict Clippy and interactive verification; commit `655a5df`.
-- **v0.5.0-C candidate — requires local verification:** `validate` command, improved diagnostics, template and creator guide.
-- **Not implemented yet:** `save`, `load`, `saves`, `.rork` files, template generator, creator packaging, and graphical interfaces (none planned). Linux testing and packaging remain outstanding.
+- v0.5: Rust-owned worlds and external TOML-authored adventures, with validation, beginner templates and contextual errors.
+- v0.6: Manual-only RORK (`.rork`, TOML) saves; `save`, `load`, and `saves` are player commands. No autosaving, no checkpoint saving, and no save-on-quit. Game-specific compatibility revision checks and staged writes protect saves from ordinary write failures.
+- v0.7.0-A candidate: text-only `new` project generator. Requires local validation before publication.
+- Packaging, a creator-friendly distribution workflow, and native Linux verification are still planned, not complete.
 
-## Development commands
+## Getting started (source checkout)
 
-Install Rust/Cargo to develop from source. On Windows, the MSVC Rust toolchain may require Microsoft C++ build tools. From the repository root:
+Install a Rust toolchain and open a terminal in the repository root. Windows CMD examples:
 
-```sh
+```cmd
+cargo run -- help
+cargo run -- new my_first_adventure my_first_adventure My First Adventure
+cargo run -- validate my_first_adventure
+cargo run -- play my_first_adventure
+```
+
+The `new` command creates an editable one-room project, safely refusing to overwrite an existing directory. Edit `my_first_adventure\rooms\start.toml`, then re-run `play`; no source-code changes or recompilation are required. Avoid committing your generated local test folder unless you intend to publish that adventure.
+
+Other examples:
+
+```cmd
 cargo run
 cargo run -- play story_example
-cargo run -- validate story_example
+cargo run -- validate templates/starter
 cargo run --manifest-path samples/independent_game/Cargo.toml
+```
+
+In-game commands include `look`, `take`, `inventory`, `use`, `save <name>`, `load <name>`, `saves` and `quit`. Shell/Cargo commands must be entered outside the game.
+
+### Developer checks
+
+```cmd
 cargo fmt --all
 cargo test
 cargo clippy --all-targets -- -D warnings
 ```
 
-The first command launches the existing Rust fixture; `cargo run -- play story_example` launches a TOML-authored game from disk. **In-game commands are different from shell commands**; exit the adventure (`quit`) before launching a new Cargo process.
+## Authoring and project layout
 
-Try the file-authored example:
+A TOML adventure contains `game.toml`, a `rooms/` folder, an `items/` folder, and optional `interactions.toml`. Each room and item uses its own TOML file. See [Creating a Game](docs/CREATING_A_GAME.md) and [Story Format](docs/STORY_FORMAT_PROPOSAL.md). You can also copy `templates/starter/`.
 
-```text
-north
-look
-take key
-use key on door
-look
-north
-quit
-```
+RORK save files are stored in per-game user-data directories, separate from game installation paths; see [RORK save format](docs/SAVE_FORMAT.md). Saves are always player-initiated.
 
-The north passage is locked until the key unlocks the door. You can change the room prose in `story_example/rooms/foyer.toml` and relaunch without changing Rust source.
+The engine code is in `src/`; game/engine tests in `tests/`; the neutral Rust fixture is in `examples/`; an independent Rust client is in `samples/independent_game/`.
 
-## Authoring your own adventure
+## Roadmap and course work
 
-Copy `story_example/` to another directory. Edit `game.toml`, add room files under `rooms/`, and item files under `items/`; define optional interactions and exit rules in `interactions.toml`. Launch with `cargo run -- play <directory>` during development, or a compiled binary with `lupine play <directory>`.
-
-Start with [`docs/CREATING_A_GAME.md`](docs/CREATING_A_GAME.md) and copy `templates/starter/`. Check errors without launching with `cargo run -- validate <directory>`.
-
-The versioned TOML format is specified in [`docs/STORY_FORMAT_PROPOSAL.md`](docs/STORY_FORMAT_PROPOSAL.md). See [`docs/CREATOR_VISION.md`](docs/CREATOR_VISION.md) for the final goal of easy text-only authoring without programming knowledge or requiring Cargo for players.
-
-## Repository layout
-
-| Path | Responsibility |
-|---|---|
-| `src/parser.rs`, `src/commands.rs` | Deterministic player commands |
-| `src/world.rs`, `src/state.rs` | Content definitions and mutable play state |
-| `src/engine.rs`, `src/render.rs` | Rules, transitions, and narration |
-| `src/runner.rs` | Shared terminal runtime |
-| `src/story_loader.rs` | TOML story parser and validation (v0.5.0-B candidate) |
-| `examples/fixture_world.rs` | Built-in test world |
-| `samples/independent_game/` | Separate Rust-authored sample game |
-| `story_example/` | TOML-authored sample game |
-| `templates/starter/` | Copyable beginner adventure |
-| `tests/` | Unit and integration tests |
-| `docs/` | Requirements, architecture, format specs and roadmap |
-
-## Future saves: RORK
-
-Manual `save`, `load`, and `saves` are **planned**, not yet available. Native saves will have the TOML-based `.rork` extension, with filenames such as `forestcamp.howlbound.rork`. **No autosaving**, by design. See [`docs/SAVE_FORMAT.md`](docs/SAVE_FORMAT.md).
-
-## CSE 310
-
-Lupine is also a Rust programming course project. The instructor-provided README template and actual video / sprint reporting remain required for course submission; this project README is not a substitute.
+See [Development roadmap](docs/ROADMAP.md), [Requirements](docs/REQUIREMENTS.md), and [Creator vision](docs/CREATOR_VISION.md). Lupine's final authoring experience is text-based (no graphical editor planned). The CSE 310 instructor-provided README template, video, and accurate sprint report remain separate course obligations.
 
 ## License
 
 MIT — see [LICENSE](LICENSE).
-
-### Manual save commands (v0.6.0-B candidate)
-
-During gameplay, use `save Forest Camp`, `load Forest Camp`, or `saves`. Bare `save` and `load` ask for a slot name. Files are human-readable TOML with `.rork` extension, stored outside the game directory under the per-user Lupine save location. Existing saves require overwrite confirmation. **Lupine never autosaves.** This stage still requires filesystem hardening in v0.6.0-C; see `docs/SAVE_FORMAT.md`.
-
-### RORK save compatibility (v0.6.0-C candidate)
-
-Game creators may set `save_compatibility_version = 1` in `game.toml`. If omitted it defaults to 1. Increment it when changing a game's state schema incompatibly (for example, deleting rooms/items referenced by saved games). RORK saves remain TOML files named like `forestcamp.example_adventure.rork`. Existing Stage B saves without the compatibility field remain readable at revision 1. Saving is manual only: `save`, `load`, `saves`; no autosaving.
-
-Save replacement now stages data to a synced temporary file before renaming, protecting existing saves from ordinary write errors. Crash/power-loss reliability still depends on the filesystem. This candidate must pass local Cargo tests before publication.
