@@ -541,6 +541,59 @@ pub fn run_with_io_and_saves_progression_content_encounters_wallet_shops<R: BufR
             }
             continue;
         }
+        // Bulk inventory operations are explicit: only items actually in this room
+        // can be collected, and only carried items can be dropped. Never touch fixed
+        // scenery, consumed items or another room's objects.
+        if (verb.eq_ignore_ascii_case("take") || verb.eq_ignore_ascii_case("drop"))
+            && argument.eq_ignore_ascii_case("all")
+        {
+            let taking = verb.eq_ignore_ascii_case("take");
+            let targets: Vec<_> = world
+                .items
+                .iter()
+                .filter(|item| {
+                    if taking {
+                        item.portable
+                            && state.location(&item.id)
+                                == Some(crate::state::ItemLocation::Room(
+                                    state.current_room.clone(),
+                                ))
+                    } else {
+                        state.location(&item.id) == Some(crate::state::ItemLocation::Inventory)
+                    }
+                })
+                .map(|item| item.id.clone())
+                .collect();
+            if targets.is_empty() {
+                writeln!(
+                    output,
+                    "{}\n",
+                    if taking {
+                        "Nothing to take."
+                    } else {
+                        "You are carrying nothing to drop."
+                    }
+                )?;
+            } else {
+                for id in targets {
+                    let item = world.item(&id).expect("item ID came from the world");
+                    if taking {
+                        state
+                            .item_locations
+                            .insert(id, crate::state::ItemLocation::Inventory);
+                        writeln!(output, "You take the {}.", item.name)?;
+                    } else {
+                        state.item_locations.insert(
+                            id,
+                            crate::state::ItemLocation::Room(state.current_room.clone()),
+                        );
+                        writeln!(output, "You drop the {}.", item.name)?;
+                    }
+                }
+                writeln!(output)?;
+            }
+            continue;
+        }
         if verb.eq_ignore_ascii_case("stats") && argument.is_empty() {
             if let Some(character) = &state.character {
                 writeln!(
@@ -559,7 +612,9 @@ pub fn run_with_io_and_saves_progression_content_encounters_wallet_shops<R: BufR
             }
             continue;
         }
-        if verb.eq_ignore_ascii_case("spellbook") && argument.is_empty() {
+        if (verb.eq_ignore_ascii_case("spellbook") || verb.eq_ignore_ascii_case("spells"))
+            && argument.is_empty()
+        {
             writeln!(output, "{}\n", content.spellbook(&state))?;
             continue;
         }

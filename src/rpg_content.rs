@@ -253,7 +253,7 @@ impl RpgContent {
             return "This adventure has no RPG character.".into();
         };
         match ability.kind {
-            AbilityKind::Damage => return "There is no enemy combat target yet. Damage spells arrive in v0.8.0-C; no MP spent.".into(),
+            AbilityKind::Damage => return "Damage spells require an enemy target. Try 'cast <spell> on <enemy>'; no MP spent.".into(),
             AbilityKind::Heal => if target.is_some_and(|t| !t.eq_ignore_ascii_case("self") && !t.eq_ignore_ascii_case("me")) {
                 return "Healing currently targets yourself only.".into();
             },

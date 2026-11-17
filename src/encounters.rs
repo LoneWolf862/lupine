@@ -471,7 +471,7 @@ impl EncounterContent {
                     .saturating_mul(10)
                     .saturating_add(u64::from(enemy.max_hp) / 2)
                     / u64::from(enemy.max_hp);
-                let segments = full.min(10) as usize;
+                let segments = full.clamp(1, 10) as usize;
                 result.push_str(&format!(
                     "  {} #{} [{}{}]\n",
                     enemy.name,
@@ -507,5 +507,35 @@ impl RandomSource for EncounterRng {
         self.0 ^= self.0 >> 7;
         self.0 ^= self.0 << 17;
         (self.0 % u64::from(limit)) as u32
+    }
+}
+
+#[cfg(test)]
+mod health_bar_regressions {
+    use super::*;
+    #[test]
+    fn living_enemy_always_has_visible_health() {
+        let enemy = Enemy {
+            id: "test".to_string(),
+            name: "Test Enemy".to_string(),
+            description: "A test creature".to_string(),
+            level: 1,
+            max_hp: 100,
+            attack_power: 100,
+            defense: 0,
+            experience: 0,
+            loot: vec![],
+            currency_rewards: vec![],
+            attacks: vec![],
+        };
+        let mut content = EncounterContent::default();
+        content.enemies.insert(enemy.id.clone(), enemy);
+        let out = content.describe(&[EnemyInstance {
+            instance_id: 1,
+            enemy_id: "test".to_string(),
+            current_hp: 1,
+        }]);
+        assert!(out.contains("[-         ]"), "{out}");
+        assert!(!out.contains("[          ]"), "{out}");
     }
 }

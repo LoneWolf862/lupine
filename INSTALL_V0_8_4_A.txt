@@ -1,0 +1,7 @@
+Lupine v0.8.4-A — Quality-of-life patch
+
+Overlay this archive on the Lupine repository after v0.8.3.
+Run: cargo fmt --all && cargo test && cargo clippy --all-targets -- -D warnings
+Then run: cargo run -- play samples/rpg_persistent
+Try: take all, inventory, drop all, take dagger, spells, cast fireball (after learning it).
+This is an uncompiled candidate. Do not commit until it passes locally.

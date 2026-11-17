@@ -46,5 +46,5 @@ pub fn describe_room(world: &World, state: &GameState, room: &Room) -> String {
 }
 
 pub fn help() -> &'static str {
-    "Commands: look (l), directions (n/s/e/w/u/d), go <direction>, examine <object> (x), take <object> (get/grab/pick up), drop <object>, inventory (i), use <item> on <target>, save [name], load [name], saves, stats, weapons, learn <scroll>, spellbook, cast <ability> [on self], help (h), quit (q)."
+    "Commands: look (l), directions (n/s/e/w/u/d), go <direction>, examine <object> (x), take <object|all> (get/grab/pick up), drop <object|all>, inventory (i), use <item> on <target>, save [name], load [name], saves, stats, weapons, learn <scroll>, spellbook (spells), cast <ability> [on self], help (h), quit (q)."
 }
