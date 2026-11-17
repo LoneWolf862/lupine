@@ -39,3 +39,9 @@
 - The creator interface is text-based (TOML templates and terminal utilities), **not** a GUI.
 - Engine-level manual `save`, `load`, and `saves` will use TOML-based `.rork` saves. No autosaving under any circumstances.
 - Protect compatibility and avoid claiming a save loader or TOML story loader exists before implemented and tested.
+
+## v0.5.0-C notes
+
+- TOML story loading (`play PATH`) was verified in v0.5.0-B, commit `655a5df`.
+- `validate PATH` and the creator template are v0.5.0-C candidates, not yet user-verified.
+- Keep validation errors specific to file paths and identifiers; do not alter content automatically.

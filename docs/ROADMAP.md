@@ -9,8 +9,8 @@ Milestones are aspirational unless explicitly marked verified. HOWLBOUND remains
 | v0.3.0 | Complete, Windows | Reusable world model, condition/effect rules, descriptions and tests. |
 | v0.4.0 | Complete, Windows | Independent Rust-authored game and shared terminal runner; 17 tests; commit `56db281`. |
 | v0.5.0-A | Complete, Windows | Runtime-owned world and state data; 18 tests, strict Clippy and interactive checks; commit `97b9476`. |
-| **v0.5.0-B** | **Candidate / in testing** | Load versioned TOML story folders using the same `World` API. |
-| v0.5.0-C | Planned | Improve story diagnostics, creator documentation, multiple story examples. |
+| v0.5.0-B | Complete, Windows | TOML story loading, 24 tests and interactive verification; commit `655a5df`. |
+| **v0.5.0-C** | **Candidate / in testing** | `validate` command, file-aware reference errors, starter template and creator tutorial. |
 | v0.6.0 | Planned, required | Manual-only `save`, `load`, `saves`, `.rork` TOML save files, safe versioned state persistence. **Never autosave.** |
 | v0.7.0+ | Planned | Text-only creator validation, terminal generators/templates and streamlined playtest workflow. |
 | v0.9.0+ | Planned | Offline release packaging, creator export workflow, cross-platform verification. |

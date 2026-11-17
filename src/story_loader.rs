@@ -1,6 +1,6 @@
 //! Load an offline, text-authored adventure into the same World used by Rust games.
 //! File-format types are deliberately distinct from the engine model.
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -238,6 +238,7 @@ pub fn load_game(directory: impl AsRef<Path>) -> Result<LoadedGame, String> {
         ));
     }
     let mut rooms = Vec::new();
+    let mut room_paths = Vec::new();
     for path in story_files(&directory.join("rooms"))? {
         let data: RoomData = read_toml(&path)?;
         let origin = path.display().to_string();
@@ -248,6 +249,7 @@ pub fn load_game(directory: impl AsRef<Path>) -> Result<LoadedGame, String> {
                 destination,
             ));
         }
+        room_paths.push(path.clone());
         rooms.push(Room {
             id: data.id,
             title: data.title,
@@ -257,9 +259,11 @@ pub fn load_game(directory: impl AsRef<Path>) -> Result<LoadedGame, String> {
         });
     }
     let mut items = Vec::new();
+    let mut item_paths = Vec::new();
     for path in story_files(&directory.join("items"))? {
         let data: ItemData = read_toml(&path)?;
         let origin = path.display().to_string();
+        item_paths.push(path.clone());
         items.push(Item {
             id: data.id,
             name: data.name,
@@ -313,6 +317,10 @@ pub fn load_game(directory: impl AsRef<Path>) -> Result<LoadedGame, String> {
         exit_rules,
         starting_room: manifest.starting_room,
     };
+    let errors = validate_story_references(&world, &room_paths, &item_paths, directory);
+    if !errors.is_empty() {
+        return Err(format!("Story validation failed:\n{}", errors.join("\n")));
+    }
     world.validate().map_err(|errors| {
         format!(
             "{}: story validation failed:\n{}",
@@ -325,4 +333,87 @@ pub fn load_game(directory: impl AsRef<Path>) -> Result<LoadedGame, String> {
         title: manifest.title,
         world,
     })
+}
+
+/// Add file-based guidance for common authoring mistakes before general engine validation.
+/// The core engine remains the source of truth for rules and state invariants.
+fn validate_story_references(
+    world: &World,
+    room_paths: &[PathBuf],
+    item_paths: &[PathBuf],
+    root: &Path,
+) -> Vec<String> {
+    let mut errors = Vec::new();
+    let mut room_ids: HashMap<&str, &Path> = HashMap::new();
+    let mut item_ids: HashMap<&str, &Path> = HashMap::new();
+    let mut seen_rooms = HashSet::new();
+    let mut seen_items = HashSet::new();
+    for (room, path) in world.rooms.iter().zip(room_paths) {
+        if room.id.trim().is_empty() {
+            errors.push(format!(
+                "{}: room 'id' cannot be empty. Add an id such as 'forest'.",
+                path.display()
+            ));
+        } else if !seen_rooms.insert(room.id.as_str()) {
+            errors.push(format!(
+                "{}: duplicate room id '{}'. Give each room a unique id.",
+                path.display(),
+                room.id
+            ));
+        }
+        room_ids.entry(room.id.as_str()).or_insert(path);
+    }
+    for (item, path) in world.items.iter().zip(item_paths) {
+        if item.id.trim().is_empty() {
+            errors.push(format!(
+                "{}: item 'id' cannot be empty. Add an id such as 'lantern'.",
+                path.display()
+            ));
+        } else if !seen_items.insert(item.id.as_str()) {
+            errors.push(format!(
+                "{}: duplicate item id '{}'. Give each item a unique id.",
+                path.display(),
+                item.id
+            ));
+        }
+        item_ids.entry(item.id.as_str()).or_insert(path);
+    }
+    if !room_ids.contains_key(world.starting_room.as_str()) {
+        errors.push(format!(
+            "{}: starting_room '{}' does not exist. Set it to an id defined in rooms/*.toml.",
+            root.join("game.toml").display(),
+            world.starting_room
+        ));
+    }
+    for (room, path) in world.rooms.iter().zip(room_paths) {
+        for (direction, destination) in &room.exits {
+            if !room_ids.contains_key(destination.as_str()) {
+                errors.push(format!("{}: room '{}' has a {} exit to unknown room '{}'. Create that room in rooms/ or correct the exit destination.", path.display(), room.id, direction.label(), destination));
+            }
+        }
+    }
+    for (item, path) in world.items.iter().zip(item_paths) {
+        if !room_ids.contains_key(item.starting_room.as_str()) {
+            errors.push(format!("{}: item '{}' starts in unknown room '{}'. Set starting_room to an existing room id.", path.display(), item.id, item.starting_room));
+        }
+    }
+    let rules_path = root.join("interactions.toml");
+    for (index, rule) in world.interactions.iter().enumerate() {
+        if !item_ids.contains_key(rule.item.as_str())
+            || !item_ids.contains_key(rule.target.as_str())
+        {
+            errors.push(format!("{}: interaction #{} references missing item '{}' or target '{}'. Define both in items/*.toml.", rules_path.display(), index + 1, rule.item, rule.target));
+        }
+    }
+    for (index, rule) in world.exit_rules.iter().enumerate() {
+        if !room_ids.contains_key(rule.from.as_str()) {
+            errors.push(format!(
+                "{}: exit rule #{} references unknown room '{}'.",
+                rules_path.display(),
+                index + 1,
+                rule.from
+            ));
+        }
+    }
+    errors
 }

@@ -5,7 +5,8 @@
 ## Development status
 
 - **v0.5.0-A verified on Windows:** owned world/state data, reusable conditions and effects, state-dependent descriptions, independent Rust-authored games and reusable terminal runner. 18 tests passed, interactive testing passed, strict Clippy passed. Commit `97b9476`.
-- **v0.5.0-B candidate — requires local verification:** versioned TOML story loading, a story folder example, and `play` terminal launch argument.
+- **v0.5.0-B verified on Windows:** versioned TOML story loading, example adventure, 24 passing tests, strict Clippy and interactive verification; commit `655a5df`.
+- **v0.5.0-C candidate — requires local verification:** `validate` command, improved diagnostics, template and creator guide.
 - **Not implemented yet:** `save`, `load`, `saves`, `.rork` files, template generator, creator packaging, and graphical interfaces (none planned). Linux testing and packaging remain outstanding.
 
 ## Development commands
@@ -15,6 +16,7 @@ Install Rust/Cargo to develop from source. On Windows, the MSVC Rust toolchain m
 ```sh
 cargo run
 cargo run -- play story_example
+cargo run -- validate story_example
 cargo run --manifest-path samples/independent_game/Cargo.toml
 cargo fmt --all
 cargo test
@@ -41,6 +43,8 @@ The north passage is locked until the key unlocks the door. You can change the r
 
 Copy `story_example/` to another directory. Edit `game.toml`, add room files under `rooms/`, and item files under `items/`; define optional interactions and exit rules in `interactions.toml`. Launch with `cargo run -- play <directory>` during development, or a compiled binary with `lupine play <directory>`.
 
+Start with [`docs/CREATING_A_GAME.md`](docs/CREATING_A_GAME.md) and copy `templates/starter/`. Check errors without launching with `cargo run -- validate <directory>`.
+
 The versioned TOML format is specified in [`docs/STORY_FORMAT_PROPOSAL.md`](docs/STORY_FORMAT_PROPOSAL.md). See [`docs/CREATOR_VISION.md`](docs/CREATOR_VISION.md) for the final goal of easy text-only authoring without programming knowledge or requiring Cargo for players.
 
 ## Repository layout
@@ -55,6 +59,7 @@ The versioned TOML format is specified in [`docs/STORY_FORMAT_PROPOSAL.md`](docs
 | `examples/fixture_world.rs` | Built-in test world |
 | `samples/independent_game/` | Separate Rust-authored sample game |
 | `story_example/` | TOML-authored sample game |
+| `templates/starter/` | Copyable beginner adventure |
 | `tests/` | Unit and integration tests |
 | `docs/` | Requirements, architecture, format specs and roadmap |
 

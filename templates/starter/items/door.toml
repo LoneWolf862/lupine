@@ -1,0 +1,10 @@
+id = "workshop_door"
+name = "workshop door"
+aliases = ["door"]
+description = "A heavy door with a brass lock."
+portable = false
+starting_room = "foyer"
+
+[[descriptions]]
+when = [{ flag_set = "door_open" }]
+text = "The workshop door stands open."

@@ -1,0 +1,6 @@
+id = "workshop"
+title = "Sample Workshop"
+description = "A quiet workshop. A doorway leads south."
+
+[exits]
+south = "foyer"

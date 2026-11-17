@@ -1,40 +1,51 @@
-# Creating a game with Lupine (Rust-authored prototype, v0.3.0)
+# Creating your first Lupine adventure (TOML format 1)
 
-**Status:** Developer-oriented preview. Nontechnical authoring and story-file loading are *future goals*, not supported in this release.
+**This guide uses v0.5.0-C candidate features.** No graphical interface or Rust game code is required.
 
-Lupine is a library crate. The command parser, rule executor, state manager, and terminal rendering don't contain any story-specific items or rooms. The bundled *generic* example is in `examples/fixture_world.rs`, imported by the demo executable in `src/main.rs`.
+## 1. Copy the starter project
 
-## Current authoring API
+Copy `templates/starter/` into a folder you own, for example `my_adventure/`. Keep its `rooms/` and `items/` subfolders.
 
-1. Construct a `lupine::world::World` with a stable starting-room ID, room definitions, item definitions, and interactions.
-2. Call `world.validate()` **before** starting. Treat every returned error as an authoring issue.
-3. Initialize `GameState::new(&world)`; do not mutate the immutable `World` when the player acts.
-4. Parse the player's text using `parser::parse_command` and pass the resulting typed `Command` into `engine::execute_command`.
-5. Display the returned `ActionOutcome`. Call `render::describe_room` for the opening description.
+## 2. Set your game's identity
 
-See `examples/fixture_world.rs` for an actual complete world definition and `tests/reusability.rs` for a second independent world.
+Open `game.toml` and change `id` to a **stable**, lowercase identifier, such as `my_adventure`; change `title` to the player-facing title. `starting_room` must equal one room's `id`. Keep `format_version = 1`.
 
-### Mechanics supported in v0.3.0
+## 3. Write a room
 
-- A room lists exits as `(Direction, RoomId)` pairs.
-- An `ExitRule` may require all `Condition` values to pass before traversing an exit.
-- An `Interaction` is triggered by `use <item> on <target>` and may require all conditions before applying all effects.
-- `Condition`: `HasItem`, `FlagSet`, `FlagUnset`.
-- `Effect`: `SetFlag`, `ClearFlag`, `MoveItemToRoom`.
-- `DescriptionVariant` overrides the default room/item description when all its conditions pass; the **first matching variant** wins.
-- Items have aliases and a portability flag. Players may carry, inspect, take, and drop them.
+In `rooms/foyer.toml`, edit the `title` and `description`. To add another room, make `rooms/garden.toml`:
 
-All IDs currently use `&'static str` so they must be known at compile time. This is **intentional for the first engine API**; no TOML/JSON parser, authoring GUI, save/load, or arbitrary text-driven story loading exists yet.
+```toml
+id = "garden"
+title = "Garden"
+description = "An old garden runs along a stone wall."
 
-### Limitations to keep in mind
+[exits]
+south = "foyer"
+```
 
-- The supported interaction verb is `use` with `on`; there is no generic custom-verb registry yet.
-- Conditions combine using AND. OR/NOT expression trees are not supported (other than the explicit `FlagUnset`).
-- Conditions are evaluated before an interaction applies its effects. Author-defined effect lists should not rely on intermediate effects being validated.
-- Exit rules govern traversal; `look` still lists the direction of a blocked exit.
-- The validator checks IDs, links, duplicate IDs/directions/interactions, and references. It does not prove that every puzzle is solvable or that every room can be reached.
-- The code currently uses `std` only, with no runtime networking.
+In `rooms/foyer.toml`, add `north = "garden"` beneath `[exits]`. Both directions are optional; rooms need not have reciprocal exits. Supported directions are `north`, `south`, `east`, `west`, `up`, `down`.
 
-## Next: nontechnical authoring
+## 4. Define objects
 
-The eventual Creator Release will allow authoring and packaging adventures without Rust. The eventual file format, validator UX, and optional graphical Lupine Studio have **not** been chosen or implemented. See `docs/CREATOR_VISION.md`.
+Each item goes in `items/<name>.toml`. The `starting_room` matches a room ID, not its title. `portable = true` enables taking and dropping; `portable = false` makes an object stationary. See `items/brass_key.toml` for an example.
+
+## 5. Add puzzles
+
+The starter's `interactions.toml` demonstrates a key, a door, an unlock flag, and a conditional exit. Use the same structure when changing the puzzle. Conditions supported now: `has_item`, `flag_set`, `flag_unset`. Effects: `set_flag`, `clear_flag`, `move_item_to_room`. See `STORY_FORMAT_PROPOSAL.md` for syntax.
+
+## 6. Validate before play
+
+From the Lupine source directory:
+
+```sh
+cargo run -- validate my_adventure
+cargo run -- play my_adventure
+```
+
+Replace `my_adventure` with the actual relative or absolute folder path. When using a prebuilt Lupine executable, omit `cargo run --` and use `lupine validate ...` or `lupine play ...`. Validation does **not** start a game or edit story files.
+
+If validation reports a filename and an unknown room/item, check that the referenced ID is spelled exactly as defined in another file. The starter is deliberately small: duplicate it and make one change at a time.
+
+## What is not implemented yet?
+
+The `save`, `load`, and `saves` commands and the `.rork` format are **planned for v0.6.0**; no autosaving will be added. A creator-side `lupine new` generator and standalone packaging are future milestones.
