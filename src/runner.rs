@@ -389,6 +389,19 @@ pub fn run_with_io_and_saves_progression_content_encounters_wallet_shops<R: BufR
         let (verb, argument) = command
             .split_once(char::is_whitespace)
             .map_or((command, ""), |(verb, rest)| (verb, rest.trim()));
+        // Defeat is terminal for this in-memory run. Only manual load or quit can
+        // recover; do not silently heal, autosave or permit paid services.
+        if is_defeated(&state)
+            && !["load", "saves", "quit", "q", "exit", "help", "h", "?"]
+                .iter()
+                .any(|allowed| verb.eq_ignore_ascii_case(allowed))
+        {
+            writeln!(
+                output,
+                "You have been defeated. Use 'saves', 'load <name>', or 'quit'.\n"
+            )?;
+            continue;
+        }
         if verb.eq_ignore_ascii_case("enemies") && argument.is_empty() {
             writeln!(output, "{}\n", encounters.describe(&state.active_enemies))?;
             continue;
@@ -451,6 +464,12 @@ pub fn run_with_io_and_saves_progression_content_encounters_wallet_shops<R: BufR
                 if !retaliation.is_empty() {
                     writeln!(output, "{retaliation}\n")?;
                 }
+                if is_defeated(&state) {
+                    writeln!(
+                        output,
+                        "\nYOU HAVE BEEN DEFEATED\nAvailable commands: saves, load <name>, quit.\n"
+                    )?;
+                }
                 if !state.active_enemies.is_empty() {
                     writeln!(output, "{}\n", encounters.describe(&state.active_enemies))?;
                 }
@@ -490,6 +509,12 @@ pub fn run_with_io_and_saves_progression_content_encounters_wallet_shops<R: BufR
                 let retaliation = combat::retaliate(&encounters, &mut state, &surviving, &mut rng);
                 if !retaliation.is_empty() {
                     writeln!(output, "{retaliation}\n")?;
+                }
+                if is_defeated(&state) {
+                    writeln!(
+                        output,
+                        "\nYOU HAVE BEEN DEFEATED\nAvailable commands: saves, load <name>, quit.\n"
+                    )?;
                 }
                 if !state.active_enemies.is_empty() {
                     writeln!(output, "{}\n", encounters.describe(&state.active_enemies))?;
@@ -838,13 +863,102 @@ pub fn run_with_io_and_saves_progression_content_encounters_wallet_shops<R: BufR
                 output,
                 "Please specify a target. Try 'help' for the syntax of {action}.\n"
             )?,
-            Err(ParseError::Unknown(command)) => writeln!(
-                output,
-                "I don't understand '{command}'. Type 'help' for commands.\n"
-            )?,
+            Err(ParseError::Unknown(command)) => {
+                writeln!(
+                    output,
+                    "I don't understand '{command}'. Type 'help' for commands."
+                )?;
+                if let Some(suggestion) = suggest_verb(&command) {
+                    writeln!(output, "Did you mean '{suggestion}'?")?;
+                }
+                writeln!(output)?;
+            }
         }
     }
     Ok(())
+}
+
+fn is_defeated(state: &GameState) -> bool {
+    state
+        .character
+        .as_ref()
+        .is_some_and(|character| character.hp == 0)
+}
+
+// Lightweight command spelling suggestions. Never execute the suggestion.
+fn suggest_verb(command: &str) -> Option<String> {
+    const VERBS: &[&str] = &[
+        "look",
+        "inventory",
+        "examine",
+        "take",
+        "drop",
+        "use",
+        "attack",
+        "cast",
+        "learn",
+        "spellbook",
+        "spells",
+        "weapons",
+        "stats",
+        "enemies",
+        "wallet",
+        "balance",
+        "money",
+        "shop",
+        "buy",
+        "sell",
+        "save",
+        "saves",
+        "load",
+        "quit",
+        "help",
+        "north",
+        "south",
+        "east",
+        "west",
+        "up",
+        "down",
+    ];
+    let verb = command.split_whitespace().next()?;
+    if verb.len() < 3 || !verb.is_ascii() {
+        return None;
+    }
+    let mut matches = VERBS
+        .iter()
+        .filter_map(|candidate| {
+            let distance = edit_distance_at_most_two(verb, candidate)?;
+            (distance > 0).then_some((distance, *candidate))
+        })
+        .collect::<Vec<_>>();
+    matches.sort_unstable();
+    let (distance, best) = *matches.first()?;
+    // A tie means there is no clear recommendation.
+    if matches.get(1).is_some_and(|next| next.0 == distance) {
+        return None;
+    }
+    let remainder = command.strip_prefix(verb).unwrap_or("");
+    Some(format!("{best}{remainder}"))
+}
+
+fn edit_distance_at_most_two(a: &str, b: &str) -> Option<usize> {
+    if a.len().abs_diff(b.len()) > 2 {
+        return None;
+    }
+    let mut previous = (0..=b.len()).collect::<Vec<_>>();
+    for (row, c) in a.bytes().enumerate() {
+        let mut next = vec![row + 1];
+        for (col, other) in b.bytes().enumerate() {
+            let substitution = usize::from(c != other);
+            next.push(
+                (previous[col + 1] + 1)
+                    .min(next[col] + 1)
+                    .min(previous[col] + substitution),
+            );
+        }
+        previous = next;
+    }
+    (previous[b.len()] <= 2).then_some(previous[b.len()])
 }
 
 fn prompt<R: BufRead, W: Write>(
@@ -883,4 +997,20 @@ fn show_room<W: Write>(world: &World, state: &GameState, output: &mut W) -> io::
         writeln!(output, "{}\n", describe_room(world, state, room))?;
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod polish_b_tests {
+    use super::*;
+
+    #[test]
+    fn suggests_only_unambiguous_commands_without_executing() {
+        assert_eq!(suggest_verb("walet"), Some("wallet".into()));
+        assert_eq!(
+            suggest_verb("attak goblin with dagger"),
+            Some("attack goblin with dagger".into())
+        );
+        assert_eq!(suggest_verb("stasts"), Some("stats".into()));
+        assert_eq!(suggest_verb("xyzzy"), None);
+    }
 }

@@ -18,7 +18,15 @@ pub fn describe_room(world: &World, state: &GameState, room: &Room) -> String {
     } else {
         format!("Objects: {}", objects.join(", "))
     };
-    let description = select_description(&room.description, &room.descriptions, state);
+    // Author-opt-in dynamic placeholder. Never inject stale item names in a
+    // description unless an author explicitly writes static item prose.
+    let objects_text = if objects.is_empty() {
+        "nothing".to_owned()
+    } else {
+        objects.join(", ")
+    };
+    let description = select_description(&room.description, &room.descriptions, state)
+        .replace("{{objects}}", &objects_text);
     let art = room
         .art_variants
         .iter()

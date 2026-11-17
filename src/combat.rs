@@ -51,7 +51,11 @@ fn target_index(
         .filter_map(|(index, instance)| {
             let definition = encounters.enemies.get(&instance.enemy_id)?;
             let matches = definition.name.eq_ignore_ascii_case(name)
-                || definition.id.eq_ignore_ascii_case(name);
+                || definition.id.eq_ignore_ascii_case(name)
+                || definition
+                    .name
+                    .split_whitespace()
+                    .any(|part| part.eq_ignore_ascii_case(name));
             (matches && number.is_none_or(|n| n == instance.instance_id)).then_some(index)
         })
         .collect();
@@ -343,7 +347,24 @@ mod tests {
             .contains("Multiple"));
         assert_eq!(target_index(&content, &active, "Goblin #2"), Ok(1));
         assert!(target_index(&content, &active, "Goblin #99").is_err());
+        assert_eq!(target_index(&content, &active, "goblin #1"), Ok(0));
     }
+    #[test]
+    fn partial_enemy_name_is_allowed_when_unambiguous() {
+        let (mut content, mut active) = fixture();
+        content.enemies.get_mut("goblin").unwrap().name = "Stone Guardian".into();
+        assert!(target_index(&content, &active, "guardian")
+            .unwrap_err()
+            .contains("Multiple"));
+        active.pop();
+        assert_eq!(target_index(&content, &active, "guardian"), Ok(0));
+        assert_eq!(target_index(&content, &active, "stone guardian"), Ok(0));
+        assert_eq!(
+            target_index(&content, &active, "ard"),
+            Err("No visible enemy matches 'ard'.".into())
+        );
+    }
+
     #[test]
     fn damage_respects_defense_and_removes_defeated_enemy() {
         let (content, mut active) = fixture();

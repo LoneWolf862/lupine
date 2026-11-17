@@ -1,0 +1,4 @@
+Lupine v0.8.4-B development candidate (apply after v0.8.4-A).
+Extract at your Lupine repository root, retaining .git and your adventures.
+Run: cargo fmt --all && cargo test && cargo clippy --all-targets -- -D warnings
+Verify death safety and target aliases interactively before committing.
