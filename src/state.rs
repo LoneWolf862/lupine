@@ -17,6 +17,8 @@ pub struct GameState {
     pub character: Option<crate::rpg::Character>,
     pub learned_abilities: HashSet<String>,
     pub wallet: BTreeMap<String, u64>,
+    /// Successful purchases of finite-stock offers, keyed by shop_id:offer_id.
+    pub shop_purchases: BTreeMap<String, u32>,
     /// Active encounter only; cleared when moving to another room.
     pub active_enemies: Vec<crate::encounters::EnemyInstance>,
     /// Monotonically increasing ID for unique enemy targets within this session/save.
@@ -42,6 +44,7 @@ impl GameState {
             character: None,
             learned_abilities: HashSet::new(),
             wallet: BTreeMap::new(),
+            shop_purchases: BTreeMap::new(),
             active_enemies: Vec::new(),
             next_enemy_id: 1,
         }

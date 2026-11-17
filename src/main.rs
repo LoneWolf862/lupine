@@ -36,7 +36,14 @@ fn main() -> std::io::Result<()> {
                 game.progression.is_some(),
             )
             .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
-            lupine::runner::run_with_game_id_compat_progression_content_encounters_wallet(
+            let shops = lupine::shops::ShopContent::load(
+                std::path::Path::new(path),
+                &game.world,
+                &wallet,
+                &content,
+            )
+            .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
+            lupine::runner::run_with_game_id_compat_progression_content_encounters_wallet_shops(
                 game.world,
                 &game.title,
                 &game.id,
@@ -45,6 +52,7 @@ fn main() -> std::io::Result<()> {
                 content,
                 encounters,
                 wallet,
+                shops,
             )
         }
         [_, command, path] if command == "validate" => {
@@ -79,6 +87,14 @@ fn main() -> std::io::Result<()> {
             wallet
                 .validate_encounters(&encounters)
                 .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
+            let shops = lupine::shops::ShopContent::load(
+                std::path::Path::new(path),
+                &game.world,
+                &wallet,
+                &content,
+            )
+            .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
+            println!("{} configured shops", shops.shops.len());
             println!("{} configured currencies", wallet.currencies.len());
             println!("Valid story: {} ({})", game.title, game.id);
             println!(

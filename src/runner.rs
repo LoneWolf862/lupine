@@ -10,6 +10,7 @@ use crate::render::describe_room;
 use crate::save_files::{
     default_save_root, list_slots, read_slot_with_compat, slot_exists, write_slot_with_compat,
 };
+use crate::shops::ShopContent;
 use crate::state::GameState;
 use crate::wallet::WalletContent;
 use crate::world::World;
@@ -188,8 +189,34 @@ pub fn run_with_game_id_compat_progression_content_encounters_wallet(
     encounters: EncounterContent,
     wallet: WalletContent,
 ) -> io::Result<()> {
+    run_with_game_id_compat_progression_content_encounters_wallet_shops(
+        world,
+        title,
+        game_id,
+        compatibility_version,
+        progression,
+        content,
+        encounters,
+        wallet,
+        ShopContent::default(),
+    )
+}
+
+/// Run with creator-authored shop definitions (opt-in).
+#[allow(clippy::too_many_arguments)]
+pub fn run_with_game_id_compat_progression_content_encounters_wallet_shops(
+    world: World,
+    title: &str,
+    game_id: &str,
+    compatibility_version: u32,
+    progression: Option<crate::rpg::Progression>,
+    content: crate::rpg_content::RpgContent,
+    encounters: EncounterContent,
+    wallet: WalletContent,
+    shops: ShopContent,
+) -> io::Result<()> {
     let root = default_save_root()?;
-    run_with_io_and_saves_progression_content_encounters_wallet(
+    run_with_io_and_saves_progression_content_encounters_wallet_shops(
         world,
         title,
         game_id,
@@ -199,6 +226,7 @@ pub fn run_with_game_id_compat_progression_content_encounters_wallet(
         content,
         encounters,
         wallet,
+        shops,
         io::stdin().lock(),
         io::stdout().lock(),
     )
@@ -272,6 +300,38 @@ pub fn run_with_io_and_saves_progression_content_encounters_wallet<R: BufRead, W
     content: crate::rpg_content::RpgContent,
     encounters: EncounterContent,
     wallet: WalletContent,
+    input: R,
+    output: W,
+) -> io::Result<()> {
+    run_with_io_and_saves_progression_content_encounters_wallet_shops(
+        world,
+        title,
+        game_id,
+        root,
+        compatibility_version,
+        progression,
+        content,
+        encounters,
+        wallet,
+        ShopContent::default(),
+        input,
+        output,
+    )
+}
+
+/// Testable runner with creator-configured shops.
+#[allow(clippy::too_many_arguments)]
+pub fn run_with_io_and_saves_progression_content_encounters_wallet_shops<R: BufRead, W: Write>(
+    world: World,
+    title: &str,
+    game_id: &str,
+    root: &Path,
+    compatibility_version: u32,
+    progression: Option<crate::rpg::Progression>,
+    content: crate::rpg_content::RpgContent,
+    encounters: EncounterContent,
+    wallet: WalletContent,
+    shops: ShopContent,
     mut input: R,
     mut output: W,
 ) -> io::Result<()> {
@@ -302,6 +362,7 @@ pub fn run_with_io_and_saves_progression_content_encounters_wallet<R: BufRead, W
     let mut state = GameState::new(&world);
     state.wallet = wallet.initial_balances();
     encounters.prepare_loot(&mut state);
+    shops.prepare_inventory(&mut state);
     if let Some(config) = &progression {
         state.character = Some(config.create_character().map_err(io::Error::other)?);
     }
@@ -441,6 +502,30 @@ pub fn run_with_io_and_saves_progression_content_encounters_wallet<R: BufRead, W
             && argument.is_empty()
         {
             writeln!(output, "{}\n", wallet.describe(&state))?;
+            continue;
+        }
+        if verb.eq_ignore_ascii_case("shop") {
+            writeln!(output, "{}\n", shops.describe(&state, &wallet, argument))?;
+            continue;
+        }
+        if verb.eq_ignore_ascii_case("buy") || verb.eq_ignore_ascii_case("sell") {
+            let (offer, shop) = argument
+                .split_once(" from ")
+                .map_or((argument, ""), |(o, s)| (o.trim(), s.trim()));
+            if offer.is_empty() {
+                writeln!(output, "Specify an offer, e.g. 'buy healing service'.\n")?;
+            } else {
+                // Sell offers are creator-defined; the verb is convenience syntax.
+                let result = shops.transact(&mut state, &wallet, offer, shop);
+                writeln!(
+                    output,
+                    "{}\n",
+                    match result {
+                        Ok(s) => s,
+                        Err(e) => e,
+                    }
+                )?;
+            }
             continue;
         }
         if verb.eq_ignore_ascii_case("stats") && argument.is_empty() {
@@ -609,6 +694,10 @@ pub fn run_with_io_and_saves_progression_content_encounters_wallet<R: BufRead, W
                             output,
                             "Load failed: save references unknown learned ability.\n"
                         )?;
+                        continue;
+                    }
+                    if let Err(e) = shops.validate_saved(&restored) {
+                        writeln!(output, "Load failed: {e}\n")?;
                         continue;
                     }
                     if let Err(e) = wallet.validate_balances(&restored) {

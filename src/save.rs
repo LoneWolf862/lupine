@@ -36,6 +36,8 @@ struct SaveFile {
     learned_abilities: Vec<String>,
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     wallet: BTreeMap<String, u64>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    shop_purchases: BTreeMap<String, u32>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     active_enemies: Vec<crate::encounters::EnemyInstance>,
     #[serde(default = "default_next_enemy_id")]
@@ -119,6 +121,7 @@ pub fn encode_save_with_compat(
             ids
         },
         wallet: state.wallet.clone(),
+        shop_purchases: state.shop_purchases.clone(),
         active_enemies: state.active_enemies.clone(),
         next_enemy_id: state.next_enemy_id,
     };
@@ -200,6 +203,7 @@ pub fn decode_save_with_compat(
         character: file.character,
         learned_abilities,
         wallet: file.wallet,
+        shop_purchases: file.shop_purchases,
         active_enemies: file.active_enemies,
         next_enemy_id: file.next_enemy_id,
     };
@@ -232,6 +236,9 @@ fn validate_metadata(game_id: &str, save_name: &str) -> Result<(), String> {
 }
 
 fn validate_state(world: &World, state: &GameState) -> Result<(), String> {
+    if state.shop_purchases.keys().any(|id| !id.contains(':')) {
+        return Err("Invalid shop purchase key in RORK save".into());
+    }
     if state.next_enemy_id == 0 {
         return Err("RORK next_enemy_id must be positive".into());
     }
