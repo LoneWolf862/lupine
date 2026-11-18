@@ -88,7 +88,7 @@ pub fn open<R: BufRead, W: Write>(
             )?;
         }
         super::ui::heading(output, "ADVENTURE CREATOR")?;
-        writeln!(output, "  0. Exit Creator\n  1. Play Your Adventure\n  2. Validate Your Adventure\n  3. Configure Adventure Settings [Phase 2E - not available yet]\n  4. Create or Edit Items\n  5. Create or Edit Spells\n  6. Create or Edit Artwork\n  7. Create or Edit Rooms\n  8. Help\n  9. Interactions and puzzles\n\nEnter refreshes the tree; ? gives help.")?;
+        writeln!(output, "  0. Exit Creator\n  1. Play Your Adventure\n  2. Validate Your Adventure\n  3. Configure Adventure Settings\n  4. Create or Edit Items\n  5. Create or Edit Spells\n  6. Create or Edit Artwork\n  7. Create or Edit Rooms\n  8. Help\n  9. Interactions and puzzles\n\nEnter refreshes the tree; ? gives help.")?;
         let Some(choice) = answer(input, output, "Selection:")? else {
             writeln!(
                 output,
@@ -124,7 +124,7 @@ pub fn open<R: BufRead, W: Write>(
             "4" => super::content_edit::run_items(&root, input, output)?,
             "5" => super::content_edit::run_spells(&root, input, output)?,
             "6" => super::art_edit::run(&root, input, output)?,
-            "3" => writeln!(output, "That guided editor is planned for the phase shown in the menu.\nNo files were changed. Existing noninteractive add commands and text\nediting remain available; see docs/CREATOR_QUICKSTART.md.")?,
+            "3" => super::fig_edit::run(&root, input, output)?,
             "8" | "?" | "help" => writeln!(output, "You are working in the adventure folder shown above.\nThe tree shows actual files; trailing / means a directory.\nTOML holds story content; optional config/*.fig holds engine settings.\n1 plays here and quit returns here. Each play starts fresh unless you\nexplicitly load a save. 2 checks all supported content and FIG settings.\nEnter refreshes the tree after external edits. 0/back/cancel leaves this\nadventure. Room edits require explicit Save confirmation; player saves remain manual.\n7 opens the Room Manager for guided names, descriptions and connections. Items/spells/art and interactions/FIG editors are still planned.")?,
             _ => writeln!(output, "\nPlease choose 0-9, or type help. Your adventure is still selected.\n")?,
         }

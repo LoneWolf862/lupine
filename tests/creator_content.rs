@@ -250,3 +250,82 @@ fn mixed_case_item_names_match_without_aliases_and_keep_ambiguity() {
     assert!(out.contains("Which key do you mean"), "{out}");
     assert!(out.contains("You take the Brass Key"), "{out}");
 }
+
+#[test]
+fn fig_editor_changes_all_character_values_and_labels_with_exact_preview() {
+    let f = Fixture::new();
+    let out=f.run("3\n1\n1\ntrue\n2\n2\n3\n10\n4\n80\n5\n40\n6\n110\n7\n12\n8\n6\n9\n11\n10\n200\n11\n150\np\ns\nyes\n2\n1\nGrimoire\n2\nSpells\np\ns\nyes\n0\n2\n1\nstats\nspellbook\nquit\n0\n");
+    assert!(out.contains("Changes saved"), "{out}");
+    assert!(out.contains("Validation successful"));
+    let text = f.read("config/character.fig");
+    assert!(text.contains("# HP base"));
+    assert!(out.contains(&text));
+    let v: toml::Value = text.parse().unwrap();
+    for (key, n) in [
+        ("starting_level", 2),
+        ("max_level", 10),
+        ("starting_hp", 80),
+        ("starting_mp", 40),
+        ("starting_ap", 110),
+        ("hp_per_level", 12),
+        ("mp_per_level", 6),
+        ("ap_per_level", 11),
+        ("base_requirement", 200),
+        ("growth_percent", 150),
+    ] {
+        assert_eq!(v[key].as_integer(), Some(n));
+    }
+    assert!(out.contains("Grimoire"));
+    assert!(!f.saves.exists());
+}
+#[test]
+fn fig_absence_cancel_legacy_enablement_and_inline_labels_are_preserved() {
+    let f = Fixture::new();
+    fs::remove_file(f.game.join("config/character.fig")).unwrap();
+    fs::remove_file(f.game.join("config/terminology.fig")).unwrap();
+    fs::remove_dir(f.game.join("config")).unwrap();
+    f.run("3\n1\n0\n2\ncancel\n0\n0\n");
+    assert!(!f.game.join("config").exists());
+    let out = f.run("3\n2\n1\nJournal\ns\nyes\n0\n0\n");
+    assert!(out.contains("Changes saved"), "{out}");
+    assert!(!f.game.join("config/character.fig").exists());
+    fs::write(
+        f.game.join("config/character.fig"),
+        "# legacy\nstarting_hp=70 # keep\n",
+    )
+    .unwrap();
+    fs::write(
+        f.game.join("config/terminology.fig"),
+        "# custom\ndisplay = { spellbook = 'Book', spells = 'Arts' } # keep\n",
+    )
+    .unwrap();
+    let out = f.run("3\n1\n4\n90\ns\nyes\n2\n2\nSkills\ns\nyes\n0\n0\n");
+    assert!(out.contains("true (omitted in existing file)"), "{out}");
+    assert!(!f.read("config/character.fig").contains("enabled ="));
+    assert!(f.read("config/character.fig").contains("# keep"));
+    assert!(f.read("config/terminology.fig").contains("# custom"));
+    assert!(lupine::story_loader::load_game(&f.game)
+        .unwrap()
+        .config
+        .character
+        .is_some());
+}
+#[test]
+fn fig_invalid_cross_field_values_can_be_corrected_without_losing_draft() {
+    let f = Fixture::new();
+    let out = f.run("3\n1\n2\n3\n3\n2\ns\nyes\n3\n4\ns\nyes\n0\n0\n");
+    assert!(out.contains("Proposed changes are invalid"), "{out}");
+    assert!(out.contains("Changes saved"));
+    let v: toml::Value = f.read("config/character.fig").parse().unwrap();
+    assert_eq!(v["starting_level"].as_integer(), Some(3));
+    assert_eq!(v["max_level"].as_integer(), Some(4));
+}
+#[test]
+fn fig_cannot_disable_rpg_with_existing_spells() {
+    let f = Fixture::new();
+    f.run("3\n1\n1\ntrue\ns\nyes\n0\n5\nn\nheal\ns\nyes\n0\n0\n");
+    let old = f.read("config/character.fig");
+    let out = f.run("3\n1\n1\nfalse\ns\nyes\n0\n0\n0\n");
+    assert!(out.contains("require enabled = true"), "{out}");
+    assert_eq!(f.read("config/character.fig"), old);
+}

@@ -179,6 +179,10 @@ impl Snapshot {
             let allowed = path == Path::new("interactions.toml")
                 || match category {
                     "rooms" | "items" | "spells" => path.extension().is_some_and(|e| e == "toml"),
+                    "config" => matches!(
+                        path.file_name().and_then(|s| s.to_str()),
+                        Some("character.fig" | "terminology.fig")
+                    ),
                     "art" => path.extension().is_some_and(|e| e == "txt"),
                     _ => {
                         path.starts_with("art")
@@ -242,7 +246,7 @@ impl Snapshot {
             let staged = lock.join("proposed");
             owned.dir(&staged)?;
             owned.dir(&lock.join("original"))?;
-            for category in ["rooms", "items", "spells", "art"] {
+            for category in ["rooms", "items", "spells", "art", "config"] {
                 owned.dir(&lock.join("original").join(category))?;
             }
             for dir in &self.dirs {

@@ -240,7 +240,10 @@ pub(super) fn save<R: BufRead, W: Write>(
     if !confirm(w, "Save these changes after full adventure validation?")? {
         return Ok(false);
     }
-    snapshot.commit(&BTreeMap::from([(d.path.clone(), d.contents())]))?;
+    if let Err(error) = snapshot.commit(&BTreeMap::from([(d.path.clone(), d.contents())])) {
+        w.say(&format!("Save needs attention: {error}\nYour draft remains open. Correct proposed values and retry; for external changes or recovery conflicts, discard and reopen after review."))?;
+        return Ok(false);
+    }
     w.say("Changes saved. Validation PASSED. Select the content again to review, or return to the creator to playtest.")?;
     Ok(true)
 }
