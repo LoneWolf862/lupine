@@ -261,3 +261,22 @@ fn shop_and_weapon_edit_keep_comments_ids_and_unedited_fields() {
     assert_eq!(o.stock, Some(2));
     assert_eq!(o.requires_flags, vec!["open"]);
 }
+
+#[test]
+fn weapon_item_cannot_become_uncollectable_through_item_editor() {
+    let f = Fixture::new();
+    let out = f.run("r\n2\ni\nn\nsword\n1\ns\nyes\n0\nn\n1\ns\nyes\n0\n0\n4\n1\n4\nno\n0\n0\n0\n");
+    assert!(
+        out.contains("Cannot make a teaching or weapon item fixed"),
+        "{out}"
+    );
+    assert!(
+        Adventure::load(&f.game)
+            .unwrap()
+            .game
+            .world
+            .item("sword")
+            .unwrap()
+            .portable
+    );
+}

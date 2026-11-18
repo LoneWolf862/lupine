@@ -25,7 +25,8 @@ Review corrections and evidence:
 3. The first acceptance script failed to reach the second enemy despite an initially passing shallow assertion. The route and assertions were strengthened: saved HP now proves both encounters retain wounds, and successful healing/mana transactions are required in actual output.
 4. Expected wallet arithmetic was corrected in the test: 25 minus 5, 1, 2 and 3, plus a 5 reward is 19. Runtime arithmetic was unchanged.
 5. Shared field prompts were moved out of the enemy module to avoid coupling other managers to enemy authoring.
-6. Tests cover inline primary currencies with omitted default IDs, table/inline offer preservation, invalid weights/missing references, duplicate currency IDs, declined saves, EOF, cancellation, external edits and mixed-category rollback.
+6. Item Manager now refuses making a weapon item fixed, matching its existing teaching-item safeguard; this is an authoring guard, not a runtime schema change.
+7. Tests cover inline primary currencies with omitted default IDs, table/inline offer preservation, invalid weights/missing references, duplicate currency IDs, declined saves, EOF, cancellation, external edits and mixed-category rollback.
 
 ## Environment and branches
 

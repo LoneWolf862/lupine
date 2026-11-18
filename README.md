@@ -19,7 +19,7 @@ cargo run -- validate my_adventure
 cargo run -- play my_adventure
 ```
 
-Run `cargo run -- new` for beginner setup, then continue in the persistent **Adventure Creator**. Reopen with `cargo run -- creator "my_adventure"`. Its guided editors cover rooms/connections, items/aliases, spells/teaching items, multiline artwork/variants, interaction puzzles/locked doors, conditional descriptions, existing-enemy encounter tables, and supported FIG settings. Review previews and explicitly confirm Save; validate and play from the same menu. Type `quit` in play to return. Content remains ordinary editable TOML, FIG and text files.
+Run `cargo run -- new` for beginner setup, then continue in the persistent **Adventure Creator**. Reopen with `cargo run -- creator "my_adventure"`. Its guided editors cover rooms/connections, items/aliases, spells/teaching items, multiline artwork/variants, interaction puzzles/locked doors, conditional descriptions, encounter tables and enemy/weapon/shop/currency definitions, and supported FIG settings. Review previews and explicitly confirm Save; validate and play from the same menu. Type `quit` in play to return. Content remains ordinary editable TOML, FIG and text files.
 
 **Creator status:** Core guided authoring is merged. RPG definition editors are implemented candidates in draft PRs #14-#18. See the [current RPG review](docs/RPG_AUTHORING_DEVELOPMENT.md) for exact verification and limitations.
 

@@ -53,13 +53,13 @@ Connections can lead from another room into the selected room or outward from it
 
 Room Options: 1 name, 2 description, 3 connections, 4 properties, 5 exact previews, 6 Save, 7 advanced settings, 0 discard. Advanced settings edit conditional descriptions and encounter tables. First-match descriptions replace the default when all their conditions pass. Select an existing variant to edit just its text or requirements; remove/reorder variants explicitly.
 
-Encounters require explicitly enabled RPG and existing enemy definitions. Configure chance 0–100, group size 1–12 with minimum <= maximum, persistence (`temporary`, `room`, `unique`), weighted enemy choices and flag requirements. Weights are relative, not percentages. Return to Room Options to preview/save the whole room draft. Exact enemy HP stays private during gameplay.
+Encounters require explicitly enabled RPG; select an existing enemy or use N to create one in the room draft. Configure chance 0–100, group size 1–12 with minimum <= maximum, persistence (`temporary`, `room`, `unique`), weighted enemy choices and flag requirements. Weights are relative, not percentages. Return to Room Options to preview/save the whole room draft. Exact enemy HP stays private during gameplay.
 
 ## Items
 
 Choose 4, then N or an existing item. New items ask for a unique ID and starting room. Options edit name, description, aliases, portability, starting room and conditional prose. Option 6 inspects the exact TOML; S saves.
 
-Portable objects can be picked up and carried. Fixed objects remain in their room. Aliases are alternate player names: Brass Key might have `key` and `brass key`. Add one at a time; select a numbered alias to remove it after confirmation. Teaching items must remain portable; change/remove their spell link before making them fixed. Full validation also protects shop/loot/binding references. Starting-room changes affect fresh sessions; existing saves are not rewritten.
+Portable objects can be picked up and carried. Fixed objects remain in their room. Aliases are alternate player names: Brass Key might have `key` and `brass key`. Add one at a time; select a numbered alias to remove it after confirmation. Teaching items and weapon items must remain portable in guided editing. Full validation also protects shop/loot/binding references. Starting-room changes affect fresh sessions; existing saves are not rewritten.
 
 ## Spells and abilities
 
@@ -103,4 +103,4 @@ Hard-link support is required. Publication is recoverable, not crash-atomic acro
 
 Follow the [review procedure](CREATOR_COMPLETION_REVIEW.md). The automated `tests/fixtures/creator_acceptance.txt` transcript builds a nontrivial neutral adventure entirely through the CLI and is exercised by `cargo test --test creator_acceptance`. It is a test fixture, not HOWLBOUND story content or a human usability result.
 
-Current limits: stable-ID rename/deletion migrations, guided crash recovery and packaging are not implemented. Enemy/weapon/shop/currency/transaction-binding definition editors are not part of these new menus; existing definitions are preserved and validated, and encounter settings select existing enemies. Unusual condition/effect representations that cannot be safely edited receive a limitation message. Full text-file authoring and direct add/validate/play commands remain available.
+Current limits: stable-ID rename/deletion migrations, guided crash recovery and packaging are not implemented. Transaction-binding definition editing remains separate; enemy, weapon, shop and currency managers are now available under R. Unusual condition/effect representations that cannot be safely edited receive a limitation message. Full text-file authoring and direct add/validate/play commands remain available.

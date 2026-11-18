@@ -75,6 +75,11 @@ fn wizard_authors_combat_economy_and_manual_saves() {
             .unwrap();
         fs::read_to_string(path).unwrap()
     };
+    assert_eq!(
+        fs::read_dir(&saves).unwrap().count(),
+        8,
+        "Only the eight explicitly named save slots should exist"
+    );
     let wounded = read("wounded");
     let retained = read("retained");
     let victory = read("victory");
@@ -98,6 +103,10 @@ fn wizard_authors_combat_economy_and_manual_saves() {
     assert_eq!(v.wallet["gold"], 19);
     assert_eq!(v.wallet["tokens"], 2);
     assert!(v.learned_abilities.contains("renew"));
+    assert_eq!(v.shop_purchases["supplies:axe_sale"], 1);
+    assert_eq!(v.shop_purchases["supplies:healing"], 1);
+    assert_eq!(v.shop_purchases["supplies:lesson"], 1);
+    assert_eq!(decode(&read("economy")).wallet["gold"], 23);
     assert!(last.active_enemies.is_empty());
     assert_eq!(last.current_room, "yard");
     assert_eq!(last.character.as_ref().unwrap().experience, 20);

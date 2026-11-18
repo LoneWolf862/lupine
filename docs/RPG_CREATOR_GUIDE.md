@@ -4,8 +4,6 @@
 
 Enemies, weapons, shops and currencies now have guided managers under main menu R. Configure existing character/progression fields in 3; use Rooms > Advanced > Encounters to select or create enemies. All six shop offer types are exposed. The [RPG authoring review](RPG_AUTHORING_DEVELOPMENT.md) documents field semantics, multi-currency rewards, safe draft publication and a real-CLI demonstration authored without manual TOML/FIG editing. PRs #14-#18 remain draft; #8-#13 are merged. Transaction-object bindings below still require text authoring.
 
-**Creator candidate:** Menu 3 edits RPG enablement/progression, menu 4 edits items, menu 5 edits every spell field/teaching link, and Room Options > 7 edits encounter tables using existing enemy definitions. Menu 9 edits ordinary item interactions. Enemy/weapon/shop/currency and transaction-binding definitions below remain text-authored; these editors preserve and validate them. See [current creator guide](CREATOR_QUICKSTART.md) and [verification](CREATOR_COMPLETION_REVIEW.md).
-
 
 This document is a **practical entry point** for authors. The sample games contain working, validated TOML syntax; use them as the source of truth for individual fields instead of guessing field names. You do **not** need to write Rust to create a story.
 
