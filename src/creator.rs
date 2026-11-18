@@ -15,7 +15,9 @@ struct GameManifest<'a> {
 }
 
 mod files;
+pub mod session;
 mod setup;
+mod tree;
 mod wizard;
 use files::{create_file, validate_destination};
 use wizard::DraftFile;
