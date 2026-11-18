@@ -156,3 +156,8 @@ A separate Cargo target directory (`--target-dir target/config-docs`) can avoid 
 Choose 4, then N or an existing numbered item. New items ask for a permanent ID and starting room. In Item Options, change the display name/description, add or remove aliases, choose portability and a starting room. Portable means players can pick it up. Option 6 inspects the exact TOML including preserved conditional properties; S previews and asks for explicit yes before validating and saving. 0/back discards the draft; cancel/EOF never writes the draft. Save returns to Item Manager; return to the creator to validate/playtest. Existing item IDs and filenames remain unchanged so cross-file references survive.
 
 All content editors share the room transaction/recovery contract above, including stale-file detection and full adventure validation. A missing items directory can be created during a successful confirmed edit. Invalid projects must be repaired before editing. No player saves are modified.
+
+
+## Spell Manager (Phase 2D-B candidate)
+
+Choose 5 after explicitly enabling RPG. N creates a definition with a unique ID; select an existing number to edit. Options 1-6 edit the name, description, MP cost, effect, power and teaching item. Option 7 previews; S confirms/validates/saves. Declining save keeps your draft. Create a portable scroll in Item Manager first, then link it with option 6. During play take it and use learn <item>; defining the spell alone does not grant it. Damage requires an enemy target; heal and restore mana affect the player. No spell damage-type field is supported.

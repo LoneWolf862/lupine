@@ -153,3 +153,10 @@ Started from fetched main 14eefce on codex/phase-2d-items. Item menu supports cr
 Self-review: preserved scalar decorations, conditional descriptions, CRLF and unchanged bytes; rejected path traversal before staging; tested invalid references and stale snapshots. Windows automated checks: 179 tests passed, formatting and strict Clippy passed (target/creator-complete). Scripted item create/edit/play, alias removal, cancellation and EOF are covered; these are simulated walkthroughs, not human usability testing. No Linux verification. No package/save version changes or autosaving.
 
 Next stacked phases: spells, artwork, interactions/conditional room settings, FIG editor, integration and end-to-end acceptance. Overall creator completion is still pending. Existing untracked user files were excluded.
+
+
+## Phase 2D-B spell editor candidate
+
+Menu 5 creates/edits every current spell field: stable ID (creation only), display name, description, MP cost, kind, positive power and optional teaching item. Damage targets an enemy; heal/restore_mana affect the player. No spell damage-type field exists. Teaching items are selected from actual items, must be portable in the guided workflow and are consumed by learn. RPG enablement is explicit; disabled projects receive guidance without modification.
+
+Branch codex/phase-2d-spells stacks on codex/phase-2d-items (PR #8). Windows: 181 tests pass, fmt and strict Clippy pass; native Linux/human usability remain pending. Self-review found that declining Save discarded the draft; both item/spell forms now retain it so authors can revise or confirm later. Tests exercise this, learning, manual save/load, field ranges and preserved comments/IDs. Overall completion remains pending artwork, puzzles, FIG and integration.

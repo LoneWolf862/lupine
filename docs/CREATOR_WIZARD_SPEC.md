@@ -115,3 +115,10 @@ The implementation emits both FIGs in the same DraftFile preview/write path as T
 ## Phase 2D-A candidate
 
 Item Manager is implemented with confirmed validated transactions, stable IDs, aliases and comment-preserving field edits. See CREATOR_QUICKSTART.md and CODEX_HANDOFF.md. Remaining editors are pending.
+
+
+## Phase 2D-B spell editor candidate
+
+Menu 5 creates/edits every current spell field: stable ID (creation only), display name, description, MP cost, kind, positive power and optional teaching item. Damage targets an enemy; heal/restore_mana affect the player. No spell damage-type field exists. Teaching items are selected from actual items, must be portable in the guided workflow and are consumed by learn. RPG enablement is explicit; disabled projects receive guidance without modification.
+
+Branch codex/phase-2d-spells stacks on codex/phase-2d-items (PR #8). Windows: 181 tests pass, fmt and strict Clippy pass; native Linux/human usability remain pending. Self-review found that declining Save discarded the draft; both item/spell forms now retain it so authors can revise or confirm later. Tests exercise this, learning, manual save/load, field ranges and preserved comments/IDs. Overall completion remains pending artwork, puzzles, FIG and integration.
