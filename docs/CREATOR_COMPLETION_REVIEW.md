@@ -55,8 +55,8 @@ These are automated/scripted results, not genuine human beginner usability testi
 3. Capitalized object names without aliases could not match the parser's lowercase input. Authored names/aliases now use matching lowercase normalization, retaining exact-match priority and ambiguity. This was the smallest runtime correction required by the creator walkthrough.
 4. Reordering toml_edit tables alone retained old source positions and serialized the old variant order. Priority edits now refresh positions while retaining authored values/comments; gameplay and serialized order are tested.
 5. Teaching scrolls could be made fixed, preventing learning. The item editor explains the dependency and refuses that change until the spell link changes.
-6. An existing parallel RPG test used timestamps for temporary paths and collided on Windows. It now uses a process-local atomic counter.
-7. Linux CI revealed that advisory nearby-ID scanning failed on unreadable system siblings under /tmp. The scan now skips unreadable/linked siblings with explicit guidance, while destination confinement remains strict. Linux CI passes after the fix.
+6. An existing parallel RPG test used timestamps for temporary paths and collided on Windows. It and the remaining creator timestamp-only fixtures now use process-local atomic counters.
+7. Linux CI revealed that advisory nearby-ID scanning failed on unreadable system siblings under /tmp. The scan now skips unreadable/linked siblings and siblings removed concurrently, with explicit guidance, while destination confinement remains strict. A later Windows CI run exposed the concurrent-removal case. Linux CI passes after the fix.
 8. Prompt/help and documentation review removed stale placeholder claims, used generic descriptions outside rooms, and limited encounter count prompts to the runtime's actual 1–12 range.
 
 ## Limits and remaining work

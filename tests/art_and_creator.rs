@@ -7,13 +7,11 @@ use lupine::state::GameState;
 use lupine::story_loader::load_game;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::sync::atomic::{AtomicU64, Ordering};
 
 fn temp() -> PathBuf {
-    let nanos = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_nanos();
+    static NEXT: AtomicU64 = AtomicU64::new(0);
+    let nanos = NEXT.fetch_add(1, Ordering::Relaxed);
     std::env::temp_dir().join(format!("lupine_v07b_{}_{}", std::process::id(), nanos))
 }
 fn fixture() -> lupine::story_loader::LoadedGame {

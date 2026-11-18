@@ -2,13 +2,11 @@ use lupine::creator::new_game;
 use lupine::story_loader::load_game;
 use std::fs;
 use std::path::PathBuf;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::sync::atomic::{AtomicU64, Ordering};
 
 fn temp_project() -> PathBuf {
-    let nonce = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_nanos();
+    static NEXT: AtomicU64 = AtomicU64::new(0);
+    let nonce = NEXT.fetch_add(1, Ordering::Relaxed);
     std::env::temp_dir().join(format!("lupine_creator_{}_{}", std::process::id(), nonce))
 }
 

@@ -36,8 +36,32 @@ fn sibling_ids<R: BufRead, W: Write>(
     for entry in
         fs::read_dir(parent).map_err(|e| format!("Cannot inspect {}: {e}", parent.display()))?
     {
-        let entry = entry.map_err(|e| e.to_string())?;
-        let meta = fs::symlink_metadata(entry.path()).map_err(|e| e.to_string())?;
+        let entry = match entry {
+            Ok(entry) => entry,
+            Err(e)
+                if matches!(
+                    e.kind(),
+                    std::io::ErrorKind::NotFound | std::io::ErrorKind::PermissionDenied
+                ) =>
+            {
+                skipped += 1;
+                continue;
+            }
+            Err(e) => return Err(e.to_string()),
+        };
+        let meta = match fs::symlink_metadata(entry.path()) {
+            Ok(meta) => meta,
+            Err(e)
+                if matches!(
+                    e.kind(),
+                    std::io::ErrorKind::NotFound | std::io::ErrorKind::PermissionDenied
+                ) =>
+            {
+                skipped += 1;
+                continue;
+            }
+            Err(e) => return Err(e.to_string()),
+        };
         if files::is_link(&meta) {
             skipped += 1;
             continue;
@@ -78,7 +102,7 @@ fn sibling_ids<R: BufRead, W: Write>(
         }
     }
     if skipped > 0 {
-        w.say("Some nearby folders/files are unreadable or linked. The advisory ID check covers readable regular adventures only; choose a distinct game ID. The new project destination is still checked separately.")?;
+        w.say("Some nearby folders/files are unavailable or linked. The advisory ID check covers readable regular adventures only; choose a distinct game ID. The new project destination is still checked separately.")?;
     }
     Ok(ids)
 }
