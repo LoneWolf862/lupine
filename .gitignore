@@ -7,3 +7,5 @@ Thumbs.db
 **/target/
 /my_first_adventure/
 /test/
+# Generated release packages
+dist/

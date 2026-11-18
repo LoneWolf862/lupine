@@ -1,0 +1,87 @@
+name: Lupine portable builds
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    name: Windows x64 (primary)
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - name: Check formatting, tests, and lints
+        run: |
+          cargo fmt --all --check
+          cargo test --locked
+          cargo clippy --locked --all-targets -- -D warnings
+      - name: Build optimized executable
+        run: cargo build --locked --release
+      - name: Package playable adventures
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $package = 'dist/Lupine-v0.9.0-windows-x64'
+          New-Item -ItemType Directory -Force "$package/samples" | Out-Null
+          Copy-Item 'target/release/lupine.exe', 'README.md', 'LICENSE' -Destination $package
+          Get-ChildItem 'samples' -Directory | Where-Object { Test-Path (Join-Path $_.FullName 'game.toml') } | ForEach-Object {
+            Copy-Item $_.FullName -Destination "$package/samples" -Recurse
+          }
+          @'
+          Lupine v0.9.0 Windows x64 preview
+          Open a terminal in this folder and run:
+            .\lupine.exe play samples\rpg_persistent
+          No Rust installation needed. Saving is manual: use save and load.
+          '@ | Set-Content -Path "$package/START_HERE.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Lupine-v0.9.0-windows-x64
+          path: dist/Lupine-v0.9.0-windows-x64/
+          if-no-files-found: error
+          retention-days: 14
+
+  linux:
+    name: Linux x64 (secondary)
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - name: Check formatting, tests, and lints
+        run: |
+          cargo fmt --all --check
+          cargo test --locked
+          cargo clippy --locked --all-targets -- -D warnings
+      - name: Build optimized executable
+        run: cargo build --locked --release
+      - name: Package playable adventures
+        shell: bash
+        run: |
+          set -euo pipefail
+          package='dist/Lupine-v0.9.0-linux-x64'
+          mkdir -p "$package/samples"
+          cp target/release/lupine README.md LICENSE "$package/"
+          for directory in samples/*/; do
+            if [[ -f "${directory}game.toml" ]]; then
+              cp -r "$directory" "$package/samples/"
+            fi
+          done
+          cat > "$package/START_HERE.txt" <<'EOF'
+          Lupine v0.9.0 Linux x64 preview
+          Open a terminal in this folder and run:
+            ./lupine play samples/rpg_persistent
+          No Rust installation needed. Saving is manual: use save and load.
+          Requires a compatible glibc-based Linux distribution.
+          EOF
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Lupine-v0.9.0-linux-x64
+          path: dist/Lupine-v0.9.0-linux-x64/
+          if-no-files-found: error
+          retention-days: 14
