@@ -149,3 +149,10 @@ config/terminology.fig explains the two supported display labels. These do not r
 6. Run `cargo run -- creator`, choose Open, and press Enter without a path. Read the friendly guidance, then enter the adventure folder.
 
 A separate Cargo target directory (`--target-dir target/config-docs`) can avoid a locked running Windows debug executable. Linux execution has not been verified for this phase.
+
+
+## Item Manager (Phase 2D-A candidate)
+
+Choose 4, then N or an existing numbered item. New items ask for a permanent ID and starting room. In Item Options, change the display name/description, add or remove aliases, choose portability and a starting room. Portable means players can pick it up. Option 6 inspects the exact TOML including preserved conditional properties; S previews and asks for explicit yes before validating and saving. 0/back discards the draft; cancel/EOF never writes the draft. Save returns to Item Manager; return to the creator to validate/playtest. Existing item IDs and filenames remain unchanged so cross-file references survive.
+
+All content editors share the room transaction/recovery contract above, including stale-file detection and full adventure validation. A missing items directory can be created during a successful confirmed edit. Invalid projects must be repaired before editing. No player saves are modified.

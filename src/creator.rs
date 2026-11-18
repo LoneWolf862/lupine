@@ -14,6 +14,7 @@ struct GameManifest<'a> {
     save_compatibility_version: u32,
 }
 
+mod content_edit;
 mod files;
 mod room_edit;
 mod room_transaction;
