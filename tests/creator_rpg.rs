@@ -98,3 +98,41 @@ fn weapon_item_workflow_and_gameplay() {
     let out = f.run("r\n2\nn\n0\n0\n0\n");
     assert!(out.contains("No unused portable items"), "{out}");
 }
+#[test]
+fn authored_shop_failed_transactions_stock_and_manual_roundtrip() {
+    let f = Fixture::new();
+    let manifest =
+        f.read("game.toml") + "\n[currency]\nid='gold'\nname='Gold'\nstarting_amount=5\n";
+    fs::write(f.game.join("game.toml"), manifest).unwrap();
+    let out = f.run("r\n3\nn\nclinic\n1\n3\nheal\n1\n4\n3\n6\n2\n0\np\ns\nyes\n0\n0\n0\n");
+    assert!(out.contains("Changes saved"), "{out}");
+    let a = Adventure::load(&f.game).unwrap();
+    let mut state = lupine::state::GameState::new(&a.game.world);
+    state.character = Some(
+        a.game
+            .config
+            .character
+            .as_ref()
+            .unwrap()
+            .create_character()
+            .unwrap(),
+    );
+    state.wallet = a.wallet.initial_balances();
+    let before = state.clone();
+    assert!(a.shops.transact(&mut state, &a.wallet, "heal", "").is_err());
+    assert_eq!(state, before);
+    state.character.as_mut().unwrap().hp = 50;
+    a.shops.transact(&mut state, &a.wallet, "heal", "").unwrap();
+    assert_eq!(state.wallet["gold"], 2);
+    assert_eq!(state.character.as_ref().unwrap().hp, 60);
+    let before = state.clone();
+    assert!(a.shops.transact(&mut state, &a.wallet, "heal", "").is_err());
+    assert_eq!(state, before);
+    let serialized = lupine::save::encode_save(&a.game.world, &state, &a.game.id, "shop").unwrap();
+    let restored = lupine::save::decode_save(&a.game.world, &a.game.id, &serialized).unwrap();
+    a.shops.validate_saved(&restored).unwrap();
+    assert_eq!(restored, state);
+    let original = f.read("shops/clinic.toml");
+    f.run("r\n3\n1\n4\n1\n6\n1\n0\n0\n0\n0\n0\n");
+    assert_eq!(f.read("shops/clinic.toml"), original);
+}

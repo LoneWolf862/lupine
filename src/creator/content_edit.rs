@@ -309,7 +309,11 @@ pub(super) fn manage<R: BufRead, W: Write>(
             let mut d = Document::load(&snapshot, path, "")?;
             d.set("id", value(id.clone()));
             d.set("name", value(id.replace('_', " ")));
-            if category == "enemies" {
+            if category == "shops" {
+                if !super::shop_edit::defaults(&mut d, &snapshot, w)? {
+                    continue;
+                }
+            } else if category == "enemies" {
                 super::enemy_edit::defaults(&mut d);
             } else if category == "spells" {
                 d.set("description", value("An ability."));
@@ -342,7 +346,9 @@ pub(super) fn manage<R: BufRead, W: Write>(
             w.say("Choose a listed definition, N, or 0. Changes are held until confirmed Save.")?;
             continue;
         };
-        let result = if category == "enemies" {
+        let result = if category == "shops" {
+            super::shop_edit::form(&mut d, &snapshot, w)
+        } else if category == "enemies" {
             super::enemy_edit::form(&mut d, &snapshot, w)
         } else if category == "spells" {
             super::spell_edit::form(&mut d, &snapshot, w)
