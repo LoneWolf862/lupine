@@ -259,7 +259,7 @@ pub(super) fn save<R: BufRead, W: Write>(
     w.say("Changes saved. Validation PASSED. Select the content again to review, or return to the creator to playtest.")?;
     Ok(true)
 }
-fn manage<R: BufRead, W: Write>(
+pub(super) fn manage<R: BufRead, W: Write>(
     root: &Path,
     category: &str,
     w: &mut Wizard<'_, R, W>,
@@ -309,7 +309,9 @@ fn manage<R: BufRead, W: Write>(
             let mut d = Document::load(&snapshot, path, "")?;
             d.set("id", value(id.clone()));
             d.set("name", value(id.replace('_', " ")));
-            if category == "spells" {
+            if category == "enemies" {
+                super::enemy_edit::defaults(&mut d);
+            } else if category == "spells" {
                 d.set("description", value("An ability."));
                 d.set("mana_cost", value(0));
                 d.set("kind", value("heal"));
@@ -340,7 +342,9 @@ fn manage<R: BufRead, W: Write>(
             w.say("Choose a listed definition, N, or 0. Changes are held until confirmed Save.")?;
             continue;
         };
-        let result = if category == "spells" {
+        let result = if category == "enemies" {
+            super::enemy_edit::form(&mut d, &snapshot, w)
+        } else if category == "spells" {
             super::spell_edit::form(&mut d, &snapshot, w)
         } else {
             item_form(&mut d, &snapshot, w)

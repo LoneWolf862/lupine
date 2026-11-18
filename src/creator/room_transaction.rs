@@ -178,7 +178,9 @@ impl Snapshot {
             let category = path.parent().and_then(Path::to_str).unwrap_or("");
             let allowed = path == Path::new("interactions.toml")
                 || match category {
-                    "rooms" | "items" | "spells" => path.extension().is_some_and(|e| e == "toml"),
+                    "rooms" | "items" | "spells" | "enemies" => {
+                        path.extension().is_some_and(|e| e == "toml")
+                    }
                     "config" => matches!(
                         path.file_name().and_then(|s| s.to_str()),
                         Some("character.fig" | "terminology.fig")
