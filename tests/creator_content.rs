@@ -329,3 +329,36 @@ fn fig_cannot_disable_rpg_with_existing_spells() {
     assert!(out.contains("require enabled = true"), "{out}");
     assert_eq!(f.read("config/character.fig"), old);
 }
+
+#[test]
+fn teaching_item_cannot_be_made_nonportable_by_item_editor() {
+    let f = Fixture::new();
+    f.run(
+        "3\n1\n1\ntrue\ns\nyes\n0\n4\nn\nscroll\n1\ns\nyes\n0\n5\nn\nheal\n6\n\n1\ns\nyes\n0\n0\n",
+    );
+    let before = f.read("items/scroll.toml");
+    let out = f.run("4\n1\n4\nno\ns\n0\n0\n0\n");
+    assert!(out.contains("Cannot make a teaching item fixed"), "{out}");
+    assert_eq!(f.read("items/scroll.toml"), before);
+}
+#[test]
+fn art_variants_can_be_revised_reordered_and_keep_unedited_conditions() {
+    let f = Fixture::new();
+    fs::write(f.game.join("art/a.txt"), "A\n").unwrap();
+    fs::write(f.game.join("art/b.txt"), "B\n").unwrap();
+    let room=f.read("rooms/start.toml")+"\n[[art_variants]] # first\nwhen=[{flag_unset='one'}]\nfile='a.txt'\n[[art_variants]] # second\nwhen=[{flag_unset='two'}]\nfile='b.txt'\n";
+    fs::write(f.game.join("rooms/start.toml"), room).unwrap();
+    let out = f.run("6\nr\n1\n6\n2\n2\n  TEXT  \n/end\nyes\n7\n2\ns\nyes\n0\n1\nlook\nquit\n0\n");
+    assert!(out.contains("Changes saved"), "{out}");
+    assert!(out.contains("  TEXT  "));
+    let text = f.read("rooms/start.toml");
+    assert!(text.contains("# first"));
+    assert!(text.contains("# second"));
+    let v: toml::Value = text.parse().unwrap();
+    assert_eq!(v["art_variants"][0]["text"].as_str(), Some("  TEXT  \n"));
+    assert_eq!(
+        v["art_variants"][0]["when"][0]["flag_unset"].as_str(),
+        Some("two")
+    );
+    assert_eq!(v["art_variants"][1]["file"].as_str(), Some("a.txt"));
+}

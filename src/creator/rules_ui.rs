@@ -151,3 +151,40 @@ pub(super) fn remove(doc: &mut DocumentMut, key: &str, index: usize) -> Result<(
     }
     Err("Choose an existing entry number".into())
 }
+
+pub(super) fn move_earlier(doc: &mut DocumentMut, key: &str, index: usize) -> Result<(), String> {
+    let item = doc.get_mut(key).ok_or("No entries")?;
+    if index == 0 {
+        return Ok(());
+    }
+    if let Some(a) = item.as_array_of_tables_mut() {
+        let current = a.get(index).cloned().ok_or("No such entry")?;
+        let previous = a.get(index - 1).cloned().ok_or("No preceding entry")?;
+        *a.get_mut(index - 1).unwrap() = current;
+        *a.get_mut(index).unwrap() = previous;
+    } else if let Some(a) = item.as_array_mut() {
+        let current = a.get(index).cloned().ok_or("No such entry")?;
+        let previous = a.get(index - 1).cloned().ok_or("No preceding entry")?;
+        *a.get_mut(index - 1).unwrap() = current;
+        *a.get_mut(index).unwrap() = previous;
+    } else {
+        return Err("Cannot safely reorder this representation".into());
+    }
+    // Parsed tables carry source positions. Reordering array elements alone would
+    // serialize them in the old order; refresh positions without rebuilding values.
+    fn positions(table: &mut Table, next: &mut usize) {
+        table.set_position(*next);
+        *next += 1;
+        for (_, item) in table.iter_mut() {
+            if let Some(child) = item.as_table_mut() {
+                positions(child, next);
+            } else if let Some(children) = item.as_array_of_tables_mut() {
+                for child in children.iter_mut() {
+                    positions(child, next);
+                }
+            }
+        }
+    }
+    positions(doc.as_table_mut(), &mut 0);
+    Ok(())
+}

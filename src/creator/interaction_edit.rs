@@ -113,7 +113,10 @@ fn interaction<R: BufRead, W: Write>(
                     "failure_text"
                 };
                 w.say("Write the message players see for this outcome.")?;
-                if let Some(v) = w.description(t.get(key).and_then(Item::as_str).unwrap_or(""))? {
+                if let Some(v) = w.description_labeled(
+                    "Description",
+                    t.get(key).and_then(Item::as_str).unwrap_or(""),
+                )? {
                     rules_ui::set(t, key, value(v));
                 }
             }
@@ -134,7 +137,7 @@ fn exit_rule<R: BufRead, W: Write>(
             "0"|"back"=>return Ok(()),
             "1"=>if let Some((room,dir))=exit(snapshot,w)?{rules_ui::set(t,"from",value(room));rules_ui::set(t,"direction",value(dir));},
             "2"=>if let Some(a)=rules_ui::edit_conditions(t.get("requires").unwrap_or(&Item::None),snapshot,w)?{rules_ui::set(t,"requires",value(a));},
-            "3"=>if let Some(v)=w.description(t.get("blocked_text").and_then(Item::as_str).unwrap_or(""))?{rules_ui::set(t,"blocked_text",value(v));},
+            "3"=>if let Some(v)=w.description_labeled("Description", t.get("blocked_text").and_then(Item::as_str).unwrap_or(""))?{rules_ui::set(t,"blocked_text",value(v));},
             _=>w.say("Choose 0-3. An exit must already connect rooms. All requirements must pass to travel.")?,
         }
     }
@@ -247,11 +250,14 @@ fn door_item<R: BufRead, W: Write>(
     else {
         return Ok(None);
     };
-    let Some(description) = w.description(if portable {
-        "A key for the locked door."
-    } else {
-        "A locked door."
-    })?
+    let Some(description) = w.description_labeled(
+        "Description",
+        if portable {
+            "A key for the locked door."
+        } else {
+            "A locked door."
+        },
+    )?
     else {
         return Ok(None);
     };

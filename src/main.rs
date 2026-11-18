@@ -112,7 +112,7 @@ fn main() -> std::io::Result<()> {
         }
         [_, command] if command == "help" => {
             println!("Lupine authoring commands:");
-            println!("  lupine creator [directory]       (create/open, validate and play)");
+            println!("  lupine creator [directory]       (create/open, edit content/config, validate and play)");
             println!("  lupine new                       (guided wizard)");
             println!("  lupine new <directory> <game-id> <title words...>");
             println!("  lupine add room <directory> <room-id>");

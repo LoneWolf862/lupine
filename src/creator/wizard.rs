@@ -102,11 +102,18 @@ impl<R: BufRead, W: Write> Wizard<'_, R, W> {
         }
     }
     pub fn description(&mut self, default: &str) -> Result<Option<String>, String> {
+        self.description_labeled("Location description", default)
+    }
+    pub fn description_labeled(
+        &mut self,
+        label: &str,
+        default: &str,
+    ) -> Result<Option<String>, String> {
         self.say(
             "Write one line below, or type /multi to write several lines. Instructions will follow.",
         )?;
         loop {
-            let first = self.line(&format!("Location description [{default}]: "))?;
+            let first = self.line(&format!("{label} [{default}]: "))?;
             if first.eq_ignore_ascii_case("back") {
                 return Ok(None);
             }

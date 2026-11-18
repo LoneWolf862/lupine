@@ -8,13 +8,13 @@ use super::{
 use std::io::{BufRead, Write};
 use toml_edit::{value, Array, DocumentMut, InlineTable, Item, Table, Value};
 
-fn descriptions<R: BufRead, W: Write>(
+pub(super) fn descriptions<R: BufRead, W: Write>(
     doc: &mut DocumentMut,
     snapshot: &Snapshot,
     w: &mut Wizard<'_, R, W>,
 ) -> Result<(), String> {
     loop {
-        w.say("CONDITIONAL DESCRIPTIONS\nThe first matching description replaces the default. All its conditions must pass. {{objects}} lists visible objects.\n1. Add variant\n2. Edit variant\n3. Remove variant\n0. Return")?;
+        w.say("CONDITIONAL DESCRIPTIONS\nThe first matching description replaces the default. All its conditions must pass. {{objects}} lists visible objects.\n1. Add variant\n2. Edit variant\n3. Remove variant\n4. Move a variant earlier\n0. Return")?;
         match w.line("Selection:")?.trim() {
             "0" | "back" => return Ok(()),
             "1" => {
@@ -25,7 +25,7 @@ fn descriptions<R: BufRead, W: Write>(
                     w.say("At least one condition is needed; edit the default description for unconditional text.")?;
                     continue;
                 }
-                let Some(text) = w.description("")? else {
+                let Some(text) = w.description_labeled("Description", "")? else {
                     continue;
                 };
                 let mut t = Table::new();
@@ -39,9 +39,10 @@ fn descriptions<R: BufRead, W: Write>(
                     w.say("1. Alternate text\n2. Conditions\n0. Return")?;
                     match w.line("Field:")?.trim() {
                         "1" => {
-                            if let Some(s) =
-                                w.description(t.get("text").and_then(Item::as_str).unwrap_or(""))?
-                            {
+                            if let Some(s) = w.description_labeled(
+                                "Description",
+                                t.get("text").and_then(Item::as_str).unwrap_or(""),
+                            )? {
                                 rules_ui::set(t, "text", value(s));
                             }
                         }
@@ -184,7 +185,7 @@ fn encounters<R: BufRead, W: Write>(
         match w.line("Selection:")?.trim(){
             "back"=>return Ok(()),
             "0"=>{if ed.to_string()!=baseline||original.is_none(){let table=ed.into_table();doc["encounters"]=if inline{value(table.into_inline_table())}else{Item::Table(table)};}return Ok(());},
-            s @ ("1"|"2"|"3")=>{let(key,min,max)=match s{"1"=>("chance",0,100),"2"=>("min_enemies",1,u32::MAX as i64),_=>("max_enemies",1,u32::MAX as i64)};if let Some(n)=number(w,key,ed.get(key).and_then(Item::as_integer).unwrap_or(min),min,max)?{rules_ui::set(ed.as_table_mut(),key,value(n));}},
+            s @ ("1"|"2"|"3")=>{let(key,min,max)=match s{"1"=>("chance",0,100),"2"=>("min_enemies",1,12),_=>("max_enemies",1,12)};if let Some(n)=number(w,key,ed.get(key).and_then(Item::as_integer).unwrap_or(min),min,max)?{rules_ui::set(ed.as_table_mut(),key,value(n));}},
             "4"=>if let Some(s)=choose(w,"Persistence:",&[("temporary".into(),"Reroll on re-entry".into()),("room".into(),"Keep living enemy wounds after retreat".into()),("unique".into(),"Stay cleared after defeat".into())])?{rules_ui::set(ed.as_table_mut(),"persistence",value(s));},
             "5"=>if let Some(id)=choose(w,"Enemy definition:",&entries(snapshot,"enemies")?)?{let mut t=Table::new();t["enemy"]=value(id);t["weight"]=value(1);rules_ui::append(&mut ed,"enemies",t)?;},
             "6"=>if let Some(i)=rules_ui::select_entry(&ed,"enemies",w)?{encounter_entry(&mut ed,i,snapshot,w)?;},

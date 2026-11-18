@@ -1,4 +1,4 @@
-//! Persistent creator navigation. Room edits are explicit, validated transactions; other editors remain planned.
+//! Persistent creator navigation. Authored edits use explicit, validated transactions.
 use super::tree;
 use crate::adventure::Adventure;
 use std::{
@@ -19,7 +19,7 @@ fn answer(
     Ok(Some(line.trim().to_owned()))
 }
 fn error(output: &mut impl Write, detail: &str) -> io::Result<()> {
-    writeln!(output, "\nThis adventure is not ready yet:\n{detail}\nNothing was changed. Check the named file and field/reference, correct it\nin your text editor, then choose Validate again. Room editing requires a valid\nadventure; the creator will reload your files each time.\n")
+    writeln!(output, "\nThis adventure is not ready yet:\n{detail}\nNothing was changed. Check the named file and field/reference, correct it\nin your text editor, then choose Validate again. Guided editing requires a valid\nadventure; the creator will reload your files each time.\n")
 }
 
 /// Create/open launcher. The same terminal streams survive setup and gameplay.
@@ -53,7 +53,7 @@ pub fn start<R: BufRead, W: Write>(input: &mut R, output: &mut W, saves: &Path) 
                     Err(message) => writeln!(output, "\nCannot open: {message}\n")?,
                 }
             },
-            "?" | "help" => writeln!(output, "Create guides you through a new adventure. Open selects a folder\nyou already made. You can inspect files, validate and play. Choose 7\nto create or edit rooms. Item/configuration editors are later phases.")?,
+            "?" | "help" => writeln!(output, "Create guides you through a new adventure. Open selects a folder\nyou already made. You can inspect files, validate and play. Choose 7\nto create or edit rooms. Items, spells, artwork, configuration and puzzle editors are available.")?,
             _ => writeln!(output, "Choose 1 to create, 2 to open, or 0 to exit.")?,
         }
     }
@@ -125,7 +125,7 @@ pub fn open<R: BufRead, W: Write>(
             "5" => super::content_edit::run_spells(&root, input, output)?,
             "6" => super::art_edit::run(&root, input, output)?,
             "3" => super::fig_edit::run(&root, input, output)?,
-            "8" | "?" | "help" => writeln!(output, "You are working in the adventure folder shown above.\nThe tree shows actual files; trailing / means a directory.\nTOML holds story content; optional config/*.fig holds engine settings.\n1 plays here and quit returns here. Each play starts fresh unless you\nexplicitly load a save. 2 checks all supported content and FIG settings.\nEnter refreshes the tree after external edits. 0/back/cancel leaves this\nadventure. Room edits require explicit Save confirmation; player saves remain manual.\n7 opens the Room Manager for guided names, descriptions and connections. Items/spells/art and interactions/FIG editors are still planned.")?,
+            "8" | "?" | "help" => writeln!(output, "You are working in the adventure folder shown above.\nThe tree shows actual files; trailing / means a directory.\nTOML holds story content; optional config/*.fig holds engine settings.\n1 plays here and quit returns here. Each play starts fresh unless you\nexplicitly load a save. 2 checks all supported content and FIG settings.\nEnter refreshes the tree after external edits. 0/back/cancel leaves this\nadventure. Room edits require explicit Save confirmation; player saves remain manual.\n7 opens the Room Manager for guided names, descriptions and connections. 3 configures FIG settings; 4 edits items; 5 edits spells; 6 edits art. 9 opens puzzles and locked doors. Room Options > 7 edits conditional prose/encounters. Changes remain drafts until explicit confirmation.")?,
             _ => writeln!(output, "\nPlease choose 0-9, or type help. Your adventure is still selected.\n")?,
         }
     }
