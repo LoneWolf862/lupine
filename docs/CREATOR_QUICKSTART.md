@@ -108,3 +108,24 @@ Hard-link support is required. This protects against handled write failures but 
 5. Select each room in turn, use **2** to revise its description, and save with **6**, **yes**.
 6. Return with **0**, validate with **2**, then play with **1**. Type `north`, `south`, then `quit` to return to the creator. No TOML editing is needed for this workflow.
 7. Reopen the project with `cargo run -- creator "your project folder"`. Try canceling a draft and declining an exit conflict; the existing files should remain unchanged.
+
+
+## Creator presentation (Phase 2C.1)
+
+The project tree now nests filenames beneath directories using ASCII `+--` branches and four-column indentation. `./` is the selected adventure root; a trailing `/` identifies a directory, including an empty directory. Root files and content categories retain their fixed order; entries within each directory are sorted by name. Only recognized content is displayed; unrelated root folders and temporary file extensions stay hidden. Links/junctions are marked and never followed. The tree refreshes after saves and on returning to the creator.
+
+The display remains limited to 160 entries, with an omission message. Inspection still stops at 2048 entries/eight nested levels and blocks unsafe validation/play. Individual names longer than 180 characters are abbreviated in the tree; filenames on disk are unchanged. Tree branches use the same separators on Windows and Linux. Authored names retain their original characters.
+
+Creator screens share ASCII headings, aligned options, blank lines around sections, and a prompt label followed by `>`. Multiline input retains its compact `...` prompt. Menu numbers, defaults, back/cancel behavior and command meanings have not changed. Connection previews show From, Direction, To and the proposed reverse route. Properties distinguish incoming/outgoing routes and label outgoing routes as bidirectional or one-way. Choosing no reverse never removes a previously existing reverse route.
+
+Save review summarizes the room and routes without repeating long descriptions or advanced properties; option 4 still shows the detailed properties. A ROOM SAVED screen lists affected files and reports PASSED only after persistence and validation succeed. Exact preview bytes remain between the existing content markers.
+
+### Windows presentation review
+
+1. Run `cargo run -- creator "your project folder"` in PowerShell or Command Prompt. Check that rooms, FIG files and artwork appear beneath their actual folders.
+2. Choose **7**, select a room and **4**. Check headings, incoming/outgoing routes and separation between sections.
+3. In a disposable adventure, create a second room and connect it with a reverse exit. Inspect From/To and reverse prompts. Repeat with a one-way route and decline a conflicting replacement.
+4. Preview with **5**, then save with **6**, **yes**. Check the exact preview, file list, validation result and refreshed tree. Cancel a separate draft and confirm that no success screen appears.
+5. Return, validate, play, then quit back to the creator. Reopen the project to confirm navigation still works.
+
+If a running executable locks the normal debug build on Windows, leave that session open and use `cargo run --target-dir target/ui-polish -- creator "your project folder"` for a separate build.

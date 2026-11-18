@@ -396,11 +396,11 @@ fn properties<R: BufRead, W: Write>(
         "encounters",
     ] {
         if let Some(value) = room.doc.get(key) {
-            w.say(&format!("Preserved {key}: {value}"))?;
+            w.say(&format!("\nPreserved {key}: {value}"))?;
         }
     }
     if let Ok(game) = crate::story_loader::load_game(&draft.snapshot.root) {
-        w.say("Items starting here (authored in item files):")?;
+        w.say("\nItems starting here (authored in item files):")?;
         for item in game
             .world
             .items
@@ -409,7 +409,7 @@ fn properties<R: BufRead, W: Write>(
         {
             w.say(&format!("  {} ({})", item.name, item.id))?;
         }
-        w.say("Conditional exits (preserved in interactions.toml):")?;
+        w.say("\nConditional exits (preserved in interactions.toml):")?;
         for rule in game.world.exit_rules.iter().filter(|rule| rule.from == id) {
             w.say(&format!(
                 "  {}: {:?}; blocked message: {}",
@@ -419,7 +419,7 @@ fn properties<R: BufRead, W: Write>(
             ))?;
         }
     }
-    w.say("Conditional descriptions choose text based on flags or inventory. ASCII artwork\nand art variants decorate a room. Items are placed by their own starting_room field;\nconditional exits live in interactions.toml. Encounters are optional RPG content.\nThese advanced properties are preserved; their guided editors come later.")
+    w.say("\nConditional descriptions choose text based on flags or inventory. ASCII artwork\nand art variants decorate a room. Items are placed by their own starting_room field;\nconditional exits live in interactions.toml. Encounters are optional RPG content.\nThese advanced properties are preserved; their guided editors come later.")
 }
 fn create<R: BufRead, W: Write>(
     draft: &mut Draft,
