@@ -71,8 +71,16 @@ pub(super) fn inspect(root: &Path) -> Inspection {
         }
     }
     let mut tree = String::from("Project files (paths relative to the adventure folder):\n./\n");
-    for line in scan.lines.iter().take(MAX_LINES) {
-        tree.push_str(line);
+    for (index, (depth, label)) in scan.lines.iter().take(MAX_LINES).enumerate() {
+        for ancestor in 0..*depth {
+            let continues = scan.lines[index + 1..]
+                .iter()
+                .find(|(level, _)| *level <= ancestor)
+                .is_some_and(|(level, _)| *level == ancestor);
+            tree.push_str(if continues { "|   " } else { "    " });
+        }
+        tree.push_str("+-- ");
+        tree.push_str(label);
         tree.push('\n');
     }
     if scan.lines.len() > MAX_LINES {
@@ -85,7 +93,7 @@ pub(super) fn inspect(root: &Path) -> Inspection {
 }
 struct Scan<'a> {
     root: &'a Path,
-    lines: Vec<String>,
+    lines: Vec<(usize, String)>,
     problems: Vec<String>,
     visited: usize,
     limited: bool,
@@ -94,7 +102,10 @@ impl Scan<'_> {
     fn limit(&mut self, path: &Path) {
         if !self.limited {
             self.problems.push(format!("{}: project inspection limit reached (2048 entries / 8 directory levels). Reduce nested content before creator validation/play.", path.display()));
-            self.lines.push("+-- ... inspection limit reached".into());
+            self.lines.push((
+                0,
+                "... inspection limit reached; some entries omitted".into(),
+            ));
             self.limited = true;
         }
     }
@@ -107,7 +118,9 @@ impl Scan<'_> {
         let relative = path
             .strip_prefix(self.root)
             .expect("paths constructed beneath root");
-        let label = relative
+        let label = path
+            .file_name()
+            .expect("content has a filename")
             .to_string_lossy()
             .chars()
             .flat_map(|c| {
@@ -135,12 +148,12 @@ impl Scan<'_> {
         };
         if super::files::is_link(&metadata) {
             self.lines
-                .push(format!("+-- {label} [link/junction skipped]"));
+                .push((depth, format!("{label} [link/junction skipped]")));
             self.problems.push(format!("{label}: links/junctions are not followed. Replace with a regular file/folder inside the project."));
             return;
         }
         if metadata.is_dir() {
-            self.lines.push(format!("+-- {label}/"));
+            self.lines.push((depth, format!("{label}/")));
             if !recognized_dir {
                 self.problems.push(format!("{label}: expected a file"));
                 return;
@@ -174,7 +187,7 @@ impl Scan<'_> {
             }
             let extension = path.extension().and_then(|s| s.to_str()).unwrap_or("");
             if depth == 0 || matches!(extension, "toml" | "fig" | "txt") {
-                self.lines.push(format!("+-- {label}"));
+                self.lines.push((depth, label));
             }
         } else {
             self.problems

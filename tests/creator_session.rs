@@ -79,10 +79,7 @@ fn navigation_play_validation_and_reopen_preserve_content_and_saves() {
     assert_eq!(output.matches("Validation successful!").count(), 2);
     assert_eq!(output.matches("Returned to the creator.").count(), 2);
     assert!(output.contains("Starting Room"));
-    assert!(
-        output.matches("rooms/start.toml").count() >= 5
-            || output.matches("rooms\\start.toml").count() >= 5
-    );
+    assert!(output.matches("+-- start.toml").count() >= 5);
     assert_eq!(snapshot(&f.root), before);
     assert!(f.run("2\ncancel\n").contains("Validation successful!"));
     assert_eq!(snapshot(&f.root), before);
@@ -110,8 +107,8 @@ fn tree_reflects_actual_recognized_paths_and_empty_directories() {
         "items/",
         "art/",
         "spells/",
-        "config/terminology.fig",
-        "art/nested/sketch.txt",
+        "+-- config/\n|   +-- terminology.fig",
+        "+-- art/\n    +-- nested/\n        +-- sketch.txt",
         "interactions.toml",
     ] {
         assert!(output.contains(text), "{text}");
@@ -323,7 +320,7 @@ fn refreshed_tree_and_validation_read_external_changes() {
         .split("Project files (paths relative")
         .collect::<Vec<_>>();
     assert!(!sections[1].contains("new.txt"));
-    assert!(sections[2].contains("art/new.txt"));
+    assert!(sections[2].contains("+-- new.txt"));
     assert!(output.contains("Updated Room"));
     assert!(!f.saves.exists());
 }
@@ -371,4 +368,59 @@ fn bundled_rpg_games_validate_and_play_through_session() {
         assert_eq!(snapshot(&game), before);
         assert!(!f.saves.exists());
     }
+}
+
+#[test]
+fn nested_tree_is_sorted_bounded_and_platform_independent() {
+    let f = Fixture::new();
+    fs::create_dir_all(f.game.join("art/z_empty")).unwrap();
+    fs::create_dir_all(f.game.join("art/a_group/deeper")).unwrap();
+    for name in ["z.txt", "a.txt"] {
+        fs::write(f.game.join("art/a_group/deeper").join(name), "art").unwrap();
+    }
+    let output = f.run("0\n");
+    let tree = output
+        .split("Project files (paths relative to the adventure folder):\n")
+        .nth(1)
+        .unwrap()
+        .split("\n\n")
+        .next()
+        .unwrap();
+    assert!(tree.contains("+-- art/\n    +-- a_group/\n    |   +-- deeper/\n    |       +-- a.txt\n    |       +-- z.txt\n    +-- z_empty/"), "{tree}");
+    assert!(!tree.contains('\\'));
+    assert!(tree.is_ascii());
+    assert_eq!(output, f.run("0\n"));
+}
+
+#[test]
+fn long_tree_components_are_abbreviated_without_losing_nesting() {
+    let f = Fixture::new();
+    let long = "a".repeat(185);
+    fs::create_dir(f.game.join("art").join(&long)).unwrap();
+    fs::write(
+        f.game.join("art").join(format!("{}.txt", "z".repeat(185))),
+        "art",
+    )
+    .unwrap();
+    let output = f.run("0\n");
+    assert!(output.contains("... [long path abbreviated]/"));
+    assert_eq!(output.matches("[long path abbreviated]").count(), 2);
+    assert!(!output.contains(&long));
+    assert!(output
+        .lines()
+        .filter(|l| l.contains("+--"))
+        .all(|l| l.len() < 220));
+}
+
+#[test]
+fn menus_prompts_and_validation_have_clear_spacing() {
+    let f = Fixture::new();
+    let output = f.run("2\n7\n0\n0\n");
+    assert!(output.contains(
+        "========================================\n\n  0. Exit Creator\n  1. Play Your Adventure"
+    ));
+    assert!(output.contains("\nSelection:\n> "));
+    assert!(output.contains("Adventure: Session Test\n\nExisting Rooms:\n\n  1. Starting Room"));
+    assert!(output.contains("\n\n  N. Create New Room\n  0. Return to Creator Menu"));
+    assert!(output.contains("\nValidation successful! Your adventure is ready to play.\n\n"));
 }

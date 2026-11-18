@@ -53,6 +53,13 @@ fn beginner_creates_connects_previews_and_travels_without_toml_edits() {
     let f = Fixture::new();
     let output = f.run("7\nn\nMountain Pass\n\n/multi\nA narrow trail.\n\nVisible: {{objects}}\n/end\n1\n1\nnorth\n\n0\n5\n6\nyes\n0\n2\n1\nnorth\nsouth\nquit\n0\n");
     assert!(output.contains("Room changes saved"), "{output}");
+    assert!(output.contains(
+        "From: Starting Room (start)\nDirection: north\nTo:   Mountain Pass (mountain_pass)"
+    ));
+    assert!(output.contains("\nReverse connection:\n  Mountain Pass --south--> Starting Room"));
+    assert!(output.contains("Bidirectional connection drafted"));
+    assert!(output.contains("ROOM SAVED!"));
+    assert!(output.contains("\nValidation:\n  PASSED\n\nRoom changes saved."));
     let pass = f.room("mountain_pass");
     assert_eq!(value(&pass)["exits"]["south"].as_str(), Some("start"));
     assert_eq!(
