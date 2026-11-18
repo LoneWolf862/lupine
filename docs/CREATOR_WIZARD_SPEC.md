@@ -129,3 +129,12 @@ Branch codex/phase-2d-spells stacks on codex/phase-2d-items (PR #8). Windows: 18
 Menu 6 lists existing artwork (including nested files), creates/edits multiline text, previews exact whitespace and attaches/removes room defaults and conditional variants. First-match variants use guided flag-set, flag-unset or carried-item requirements. Existing inline artwork is replaced only after explicit confirmation. Existing variant tables and inline-array representations are preserved. No artwork is stored in RORK.
 
 Branch codex/phase-2d-artwork stacks on codex/phase-2d-spells (#9), following items #8. Windows: 184 tests, fmt and strict Clippy pass. Self-review identified unreferenced art escaping loader validation; the transaction now calls the same runtime artwork validator even before a file is referenced. Tests cover spaces, blank lines, backslashes, nested files, cancellation, terminal controls, dynamic references and removal. Linux/human usability remain pending. Recovery remains manual; no versions or autosaving changed.
+
+
+## Phase 2E-A interactions and advanced rooms candidate (2026-11-18)
+
+Main menu 9 opens existing interaction/exit-rule forms and a locked-door recipe. Rules expose used item, target, all existing conditions/effects and outcome text; existing lists/comments survive selected edits. The door workflow can create key/door items and publishes them with rules in one validated recoverable transaction. Room Options 7 adds/edits/removes conditional descriptions and edits encounter chance, counts, persistence, weighted existing enemies and flag requirements. It does not create new enemy definitions.
+
+Branch codex/phase-2e-interactions stacks on artwork #10 (after items #8 and spells #9). Windows: 189 tests, fmt and strict Clippy pass. Scripted acceptance creates connected rooms, a door and key, alternate prose, travels after unlocking and explicitly saves/loads. Cancellation publishes none of the related files. Existing conditional lists/comments and encounter choices survive edits.
+
+Self-review uncovered a real authoring blocker: mixed-case display names without aliases could not be resolved against lowercased player input. The minimal engine fix normalizes authored names/aliases for comparison, preserving exact-match priority and ambiguity. This is covered with uppercase input and ambiguous keys; no parser redesign or new mechanic. An existing navigation test was updated for the intentional ninth menu option. Native Linux and human usability remain pending. No package/RORK versions changed, no autosaving.

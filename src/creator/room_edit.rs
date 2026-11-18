@@ -486,7 +486,7 @@ fn edit<R: BufRead, W: Write>(
 ) -> Result<bool, String> {
     loop {
         w.heading("ROOM OPTIONS")?;
-        w.say(&format!("Room: {} ({id})\n\n  1. Change name\n  2. Edit description\n  3. Manage connections\n  4. Review properties\n  5. Preview exact TOML changes\n  6. Save room and connections\n  0. Back without saving (discard draft)", draft.rooms[id].text("title")))?;
+        w.say(&format!("Room: {} ({id})\n\n  1. Change name\n  2. Edit description\n  3. Manage connections\n  4. Review properties\n  5. Preview exact TOML changes\n  6. Save room and connections\n  7. Conditional descriptions and encounters\n  0. Back without saving (discard draft)", draft.rooms[id].text("title")))?;
         match menu(w, "Selection: ")?.as_str() {
             "0" | "back" => return Ok(false),
             "1" => {
@@ -507,6 +507,11 @@ fn edit<R: BufRead, W: Write>(
             }
             "3" => connections(draft, id, w)?,
             "4" => properties(draft, id, w, true)?,
+            "7" => super::room_advanced::edit(
+                &mut draft.rooms.get_mut(id).unwrap().doc,
+                &draft.snapshot,
+                w,
+            )?,
             "5" => draft.preview(id, w.output)?,
             "6" => {
                 properties(draft, id, w, false)?;
@@ -535,7 +540,7 @@ fn edit<R: BufRead, W: Write>(
                 }
             }
             "help" => (),
-            _ => w.say("Choose 0-6 or help.")?,
+            _ => w.say("Choose 0-7 or help.")?,
         }
     }
 }

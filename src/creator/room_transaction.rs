@@ -176,15 +176,16 @@ impl Snapshot {
                 .components()
                 .all(|c| matches!(c, std::path::Component::Normal(_)));
             let category = path.parent().and_then(Path::to_str).unwrap_or("");
-            let allowed = match category {
-                "rooms" | "items" | "spells" => path.extension().is_some_and(|e| e == "toml"),
-                "art" => path.extension().is_some_and(|e| e == "txt"),
-                _ => {
-                    path.starts_with("art")
-                        && self.files.contains_key(path)
-                        && path.extension().is_some_and(|e| e == "txt")
-                }
-            };
+            let allowed = path == Path::new("interactions.toml")
+                || match category {
+                    "rooms" | "items" | "spells" => path.extension().is_some_and(|e| e == "toml"),
+                    "art" => path.extension().is_some_and(|e| e == "txt"),
+                    _ => {
+                        path.starts_with("art")
+                            && self.files.contains_key(path)
+                            && path.extension().is_some_and(|e| e == "txt")
+                    }
+                };
             if !safe || !allowed {
                 return Err("This path is not an editable content file".into());
             }
