@@ -15,6 +15,8 @@ struct GameManifest<'a> {
 }
 
 mod files;
+mod room_edit;
+mod room_transaction;
 pub mod session;
 mod setup;
 mod tree;

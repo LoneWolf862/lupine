@@ -51,7 +51,8 @@ The project remains selected while you use the menu:
 
 - **1 Play:** starts the selected adventure directly. `quit` returns to the menu; the existing unsaved-progress confirmation still applies. Each play starts fresh unless you explicitly load a save. No autosaving occurs.
 - **2 Validate:** reloads story, supported FIG, RPG and related definitions through the same validators as CLI `validate`. Counts and original file/key/reference diagnostics are displayed. Errors return to the menu without changing files.
-- **3-7:** clearly labeled future editors; they do not change files yet.
+- **7 Rooms:** create/edit room names, descriptions and connections with exact previews and confirmed saves.
+- **3-6:** clearly labeled future editors; they do not change files yet.
 - **8 / help / ?:** explains the current interface.
 - **Enter:** refreshes the actual tree after external changes.
 - **0 / back / cancel:** leaves this project. If you used the Create/Open launcher, it returns there; use 0 again to exit. EOF also exits cleanly.
@@ -60,7 +61,7 @@ The tree includes existing game/interactions/transaction files, README.txt, and 
 
 The tree displays at most 160 entries and abbreviates paths over 180 characters. Inspection is limited to 2048 entries and 8 nested directory levels; reaching that limit blocks creator validation/play with an explanation rather than silently skipping safety checks. Linked files, symlinks, junctions and other Windows reparse points are not followed. Regular projects with invalid TOML can open for diagnosis; a regular game.toml and a safe existing root are required. These are read-time checks, not protection against a hostile process concurrently swapping filesystem objects. Avoid modifying the project while a load is in progress.
 
-No existing content is rewritten in Phase 2B. Comments, unrecognized fields and unrelated files are preserved byte-for-byte; unsupported schema fields still fail normal validation. Guided editing will arrive in Phases 2C-2E with a separately tested persistence model. The earlier exclusive-write/hard-link limits apply to initial creation, not read-only session navigation.
+Navigation, play and validation do not rewrite content. Room editing now uses the separately tested Phase 2C persistence model below. Other guided content editors remain future work. Unsupported schema fields still fail normal validation.
 
 ### Phase 2B Windows review
 
@@ -69,3 +70,41 @@ No existing content is rewritten in Phase 2B. Comments, unrecognized fields and 
 3. Try an invalid menu number, help, and a future-editor option. Each should remain in the creator without changing files.
 4. Exit with 0, then 0 at the launcher. Reopen with `cargo run -- creator "your project folder"` and validate again.
 5. Optionally edit a disposable room file in a text editor while at the menu. Press Enter to refresh and validate. A bad reference should report an error and keep the menu usable; restore the file afterward.
+
+## Guided Room Manager (Phase 2C)
+
+Choose **7** in the Adventure Creator. Select **N** to add a location, or select an existing room by number. A room can be any place: a forest, cave, village or spaceship. Give it a display name, accept the suggested internal ID (or customize it), and describe what players see. IDs must be unique lowercase letters/digits/dashes/underscores; existing IDs cannot be renamed here. Display names can always be changed. `/multi` starts a multiline description; `/end` finishes. `{{objects}}` inserts the names of currently visible objects during play.
+
+The connection menu explains travel direction. Choose **1** to connect another existing room **to** the selected room; choose **2** to connect the selected room **to** another. Select the other room and a direction, then decide whether to add the reverse direction. The reverse prompt shows the exact route. Answering no makes only the requested edge; it does not delete existing edges. Conflicts require a separate yes to replace an exit. Additional connections can be added before saving. Option 3 removes a selected outgoing exit after confirmation; it does not automatically remove the reverse exit or puzzle rules. Leaving a room disconnected may make it unreachable.
+
+Room Options:
+
+1. Change display name (stable ID remains fixed).
+2. Edit description, including multiline text.
+3. Manage connections.
+4. Review current properties, incoming/outgoing exits, items and preserved advanced settings.
+5. Preview exact proposed TOML for all changed rooms (or the selected room's saved file when unchanged).
+6. Save the room and all drafted connections, after a summary and explicit **yes**. Enter at confirmation means **no**.
+0. Return to Room Manager, discarding this unsaved draft.
+
+`?` gives help; `back` returns from a question/menu; `cancel` abandons the entire current draft. Prefix literal control words with a backslash. EOF abandons unsaved work and exits through the existing creator behavior. At creation's name/ID/description steps, back revisits the earlier question. After creation, use Room Options to revise any supported answer. A failed save stops the operation and reloads actual files; reopen the room to retry. Successful saving validates the whole adventure, refreshes the real file tree, and returns to Room Manager. Choose a saved room again to inspect its result.
+
+Existing conditional descriptions, art references/variants and encounter tables survive ordinary edits. Comments and formatting are preserved through TOML-aware editing; modified scalar quoting may change, while CRLF file style is retained. Item/ability/art/FIG/conditional-rule editors remain future phases. Unsupported schema fields cause normal validation errors rather than being silently removed. Preexisting invalid projects must be corrected before room editing.
+
+### Room-write safety and recovery
+
+All proposed room content is held in memory until explicit Save confirmation. The editor snapshots recognized content and metadata, validates a private staged project with the real validator, rechecks for external edits, and publishes complete files without truncation. Multi-file failures trigger rollback. If an external change prevents safe rollback, recovery files remain and the error identifies them. Do not edit or play the same project concurrently with publication. Player saves remain completely separate and manual.
+
+The private `.lupine-room-edit/` folder is an edit lock and recovery folder. It normally disappears after success or rollback. If it remains, further room edits are refused. **Do not delete it blindly.** Read RECOVERY.txt and CHANGES.txt. Retained `original/rooms/...` files are the originals; `proposed/` is the proposed project. A COMMITTED.txt marker means publication and validation finished, but cleanup may not have. Inspect the current project and preserve any external edits before deliberately restoring originals/removing only newly created files. Validate after recovery, then remove the reviewed recovery folder. There is no automatic recovery command yet.
+
+Hard-link support is required. This protects against handled write failures but does not make multiple-file changes atomic across crashes or power loss. The editor refuses projects exceeding its safe snapshot limits (8 MiB per file, 64 MiB total, existing 2048-entry/eight-level traversal bounds) rather than silently skipping content.
+
+### Phase 2C Windows walkthrough
+
+1. Run `cargo run -- new`, create a disposable adventure, then choose **7**.
+2. Choose **N**, name a second location, accept its ID, and enter its description.
+3. Choose connection option **1**, select the starting room, choose **north**, and accept the **south** reverse connection. Choose **0** when done connecting.
+4. Choose **5** to inspect both proposed files, then **6**, **yes** to save. The new room should appear in the refreshed tree.
+5. Select each room in turn, use **2** to revise its description, and save with **6**, **yes**.
+6. Return with **0**, validate with **2**, then play with **1**. Type `north`, `south`, then `quit` to return to the creator. No TOML editing is needed for this workflow.
+7. Reopen the project with `cargo run -- creator "your project folder"`. Try canceling a draft and declining an exit conflict; the existing files should remain unchanged.

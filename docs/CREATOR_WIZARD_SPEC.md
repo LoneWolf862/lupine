@@ -13,7 +13,7 @@ File responsibilities:
 Phase 1 relocates existing character fields/defaults/calculations without redesigning progression, adds display terminology, and updates creator guidance. No legacy `character.toml` loader. No save-format change is needed. Full wizard and parser upgrades are later phases.
 
 
-**Status: Phase 2A.1 setup and Phase 2B session navigation implemented; content editors below remain proposed.** `lupine new` and `add room`, `add item`, `add art` already exist. Enhance them rather than replacing them.
+**Status: Phase 2A.1 setup and Phase 2B navigation merged; Phase 2C room editing implemented for review. Later content editors remain proposed.** `lupine new` and `add room`, `add item`, `add art` already exist. Enhance them rather than replacing them.
 
 ## Learning philosophy
 
@@ -86,6 +86,16 @@ Generated projects pass the story loader. Completion provides Cargo and exact ex
 
 After interactive CLI `new`, the actual project tree and creator menu appear. `creator` offers Create/Open; `creator PATH` reopens an adventure. Option 1 runs the existing runner in-process, returning after quit. Option 2 invokes the same full loader/validator as CLI validation, displaying counts or its diagnostic without changing content. Option 8/help explains navigation. Enter refreshes; 0/back/cancel leaves the project (returning to the launcher when entered through it); EOF exits cleanly.
 
-Options 3-7 retain their intended numbers but are explicitly marked unavailable. No guided room/item/spell/art/FIG editor exists in Phase 2B. The selected project persists through menu actions; tree and content are reloaded after external edits. No automatic load/save occurs. See CREATOR_QUICKSTART.md for file-tree limits and the manual walkthrough.
+Phase 2B initially reserved options 3-7. Phase 2C now implements option 7; item/spell/art/FIG editors remain unavailable. The selected project persists through menu actions; tree and content are reloaded after external edits. No automatic load/save occurs. See CREATOR_QUICKSTART.md for file-tree limits and the manual walkthrough.
 
-The implementation is a separate PR stacked on the still-open foundation PR #2. Do not merge the foundation automatically; retarget Phase 2B to main after the foundation is approved and merged, and recheck the resulting diff.
+Foundation PR #2 and navigation PR #3 are now merged. Phase 2C starts from the approved main branch and has its own review PR.
+
+## Phase 2C - guided rooms (implemented candidate)
+
+Option 7 discovers actual room definitions and offers N for new rooms or a numbered existing room. Creation explains display name, suggested/customizable internal ID, multiline description and directional connections. Existing room IDs are fixed; display names/descriptions can change. `{{objects}}` is explained without changing its runtime behavior.
+
+Connections can be authored from an existing room into the selected room or outward from it. The six existing directions are supported, with an optional reverse exit, multiple exits, explicit conflict replacement, and explicit outgoing-exit removal. Removal does not silently remove the reverse edge or conditional exit rules; the staged validator refuses resulting invalid worlds. Disconnected locations are allowed with an unreachable warning. Advanced descriptions/art/encounters and authored comments are preserved rather than rebuilt from a reduced schema.
+
+Room Options provides name/description edits, connections, properties, exact previews, Save and discard. Save summarizes the selected room and affected files, then requires explicit yes (default no). Every affected file is serialized once for preview/publication. Changed files are staged with the rest of the project and pass the existing complete validator before publication; content is validated again afterward. External changes abort the save. Successful operations refresh the real tree and return to Room Manager; selecting a room again allows previewing the saved content. Cancel/back/EOF discard unsaved drafts.
+
+The transaction and recovery contract is documented in ARCHITECTURE.md and CREATOR_QUICKSTART.md. Preexisting invalid projects are refused for editing, not repaired or stripped. Room-ID renaming, full advanced-property editors, and cross-file puzzle migrations remain out of scope. No engine or save version changes.
