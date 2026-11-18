@@ -1,5 +1,9 @@
 # Lupine â€” Codex Development Handoff
 
+## RPG authoring handoff — 2026-11-18
+
+Continue from `codex/phase-2h-rpg-integration` in its isolated managed Windows worktree. Five draft PRs #14-#18 contain enemies, weapons, shops, currencies and integration; none merged. The owner primary checkout and personal adventures remain untouched. Read [complete handoff, tests, limits and human guide](RPG_AUTHORING_DEVELOPMENT.md). No Cargo/RORK versions or gameplay mechanics changed. Earlier records below are historical.
+
 ## Current pre-release policy (2026-11-18)
 
 Lupine is unreleased and pre-1.0, with no external users, published games or production deployments requiring development-version compatibility. Justified breaking API and format changes are allowed. Do not add obsolete-format loaders or unnecessary compatibility layers. Update bundled samples, templates, tests and current documentation together; preserve gameplay unless a change is intentional.

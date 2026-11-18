@@ -1,5 +1,9 @@
 # Lupine Text Creator Wizard — Expansion Specification
 
+## Current RPG authoring candidate
+
+Phases 2G-A through 2H are implemented in draft PRs #14-#18. Scope and verification: [RPG authoring review](RPG_AUTHORING_DEVELOPMENT.md). Existing creator PRs #8-#13 are merged. RPG managers expose current schemas through shared Wizard/Document/Snapshot helpers. Room and newly created enemies publish together; prerequisite manager saves are separately confirmed. Historical milestone sections below describe earlier states.
+
 ## Current pre-release policy (2026-11-18)
 
 Lupine is unreleased and pre-1.0, with no external users, published games or production deployments requiring development-version compatibility. Justified breaking API and format changes are allowed. Do not add obsolete-format loaders or unnecessary compatibility layers. Update bundled samples, templates, tests and current documentation together; preserve gameplay unless a change is intentional.

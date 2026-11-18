@@ -1,5 +1,9 @@
 # Lupine architecture
 
+## RPG editor integration candidate
+
+`enemy_edit`, `weapon_edit`, `shop_edit`, `currency_edit` and `rpg_menu` expose current runtime schemas. `rpg_fields` shares numeric/text/reference prompts. Snapshot allows enemy/weapon/shop TOML and game.toml targets using its existing validation/stale/rollback boundary. Room drafts can carry pending enemy documents, published with rooms; no nested independent save invalidates the room snapshot. Prerequisite managers run before a shop/weapon draft and save separately with explicit confirmation. No gameplay or RORK changes. See [review](RPG_AUTHORING_DEVELOPMENT.md).
+
 Lupine is an unreleased, offline terminal engine. Justified pre-1.0 API/format changes are allowed; migrate bundled consumers rather than adding obsolete-format loaders. Preserve gameplay and keep the engine story-independent.
 
 ## Content, configuration and state

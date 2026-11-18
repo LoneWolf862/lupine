@@ -1,5 +1,9 @@
 # Adventure Creator completion review
 
+## Current follow-up
+
+The six creator PRs #8-#13 described below have since merged. RPG authoring is delivered separately in draft PRs #14-#18; see [current review](RPG_AUTHORING_DEVELOPMENT.md). This document retains the earlier completion record.
+
 Date: 2026-11-18. Status: implemented candidates in six open draft PRs, awaiting human review. Nothing was merged or pushed directly to main. Work started from fetched main `14eefce` (Phase 2C.2 merged). The latest integration branch contains the whole stack.
 
 ## Delivered behavior

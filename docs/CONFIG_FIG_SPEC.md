@@ -1,5 +1,9 @@
 # FIG configuration foundation
 
+## RPG authoring integration candidate
+
+The guided RPG menus in draft PRs #14-#18 do not change FIG syntax or progression calculations. Explicit RPG enablement and existing progression editing remain in menu 3. Currency definitions remain content in game.toml, edited through R > 4; no currency FIG is introduced. [Authoring verification](RPG_AUTHORING_DEVELOPMENT.md). Earlier FIG editor PR #12 and integration #13 are merged.
+
 Status: the Phase 2C.2 runtime/configuration contract is merged. The Phase 2E-B guided editor is a candidate in PR #12, integrated in #13. Verification is recorded in CREATOR_COMPLETION_REVIEW.md; historical checkpoints remain in CODEX_HANDOFF.md.
 
 Lupine is unreleased/pre-1.0. Justified breaking changes are permitted; there is no legacy configuration loader. Bundled consumers must use this contract.
