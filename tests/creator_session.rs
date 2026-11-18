@@ -88,13 +88,13 @@ fn navigation_play_validation_and_reopen_preserve_content_and_saves() {
 #[test]
 fn tree_reflects_actual_recognized_paths_and_empty_directories() {
     let f = Fixture::new();
-    fs::create_dir(f.game.join("config")).unwrap();
+    fs::create_dir_all(f.game.join("config")).unwrap();
     fs::write(
         f.game.join("config/terminology.fig"),
         "[display]\nspells = 'Programs'\n",
     )
     .unwrap();
-    fs::create_dir(f.game.join("spells")).unwrap();
+    fs::create_dir_all(f.game.join("spells")).unwrap();
     fs::create_dir(f.game.join("art/nested")).unwrap();
     fs::write(f.game.join("art/nested/sketch.txt"), " /\\\n/  \\").unwrap();
     fs::write(f.game.join("rooms/draft.tmp"), "ignore me").unwrap();
@@ -107,7 +107,7 @@ fn tree_reflects_actual_recognized_paths_and_empty_directories() {
         "items/",
         "art/",
         "spells/",
-        "+-- config/\n|   +-- terminology.fig",
+        "+-- config/\n|   +-- character.fig\n|   +-- terminology.fig",
         "+-- art/\n    +-- nested/\n        +-- sketch.txt",
         "interactions.toml",
     ] {
@@ -115,7 +115,7 @@ fn tree_reflects_actual_recognized_paths_and_empty_directories() {
     }
     assert!(!output.contains("draft.tmp"));
     assert!(!output.contains("unrelated"));
-    assert!(!output.contains("character.fig"));
+    assert!(output.contains("character.fig"));
     assert!(!f.saves.exists());
 }
 
@@ -140,7 +140,7 @@ fn invalid_schema_and_fig_errors_return_to_menu_without_writes() {
         "id='start'\ntitle='Start'\ndescription='Text'\n[exits]\n",
     )
     .unwrap();
-    fs::create_dir(f.game.join("config")).unwrap();
+    fs::create_dir_all(f.game.join("config")).unwrap();
     fs::write(f.game.join("config/gameplay.fig"), "unsupported=true").unwrap();
     let output = f.run("2\n0\n");
     assert!(output.contains("gameplay.fig"));
@@ -151,7 +151,7 @@ fn invalid_schema_and_fig_errors_return_to_menu_without_writes() {
 #[test]
 fn full_rpg_validation_is_shared_with_cli() {
     let f = Fixture::new();
-    fs::create_dir(f.game.join("spells")).unwrap();
+    fs::create_dir_all(f.game.join("spells")).unwrap();
     fs::write(f.game.join("spells/bad.toml"), "id='bad'\nname='Bad'\nmana_cost=1\nkind='heal'\npower=5\nlearn_from_item='missing_scroll'\n").unwrap();
     let output = f.run("2\n0\n");
     assert!(output.contains("bad.toml"));
@@ -423,4 +423,20 @@ fn menus_prompts_and_validation_have_clear_spacing() {
     assert!(output.contains("Adventure: Session Test\n\nExisting Rooms:\n\n  1. Starting Room"));
     assert!(output.contains("\n\n  N. Create New Room\n  0. Return to Creator Menu"));
     assert!(output.contains("\nValidation successful! Your adventure is ready to play.\n\n"));
+}
+
+#[test]
+fn empty_open_path_explains_folder_choice_and_retries() {
+    let f = Fixture::new();
+    let mut output = Vec::new();
+    session::start(
+        &mut Cursor::new(format!("2\n   \n{}\n2\n0\n0\n", f.game.display())),
+        &mut output,
+        &f.saves,
+    )
+    .unwrap();
+    let output = String::from_utf8(output).unwrap();
+    assert!(output.contains("Enter the folder where you saved your adventure"));
+    assert!(!output.contains("Cannot open:"));
+    assert!(output.contains("Validation successful!"));
 }

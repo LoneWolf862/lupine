@@ -1,0 +1,37 @@
+# Character and progression settings (TOML syntax).
+# Changes apply when the adventure is reloaded. Player saves are never automatic.
+# Before incompatible enablement/stat changes in an existing campaign, increase
+# game.toml save_compatibility_version deliberately; this rejects older saves.
+# Do not change the engine version or RORK format version for configuration edits.
+
+# true enables RPG character stats/progression; false keeps narrative-only play.
+# Omitted enabled means true for older authored FIG files. New games use false.
+# All settings below are validated even while disabled. RPG content may require true.
+enabled = false
+
+# Initial level: integer 1..4294967295; must not exceed a nonzero max_level.
+# Initial stats use base + per-level gain * (starting_level - 1), without overflow.
+starting_level = 1
+# Level cap: integer 0..4294967295. 0 means no authored cap (numeric limits apply).
+max_level = 0
+
+# HP base at level 1: integer 1..4294967295; damage reduces current HP.
+starting_hp = 100
+# MP base at level 1: integer 0..4294967295; abilities can spend MP.
+starting_mp = 30
+# Attack power base: integer 1..4294967295; 100 means 1.00x weapon damage.
+starting_ap = 100
+
+# HP gained per level: integer 0..4294967295. Level-ups refill HP and MP.
+hp_per_level = 10
+# MP gained per level: integer 0..4294967295; 0 means no increase.
+mp_per_level = 5
+# Attack power gained per level: integer 0..4294967295; 10 adds 0.10x damage.
+ap_per_level = 10
+
+# XP cost from level 1 to 2: positive integer, up to 9223372036854775807 in TOML.
+# Level-ups consume XP thresholds; reaching max_level prevents further levels.
+base_requirement = 100
+# XP cost multiplier per level: integer 100..1000 percent; 120 means +20%.
+# Costs use integer rounding and saturate at numeric limits; 100 keeps cost flat.
+growth_percent = 120

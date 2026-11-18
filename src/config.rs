@@ -38,6 +38,14 @@ impl Default for DisplayTerms {
 
 impl GameConfig {
     pub fn load(root: &Path) -> Result<Self, String> {
+        for name in ["character.fig", "terminology.fig"] {
+            if fs::symlink_metadata(root.join(name)).is_ok() {
+                return Err(format!(
+                    "{}: misplaced configuration; move it to config/{name}",
+                    root.join(name).display()
+                ));
+            }
+        }
         let obsolete = root.join("character.toml");
         match fs::symlink_metadata(&obsolete) {
             Ok(_) => {
@@ -95,8 +103,27 @@ impl GameConfig {
             Err(e) => return Err(format!("{}: {e}", directory.display())),
         }
         let character_path = directory.join("character.fig");
-        let character: Option<Progression> = read_optional(root, &character_path)?;
-        if let Some(character) = &character {
+        let source: Option<toml::Table> = read_optional(root, &character_path)?;
+        let character = source
+            .map(|mut table| -> Result<_, String> {
+                // Missing enabled preserves the original FIG contract for authored games.
+                let enabled = match table.remove("enabled") {
+                    None => true,
+                    Some(toml::Value::Boolean(value)) => value,
+                    Some(_) => {
+                        return Err(format!(
+                            "{}: enabled must be a boolean (true or false)",
+                            character_path.display()
+                        ))
+                    }
+                };
+                let progression: Progression = toml::Value::Table(table)
+                    .try_into()
+                    .map_err(|e| format!("{}: {e}", character_path.display()))?;
+                Ok((enabled, progression))
+            })
+            .transpose()?;
+        if let Some((_, character)) = &character {
             character
                 .validate()
                 .map_err(|e| format!("{}: character settings (starting_level, starting_hp/mp/ap, hp/mp/ap_per_level): {e}", character_path.display()))?;
@@ -115,7 +142,7 @@ impl GameConfig {
             }
         }
         Ok(Self {
-            character,
+            character: character.and_then(|(enabled, progression)| enabled.then_some(progression)),
             terminology,
         })
     }

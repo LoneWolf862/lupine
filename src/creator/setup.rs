@@ -212,7 +212,7 @@ fn preview<R: BufRead, W: Write>(
     path: &Path,
     drafts: &[super::DraftFile],
 ) -> Result<(), String> {
-    w.say("\nThese are ordinary text files. You do not need to edit them now.\nTOML stores information as named fields: title = a name in quotes.\nOptional FIG files use the same notation for engine settings; this\nsimple adventure needs none. Explanations below are not file contents.\nThe exact contents between the markers are what Lupine will write.")?;
+    w.say("\nThese are ordinary text files. You do not need to edit them now.\nTOML stores information as named fields: title = a name in quotes.\nThe two commented FIG files use the same notation for engine settings.\nCharacter mechanics start disabled; you can opt in later. Explanations below are not file contents.\nThe exact contents between the markers are what Lupine will write.")?;
     for draft in drafts {
         draft.preview(path, w.output)?;
     }

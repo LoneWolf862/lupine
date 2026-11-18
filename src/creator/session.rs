@@ -43,6 +43,7 @@ pub fn start<R: BufRead, W: Write>(input: &mut R, output: &mut W, saves: &Path) 
                 writeln!(output, "Choose the folder containing game.toml. A relative name is inside\nyour current folder; a full path chooses another location. Do not add\nsurrounding quotes. back/cancel returns to the launcher.")?;
                 let Some(path) = answer(input, output, "Adventure folder: ")? else { return Ok(()); };
                 match path.to_ascii_lowercase().as_str() {
+                    "" => { writeln!(output, "\nEnter the folder where you saved your adventure (for example, my_adventure),\nor type back to return. Look for the folder containing game.toml.\n")?; continue; }
                     "0" | "back" | "cancel" => break,
                     "?" | "help" => continue,
                     _ => (),

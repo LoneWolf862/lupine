@@ -1,3 +1,5 @@
+# Explicit RPG opt-in. Player saves remain manual.
+enabled = true
 starting_level = 1
 max_level = 20
 starting_hp = 100
