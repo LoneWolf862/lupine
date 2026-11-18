@@ -10,111 +10,36 @@ fn main() -> std::io::Result<()> {
             "LUPINE v0.8.4 — Engine Test Adventure",
             "lupine_fixture",
         ),
-        [_, command, path] if command == "play" => {
-            let game = lupine::story_loader::load_game(path)
-                .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
-            let content = lupine::rpg_content::RpgContent::load(
-                std::path::Path::new(path),
-                &game.world,
-                game.config.character.is_some(),
-            )
-            .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
-            let room_ids = game
-                .world
-                .rooms
-                .iter()
-                .map(|r| r.id.clone())
-                .collect::<Vec<_>>();
-            let encounters = lupine::encounters::EncounterContent::load(
-                std::path::Path::new(path),
-                &room_ids,
-                game.config.character.is_some(),
-            )
-            .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
-            let wallet = lupine::wallet::WalletContent::load(
-                std::path::Path::new(path),
-                game.config.character.is_some(),
-            )
-            .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
-            let shops = lupine::shops::ShopContent::load(
-                std::path::Path::new(path),
-                &game.world,
-                &wallet,
-                &content,
-            )
-            .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
-            lupine::runner::run_configured(
-                game.world,
-                &game.title,
-                &game.id,
-                game.save_compatibility_version,
-                game.config,
-                content,
-                encounters,
-                wallet,
-                shops,
+        [_, command] if command == "creator" => {
+            let saves = lupine::save_files::default_save_root()?;
+            lupine::creator::session::start(
+                &mut std::io::stdin().lock(),
+                &mut std::io::stdout().lock(),
+                &saves,
             )
         }
-        [_, command, path] if command == "validate" => {
-            let game = lupine::story_loader::load_game(path)
+        [_, command, path] if command == "creator" => {
+            let saves = lupine::save_files::default_save_root()?;
+            lupine::creator::session::open(
+                std::path::Path::new(path),
+                &mut std::io::stdin().lock(),
+                &mut std::io::stdout().lock(),
+                &saves,
+            )
+        }
+        [_, command, path] if command == "play" || command == "validate" => {
+            let adventure = lupine::adventure::Adventure::load(std::path::Path::new(path))
                 .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
-            let content = lupine::rpg_content::RpgContent::load(
-                std::path::Path::new(path),
-                &game.world,
-                game.config.character.is_some(),
-            )
-            .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
-            let room_ids = game
-                .world
-                .rooms
-                .iter()
-                .map(|r| r.id.clone())
-                .collect::<Vec<_>>();
-            let encounters = lupine::encounters::EncounterContent::load(
-                std::path::Path::new(path),
-                &room_ids,
-                game.config.character.is_some(),
-            )
-            .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
-            encounters
-                .validate_loot(&game.world)
-                .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
-            let wallet = lupine::wallet::WalletContent::load(
-                std::path::Path::new(path),
-                game.config.character.is_some(),
-            )
-            .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
-            wallet
-                .validate_encounters(&encounters)
-                .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
-            let shops = lupine::shops::ShopContent::load(
-                std::path::Path::new(path),
-                &game.world,
-                &wallet,
-                &content,
-            )
-            .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
-            println!("{} configured shops", shops.shops.len());
-            println!("{} configured currencies", wallet.currencies.len());
-            println!("Valid story: {} ({})", game.title, game.id);
-            println!(
-                "{} enemy definitions, {} encounter tables",
-                encounters.enemies.len(),
-                encounters.tables.len()
-            );
-            println!(
-                "{} weapon definitions, {} abilities",
-                content.weapons.len(),
-                content.abilities.len()
-            );
-            println!(
-                "{} rooms, {} items, {} interactions, {} exit rules",
-                game.world.rooms.len(),
-                game.world.items.len(),
-                game.world.interactions.len(),
-                game.world.exit_rules.len()
-            );
-            Ok(())
+            if command == "validate" {
+                adventure.summary(&mut std::io::stdout().lock())
+            } else {
+                let saves = lupine::save_files::default_save_root()?;
+                adventure.play(
+                    &saves,
+                    &mut std::io::stdin().lock(),
+                    &mut std::io::stdout().lock(),
+                )
+            }
         }
         [_, command] if command == "new" => {
             let result = lupine::creator::new_game_wizard(
@@ -122,7 +47,15 @@ fn main() -> std::io::Result<()> {
                 &mut std::io::stdout().lock(),
             );
             match result {
-                Ok(_) => Ok(()),
+                Ok(path) => {
+                    let saves = lupine::save_files::default_save_root()?;
+                    lupine::creator::session::open(
+                        &path,
+                        &mut std::io::stdin().lock(),
+                        &mut std::io::stdout().lock(),
+                        &saves,
+                    )
+                }
                 Err(message) if message.starts_with("Setup canceled") => {
                     println!("{message}");
                     Ok(())
@@ -179,6 +112,7 @@ fn main() -> std::io::Result<()> {
         }
         [_, command] if command == "help" => {
             println!("Lupine authoring commands:");
+            println!("  lupine creator [directory]       (create/open, validate and play)");
             println!("  lupine new                       (guided wizard)");
             println!("  lupine new <directory> <game-id> <title words...>");
             println!("  lupine add room <directory> <room-id>");
@@ -190,7 +124,7 @@ fn main() -> std::io::Result<()> {
             Ok(())
         }
         _ => {
-            eprintln!("Usage: lupine [new [<directory> <game-id> <title...>] | add <room|item|art> <directory> <id> [--dynamic for art] | play <directory> | validate <directory> | help]");
+            eprintln!("Usage: lupine [creator [directory] | new [<directory> <game-id> <title...>] | add <room|item|art> <directory> <id> [--dynamic for art] | play <directory> | validate <directory> | help]");
             Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidInput,
                 "invalid arguments",

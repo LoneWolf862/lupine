@@ -15,7 +15,7 @@ Optional engine configuration uses TOML syntax in config/character.fig (RPG opt-
 
 ## Beginner and advanced wizard controls
 
-Enter keeps the displayed suggestion; `?` gives field help; `back` returns to the previous question; `cancel` or end of input stops before creation. At the first question, `back` explains that you are already at the beginning. Invalid answers explain the problem and repeat the prompt. Earlier answers are retained as defaults. Review option 3 returns to the adventure name, keeping your other answers. Review option 1 (also Enter) creates the project; it does **not** launch gameplay.
+Enter keeps the displayed suggestion; `?` gives field help; `back` returns to the previous question; `cancel` or end of input stops before creation. At the first question, `back` explains that you are already at the beginning. Invalid answers explain the problem and repeat the prompt. Earlier answers are retained as defaults. Review option 3 returns to the adventure name, keeping your other answers. Review option 1 (also Enter) creates the project; it enters the Adventure Creator in the CLI; it does **not** automatically launch gameplay.
 
 To enter literal `cancel`, `back` or `?`, prefix the whole answer with a backslash, such as `\back`. These controls do not match parts of sentences. For a multiline description, enter `/multi`; the wizard then explains how to enter lines, including blank lines, and finish with `/end`. `back` discards that unfinished edit and retains the previous completed description. Escape literal control lines with a backslash; double an initial backslash in description text to preserve it. Quotes, Unicode and line breaks are serialized safely as TOML.
 
@@ -29,7 +29,7 @@ A relative folder name is resolved inside the current working folder; a full pat
 
 Beginners see a summary first. Review option 2 explains TOML/FIG and displays the exact serialized contents of every generated file; advanced users see these directly. Explanations sit outside the file-content markers. The preview and disk bytes come from the same serialized drafts, rebuilt after edits. This narrative starter needs no FIG files and enables no RPG features.
 
-Completion shows `cargo run -- play` with your absolute project path for use from the Lupine source folder. It also shows the full path of the running executable, so you can launch it directly without Cargo or PATH setup. Windows commands are explicitly written for **PowerShell** (single-quoted paths and `&` before the executable path); from Command Prompt, type `powershell` first. Linux commands use POSIX shell quoting. Commands handle spaces, apostrophes and shell metacharacters. Launch is deliberately a separate action. Try `look`, `help` and `quit` once playing; saves remain strictly manual.
+Completion shows `cargo run -- play` with your absolute project path for use from the Lupine source folder. It also shows the full path of the running executable, so you can launch it directly without Cargo or PATH setup. Windows commands are explicitly written for **PowerShell** (single-quoted paths and `&` before the executable path); from Command Prompt, type `powershell` first. Linux commands use POSIX shell quoting. Commands handle spaces, apostrophes and shell metacharacters. Choose Play (1) in the creator to launch directly and type `quit` to return, or use the printed command separately. Try `look`, `help` and `quit` once playing; saves remain strictly manual.
 
 Files are staged alongside their destination, synced, and published using exclusive hard links. Filesystems without hard-link support fail safely. Handled project failures remove only files created by that operation and empty directories, reporting cleanup failures. This is a recoverable multi-file sequence, not a crash-atomic project transaction: forced termination may leave complete files or temporary files in a new project folder. Inspect that folder before removing or retrying; the wizard never overwrites it. Do not edit the project concurrently during creation.
 
@@ -42,3 +42,30 @@ The minimal game is checked through the existing story loader before success. Ex
 3. At review, choose 2 to inspect the explained files. Choose 3 to revise a name; keep other answers with Enter. Choose 1 to create.
 4. Copy the printed Cargo play command into PowerShell in the repository folder. Try `look`, `help`, then `quit`. Confirm the opening name and description match your answers.
 5. Run the wizard again, type `advanced`, and try the existing destination; it should refuse to overwrite it. Use `cancel` to exit. Also try an invalid ID and an ID already used by a sibling adventure.
+
+## Continue in the Adventure Creator (Phase 2B)
+
+From the repository, run `cargo run -- creator` to create/open an adventure, or `cargo run -- creator "my_adventure"` to reopen it. Interactive `cargo run -- new` also enters the creator after setup. Noninteractive `new PATH ID TITLE` still generates and exits; no-argument Lupine still runs the engine test adventure.
+
+The project remains selected while you use the menu:
+
+- **1 Play:** starts the selected adventure directly. `quit` returns to the menu; the existing unsaved-progress confirmation still applies. Each play starts fresh unless you explicitly load a save. No autosaving occurs.
+- **2 Validate:** reloads story, supported FIG, RPG and related definitions through the same validators as CLI `validate`. Counts and original file/key/reference diagnostics are displayed. Errors return to the menu without changing files.
+- **3-7:** clearly labeled future editors; they do not change files yet.
+- **8 / help / ?:** explains the current interface.
+- **Enter:** refreshes the actual tree after external changes.
+- **0 / back / cancel:** leaves this project. If you used the Create/Open launcher, it returns there; use 0 again to exit. EOF also exits cleanly.
+
+The tree includes existing game/interactions/transaction files, README.txt, and recognized `config/`, `rooms/`, `items/`, `spells/`, `weapons/`, `enemies/`, `shops/` and `art/` folders. Empty existing folders are shown; absent optional folders are not invented. Paths are relative to the project root and directories end in `/`. Nested text/content files appear, although their presence in the tree does not imply the runtime recursively loads every content category. Unrelated root files and temporary extensions are omitted. Unsupported FIG files are visible so validation can identify them.
+
+The tree displays at most 160 entries and abbreviates paths over 180 characters. Inspection is limited to 2048 entries and 8 nested directory levels; reaching that limit blocks creator validation/play with an explanation rather than silently skipping safety checks. Linked files, symlinks, junctions and other Windows reparse points are not followed. Regular projects with invalid TOML can open for diagnosis; a regular game.toml and a safe existing root are required. These are read-time checks, not protection against a hostile process concurrently swapping filesystem objects. Avoid modifying the project while a load is in progress.
+
+No existing content is rewritten in Phase 2B. Comments, unrecognized fields and unrelated files are preserved byte-for-byte; unsupported schema fields still fail normal validation. Guided editing will arrive in Phases 2C-2E with a separately tested persistence model. The earlier exclusive-write/hard-link limits apply to initial creation, not read-only session navigation.
+
+### Phase 2B Windows review
+
+1. Run `cargo run -- creator`; create a new adventure in a folder with spaces. Confirm the real tree and menu appear after setup.
+2. Choose 2 to validate; choose 1 to play, then `look` and `quit`. Confirm you return to the same selected adventure.
+3. Try an invalid menu number, help, and a future-editor option. Each should remain in the creator without changing files.
+4. Exit with 0, then 0 at the launcher. Reopen with `cargo run -- creator "your project folder"` and validate again.
+5. Optionally edit a disposable room file in a text editor while at the menu. Press Enter to refresh and validate. A bad reference should report an error and keep the menu usable; restore the file afterward.

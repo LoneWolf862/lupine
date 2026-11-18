@@ -73,7 +73,7 @@ pub(super) fn reserved_name(name: &str) -> bool {
             && matches!(stem.as_bytes()[3], b'1'..=b'9'))
 }
 
-fn is_link(metadata: &fs::Metadata) -> bool {
+pub(super) fn is_link(metadata: &fs::Metadata) -> bool {
     #[cfg(windows)]
     {
         use std::os::windows::fs::MetadataExt;

@@ -22,3 +22,13 @@ A manually triggered Windows/Linux packaging workflow exists; successful source 
 Creator foundation: `creator/wizard.rs` collects and validates input and previews serialized `DraftFile` values; `creator/files.rs` stages, syncs and exclusively publishes files. `creator.rs` assembles a minimal project and validates it with the story loader. TOML serialization also supports future FIG drafts without adding configuration editing today. Project rollback tracks created paths and never recursively removes a project directory.
 
 Phase 2A.1: `creator/setup.rs` owns the beginner/advanced step flow, local sibling-ID checks, review navigation and platform-quoted completion instructions. `wizard.rs` returns an optional answer (`None` means back); cancellation/EOF remain explanatory errors for library callers and friendly successful exits in the CLI. Gameplay starts only when separately requested with `play`.
+
+## Phase 2B creator navigation
+
+`creator/session.rs` holds the selected absolute project path and borrows one input/output pair through setup, menu actions and gameplay. `creator` opens Create/Open navigation; `creator PATH` opens a project directly; interactive CLI `new` enters the session after setup. The public setup-only `new_game_wizard` API and noninteractive generators retain their behavior. No-argument CLI execution still runs the engine fixture.
+
+`adventure.rs` assembles the existing story/FIG, RPG, encounters, loot, wallet and shop validators once for CLI play, CLI validation and creator actions. It holds immutable loaded content and delegates gameplay to `runner::run_configured_with_io`. No player-parser, combat, progression, or save changes. Every creator validation/play reloads files. Each play begins a fresh in-memory state, with manual load/save available through the unchanged runner.
+
+`creator/tree.rs` inspects recognized paths read-only, without following symlinks or Windows reparse points. Tree output and traversal are bounded. Unsafe/incompletely inspected projects can be viewed but cannot be played/validated through the creator. Root links are rejected before opening. Invalid TOML can still be opened to receive existing loader diagnostics. The session writes no existing project files and creates no configuration files.
+
+Existing-file persistence belongs to Phase 2C and later. Its review gate must cover comment/unknown-content preservation (or a clearly offered nondestructive alternative), original-byte comparison to detect external edits, exact previews and confirmation, full staged validation before publication, and tested rollback/recovery for changes spanning several files. The exclusive-new-file writer is not an existing-file editing implementation.
