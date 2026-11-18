@@ -15,7 +15,7 @@ cargo run -- validate my_adventure
 cargo run -- play my_adventure
 ```
 
-Alternatively, run `cargo run -- new` to use the guided wizard. Edit generated `game.toml`, room and item TOML files, then validate again; game content does not need to be compiled.
+Alternatively, run `cargo run -- new` to use the guided wizard: press Enter for Beginner mode, name your adventure and opening location, then approve the summary. File previews are optional; type `advanced` at the welcome prompt for editable IDs and direct previews. Enter accepts defaults, `?` explains fields, `back` revisits an answer, and `cancel` stops. Completion shows working Cargo and direct-executable commands. Edit generated `game.toml`, room and item TOML files, then validate again; game content does not need to be compiled.
 
 To try prewritten demonstrations:
 

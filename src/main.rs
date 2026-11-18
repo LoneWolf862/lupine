@@ -117,12 +117,18 @@ fn main() -> std::io::Result<()> {
             Ok(())
         }
         [_, command] if command == "new" => {
-            lupine::creator::new_game_wizard(
+            let result = lupine::creator::new_game_wizard(
                 &mut std::io::stdin().lock(),
                 &mut std::io::stdout().lock(),
-            )
-            .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidInput, error))?;
-            Ok(())
+            );
+            match result {
+                Ok(_) => Ok(()),
+                Err(message) if message.starts_with("Setup canceled") => {
+                    println!("{message}");
+                    Ok(())
+                }
+                Err(error) => Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, error)),
+            }
         }
         [_, command, destination, id, title @ ..] if command == "new" && !title.is_empty() => {
             let title = title.join(" ");

@@ -1,6 +1,6 @@
 //! Text-only project scaffolding. Nothing here runs a game or creates saves.
-use std::fs::{self, OpenOptions};
-use std::io::{self, BufRead, Write};
+use std::fs;
+use std::io::{BufRead, Write};
 use std::path::{Path, PathBuf};
 
 use serde::Serialize;
@@ -14,68 +14,98 @@ struct GameManifest<'a> {
     save_compatibility_version: u32,
 }
 
-/// Create an editable one-room TOML adventure. Refuses to touch an existing project.
-/// On failure, removes only a directory created by this call.
-pub fn new_game(destination: &Path, id: &str, title: &str) -> Result<PathBuf, String> {
-    if id.is_empty()
-        || id.len() > 100
-        || !id
-            .bytes()
-            .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_' || b == b'-')
-    {
-        return Err("Game ID must be 1–100 characters: lowercase a–z, 0–9, '-' or '_'".into());
-    }
-    if title.trim().is_empty() || title.chars().count() > 120 {
-        return Err("Game title must be between 1 and 120 characters".into());
-    }
-    // create_dir is exclusive, preventing accidental overwrites even if the path
-    // appears between checking the command and creating it.
-    fs::create_dir(destination)
-        .map_err(|e| format!("Cannot create {}: {e}", destination.display()))?;
-    let result = (|| -> Result<(), String> {
-        let rooms = destination.join("rooms");
-        let items = destination.join("items");
-        fs::create_dir(&rooms).map_err(|e| e.to_string())?;
-        fs::create_dir(&items).map_err(|e| e.to_string())?;
-        fs::create_dir(destination.join("art")).map_err(|e| e.to_string())?;
-        let manifest = GameManifest {
-            format_version: 1,
-            id,
-            title,
-            starting_room: "start",
-            save_compatibility_version: 1,
-        };
-        let manifest = toml::to_string_pretty(&manifest).map_err(|e| e.to_string())?;
-        create_file(&destination.join("game.toml"), &manifest)?;
-        create_file(&rooms.join("start.toml"), "id = \"start\"\ntitle = \"Starting Room\"\ndescription = \"You stand at the beginning of your adventure.\"\n# Optional ASCII art: create art/symbol.txt and set art_file = \"symbol.txt\"\n\n[exits]\n")?;
-        create_file(
-            &destination.join("interactions.toml"),
-            "# Define [[interactions]] and [[exit_rules]] here when needed.\n",
-        )?;
-        create_file(&destination.join("README.txt"), "Welcome to your Lupine adventure!\n\nEdit game.toml, rooms/start.toml, and add TOML files to rooms/ and items/.\nRun: lupine validate <project-folder>\nThen: lupine play <project-folder>\nOptional engine settings: config/character.fig enables RPG; config/terminology.fig customizes display labels. Create only the files you need; see docs/CONFIG_FIG_SPEC.md. Player .rork saves are strictly manual.\nFor examples see docs/CREATING_A_GAME.md in the Lupine source repository.\n")?;
-        Ok(())
-    })();
-    if let Err(error) = result {
-        // This directory did not exist before create_dir succeeded. Never remove
-        // anything outside it. A failed cleanup is reported rather than hidden.
-        return match fs::remove_dir_all(destination) {
-            Ok(()) => Err(format!("Could not initialize adventure: {error}")),
-            Err(cleanup) => Err(format!(
-                "Could not initialize adventure: {error}; cleanup failed: {cleanup}"
-            )),
-        };
-    }
-    Ok(destination.to_path_buf())
+mod files;
+mod setup;
+mod wizard;
+use files::{create_file, validate_destination};
+use wizard::DraftFile;
+
+const DEFAULT_DESCRIPTION: &str = "You stand at the beginning of your adventure.";
+
+#[derive(Serialize)]
+struct StartingRoom<'a> {
+    id: &'static str,
+    title: &'a str,
+    description: &'a str,
+    exits: std::collections::BTreeMap<String, String>,
 }
 
-fn create_file(path: &Path, content: &str) -> Result<(), String> {
-    let mut file = OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(path)
-        .map_err(|e| format!("{}: {e}", path.display()))?;
-    file.write_all(content.as_bytes())
-        .map_err(|e: io::Error| format!("{}: {e}", path.display()))
+fn validate_text(value: &str, max: usize) -> Result<(), String> {
+    if value.trim().is_empty()
+        || value.chars().count() > max
+        || value
+            .chars()
+            .any(|c| c.is_control() && c != '\n' && c != '\t')
+    {
+        return Err(format!(
+            "Use 1–{max} characters without terminal control characters"
+        ));
+    }
+    Ok(())
+}
+
+fn project_files(
+    id: &str,
+    title: &str,
+    room_title: &str,
+    description: &str,
+) -> Result<Vec<DraftFile>, String> {
+    validate_id(id)?;
+    validate_text(title, 120)?;
+    validate_text(room_title, 120)?;
+    validate_text(description, 65536)?;
+    Ok(vec![
+        DraftFile::toml("game.toml", &GameManifest {
+            format_version: 1, id, title, starting_room: "start", save_compatibility_version: 1,
+        }, "id is the stable save identity; title is the display name. starting_room references rooms/start.toml. Version fields describe the content and save compatibility.")?,
+        DraftFile::toml("rooms/start.toml", &StartingRoom {
+            id: "start", title: room_title, description, exits: Default::default(),
+        }, "title and description appear in play. The empty exits table means no connected rooms yet.")?,
+        DraftFile::text("interactions.toml", "# Define [[interactions]] and [[exit_rules]] here when needed.\n", "Optional interaction rules; this adventure starts without any."),
+        DraftFile::text("README.txt", "Welcome to your Lupine adventure!\n\nEdit game.toml and rooms/start.toml; add TOML files to rooms/ and items/.\nFrom the Lupine source folder: cargo run -- validate <project-folder>\nThen: cargo run -- play <project-folder>\nWith a standalone executable, use its full path followed by play <project-folder>. Quote paths containing spaces.\nOptional engine settings use TOML syntax: config/character.fig enables RPG; config/terminology.fig customizes display labels. Create only the files you need; see docs/CONFIG_FIG_SPEC.md.\nPlayer .rork saves are strictly manual.\n", "Content is editable TOML. Optional FIG files configure the engine; RORK files hold manual player saves."),
+    ])
+}
+
+/// Create an editable one-room adventure without interactive prompts.
+pub fn new_game(destination: &Path, id: &str, title: &str) -> Result<PathBuf, String> {
+    let files = project_files(id, title, "Starting Room", DEFAULT_DESCRIPTION)?;
+    write_project(destination, &files)
+}
+
+fn write_project(destination: &Path, files: &[DraftFile]) -> Result<PathBuf, String> {
+    validate_destination(destination)?;
+    fs::create_dir(destination).map_err(|e| format!("{}: {e}", destination.display()))?;
+    let mut created_files = Vec::new();
+    let mut created_dirs = vec![destination.to_path_buf()];
+    let result = (|| {
+        for folder in ["rooms", "items", "art"] {
+            let path = destination.join(folder);
+            fs::create_dir(&path).map_err(|e| format!("{}: {e}", path.display()))?;
+            created_dirs.push(path);
+        }
+        for file in files {
+            let path = destination.join(&file.name);
+            create_file(&path, &file.contents)?;
+            created_files.push(path);
+        }
+        crate::story_loader::load_game(destination)?;
+        Ok::<_, String>(())
+    })();
+    if let Err(mut error) = result {
+        // Never recursively delete: unexpected or concurrently added content survives.
+        for path in created_files.iter().rev() {
+            if let Err(e) = fs::remove_file(path) {
+                error.push_str(&format!("; cleanup {}: {e}", path.display()));
+            }
+        }
+        for path in created_dirs.iter().rev() {
+            if let Err(e) = fs::remove_dir(path) {
+                error.push_str(&format!("; cleanup {}: {e}", path.display()));
+            }
+        }
+        return Err(error);
+    }
+    Ok(destination.to_path_buf())
 }
 
 /// Add a room definition in an existing adventure; never overwrite or create
@@ -99,16 +129,7 @@ pub fn add_item(directory: &Path, id: &str) -> Result<PathBuf, String> {
 }
 
 fn entity_path(directory: &Path, folder: &str, id: &str) -> Result<PathBuf, String> {
-    if id.is_empty()
-        || id.len() > 100
-        || !id
-            .bytes()
-            .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_' || b == b'-')
-    {
-        return Err(
-            "Entity ID must be 1–100 characters, lowercase ASCII a-z, 0-9, '-' or '_'".into(),
-        );
-    }
+    validate_id(id)?;
     // Ensure the project is valid before adding a file. Creating a template is
     // not a replacement for authoring the exits/interactions it needs.
     crate::story_loader::load_game(directory)?;
@@ -177,8 +198,8 @@ pub fn add_art(directory: &Path, id: &str, dynamic: bool) -> Result<Vec<PathBuf>
             match create_file(path, art) {
                 Ok(()) => created.push(path.clone()),
                 Err(error) => {
-                    // create_file might have created a partial target; remove only
-                    // this call's files, not unrelated or existing user files.
+                    // Publication failed without touching the target. Roll back
+                    // only the earlier files created by this call.
                     for file in &created {
                         let _ = fs::remove_file(file);
                     }
@@ -195,55 +216,46 @@ pub fn add_art(directory: &Path, id: &str, dynamic: bool) -> Result<Vec<PathBuf>
 }
 
 fn validate_id(id: &str) -> Result<(), String> {
-    if id.is_empty()
+    if files::reserved_name(id)
+        || id.is_empty()
         || id.len() > 100
         || !id
             .bytes()
             .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_' || b == b'-')
     {
-        return Err("ID must be 1–100 characters, lowercase ASCII a-z, 0-9, '-' or '_'".into());
+        return Err("Use 1-100 lowercase letters, digits, dash or underscore; device names such as con, nul and com1 are reserved".into());
     }
     Ok(())
 }
 
-/// Interactive wizard for the existing `new_game` generator. No files are
-/// created until every prompt has been answered and validated.
+/// Beginner-first project setup. No files are written until review is confirmed.
+/// Cancellation and EOF return an explanatory error without creating a project.
 pub fn new_game_wizard<R: BufRead, W: Write>(
     input: &mut R,
     output: &mut W,
 ) -> Result<PathBuf, String> {
-    fn ask<R: BufRead, W: Write>(
-        input: &mut R,
-        output: &mut W,
-        label: &str,
-    ) -> Result<String, String> {
-        write!(output, "{label}").map_err(|e| e.to_string())?;
-        output.flush().map_err(|e| e.to_string())?;
-        let mut answer = String::new();
-        if input.read_line(&mut answer).map_err(|e| e.to_string())? == 0 {
-            return Err("Setup canceled (end of input); no files created".into());
-        }
-        Ok(answer.trim().to_owned())
+    setup::run(input, output)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn failed_project_write_rolls_back_its_files() {
+        let root =
+            std::env::temp_dir().join(format!("lupine-project-rollback-{}", std::process::id()));
+        let files = vec![
+            DraftFile::text("game.toml", "complete\n", ""),
+            DraftFile::text("missing/file.toml", "cannot write\n", ""),
+        ];
+        assert!(write_project(&root, &files).is_err());
+        assert!(!root.exists());
     }
-    writeln!(output, "Lupine adventure setup — no Rust required.").map_err(|e| e.to_string())?;
-    let dest = ask(input, output, "New project folder: ")?;
-    if dest.is_empty() {
-        return Err("Project folder cannot be empty".into());
+    #[test]
+    fn validation_failure_rolls_back_generated_project() {
+        let root =
+            std::env::temp_dir().join(format!("lupine-project-invalid-{}", std::process::id()));
+        assert!(write_project(&root, &[DraftFile::text("game.toml", "invalid TOML", "")]).is_err());
+        assert!(!root.exists());
     }
-    let id = ask(
-        input,
-        output,
-        "Game ID (lowercase letters, numbers, - or _): ",
-    )?;
-    validate_id(&id)?;
-    let title = ask(input, output, "Adventure title: ")?;
-    if title.trim().is_empty() {
-        return Err("Adventure title cannot be empty".into());
-    }
-    let path = PathBuf::from(dest);
-    new_game(&path, &id, &title)?;
-    writeln!(output, "Created: {}", path.display()).map_err(|e| e.to_string())?;
-    writeln!(output, "Next: lupine validate {}", path.display()).map_err(|e| e.to_string())?;
-    writeln!(output, "Then: lupine play {}", path.display()).map_err(|e| e.to_string())?;
-    Ok(path)
 }
