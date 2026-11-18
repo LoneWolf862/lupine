@@ -178,7 +178,7 @@ impl Snapshot {
             let category = path.parent().and_then(Path::to_str).unwrap_or("");
             let allowed = path == Path::new("interactions.toml")
                 || match category {
-                    "rooms" | "items" | "spells" | "enemies" => {
+                    "rooms" | "items" | "spells" | "enemies" | "weapons" => {
                         path.extension().is_some_and(|e| e == "toml")
                     }
                     "config" => matches!(
