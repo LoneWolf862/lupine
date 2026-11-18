@@ -1,6 +1,6 @@
 # FIG configuration foundation
 
-Status: Phase 2C.2 implementation contract (candidate for review). Verification results are recorded in CODEX_HANDOFF.md.
+Status: the Phase 2C.2 runtime/configuration contract is merged. The Phase 2E-B guided editor is a candidate in PR #12, integrated in #13. Verification is recorded in CREATOR_COMPLETION_REVIEW.md; historical checkpoints remain in CODEX_HANDOFF.md.
 
 Lupine is unreleased/pre-1.0. Justified breaking changes are permitted; there is no legacy configuration loader. Bundled consumers must use this contract.
 

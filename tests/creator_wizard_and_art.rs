@@ -4,14 +4,12 @@ use std::{
     fs,
     io::Cursor,
     path::PathBuf,
-    time::{SystemTime, UNIX_EPOCH},
+    sync::atomic::{AtomicU64, Ordering},
 };
 
 fn temp() -> PathBuf {
-    let tick = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_nanos();
+    static NEXT: AtomicU64 = AtomicU64::new(0);
+    let tick = NEXT.fetch_add(1, Ordering::Relaxed);
     std::env::temp_dir().join(format!("lupine_v07c_{}_{}", std::process::id(), tick))
 }
 #[test]

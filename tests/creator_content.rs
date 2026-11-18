@@ -329,3 +329,73 @@ fn fig_cannot_disable_rpg_with_existing_spells() {
     assert!(out.contains("require enabled = true"), "{out}");
     assert_eq!(f.read("config/character.fig"), old);
 }
+
+#[test]
+fn teaching_item_cannot_be_made_nonportable_by_item_editor() {
+    let f = Fixture::new();
+    f.run(
+        "3\n1\n1\ntrue\ns\nyes\n0\n4\nn\nscroll\n1\ns\nyes\n0\n5\nn\nheal\n6\n\n1\ns\nyes\n0\n0\n",
+    );
+    let before = f.read("items/scroll.toml");
+    let out = f.run("4\n1\n4\nno\ns\n0\n0\n0\n");
+    assert!(out.contains("Cannot make a teaching item fixed"), "{out}");
+    assert_eq!(f.read("items/scroll.toml"), before);
+}
+#[test]
+fn art_variants_can_be_revised_reordered_and_keep_unedited_conditions() {
+    let f = Fixture::new();
+    fs::write(f.game.join("art/a.txt"), "A\n").unwrap();
+    fs::write(f.game.join("art/b.txt"), "B\n").unwrap();
+    let room=f.read("rooms/start.toml")+"\n[[art_variants]] # first\nwhen=[{flag_unset='one'}]\nfile='a.txt'\n[[art_variants]] # second\nwhen=[{flag_unset='two'}]\nfile='b.txt'\n";
+    fs::write(f.game.join("rooms/start.toml"), room).unwrap();
+    let out = f.run("6\nr\n1\n6\n2\n2\n  TEXT  \n/end\nyes\n7\n2\ns\nyes\n0\n1\nlook\nquit\n0\n");
+    assert!(out.contains("Changes saved"), "{out}");
+    assert!(out.contains("  TEXT  "));
+    let text = f.read("rooms/start.toml");
+    assert!(text.contains("# first"));
+    assert!(text.contains("# second"));
+    let v: toml::Value = text.parse().unwrap();
+    assert_eq!(v["art_variants"][0]["text"].as_str(), Some("  TEXT  \n"));
+    assert_eq!(
+        v["art_variants"][0]["when"][0]["flag_unset"].as_str(),
+        Some("two")
+    );
+    assert_eq!(v["art_variants"][1]["file"].as_str(), Some("a.txt"));
+}
+
+#[test]
+fn editing_existing_rpg_items_protects_shop_and_loot_dependencies() {
+    fn copy(source: &std::path::Path, target: &std::path::Path) {
+        fs::create_dir(target).unwrap();
+        for entry in fs::read_dir(source).unwrap() {
+            let p = entry.unwrap().path();
+            let dst = target.join(p.file_name().unwrap());
+            if p.is_dir() {
+                copy(&p, &dst);
+            } else {
+                fs::copy(&p, &dst).unwrap();
+            }
+        }
+    }
+    let mut f = Fixture::new();
+    f.game = f.root.join("sample");
+    copy(
+        &PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("samples/rpg_transactions"),
+        &f.game,
+    );
+    let altar = f.read("items/mana_altar.toml");
+    let trophy = f.read("items/goblin_trophy.toml");
+    let out = f.run("4\n4\n5\n2\ns\nyes\n0\n2\n4\nno\ns\nyes\n0\n0\n0\n");
+    assert!(out.contains("must start in the shop's room"), "{out}");
+    assert!(out.contains("must be portable"), "{out}");
+    assert_eq!(f.read("items/mana_altar.toml"), altar);
+    assert_eq!(f.read("items/goblin_trophy.toml"), trophy);
+    let spell = f.read("spells/fireball.toml");
+    let weapon = f.read("weapons/rusty_dagger.toml");
+    let shop = f.read("shops/healer.toml");
+    let out = f.run("4\n1\n1\nFlame Scroll\ns\nyes\n0\n2\n0\n");
+    assert!(out.contains("Changes saved"), "{out}");
+    assert_eq!(f.read("spells/fireball.toml"), spell);
+    assert_eq!(f.read("weapons/rusty_dagger.toml"), weapon);
+    assert_eq!(f.read("shops/healer.toml"), shop);
+}

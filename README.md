@@ -15,7 +15,9 @@ cargo run -- validate my_adventure
 cargo run -- play my_adventure
 ```
 
-Alternatively, run `cargo run -- new` to use the guided wizard: press Enter for Beginner mode, name your adventure and opening location, then approve the summary. File previews are optional; type `advanced` at the welcome prompt for editable IDs and direct previews. Enter accepts defaults, `?` explains fields, `back` revisits an answer, and `cancel` stops. Completion enters the persistent Adventure Creator, where you can inspect the file tree, validate and play without restarting. Type `quit` in play to return. Use `cargo run -- creator` for a Create/Open menu, or `cargo run -- creator "my_adventure"` to reopen a project. Choose **7: Create or Edit Rooms** to add locations, revise descriptions, and connect them with one-way or reverse exits. Review the proposed changes and explicitly confirm Save. Choose **4** to create/edit items, aliases, portability and starting rooms with confirmed saves. Spells, artwork and configuration editors remain later phases. Edit generated `game.toml`, room and item TOML files, then validate again; game content does not need to be compiled.
+Run `cargo run -- new` for beginner setup, then continue in the persistent **Adventure Creator**. Reopen with `cargo run -- creator "my_adventure"`. Its guided editors cover rooms/connections, items/aliases, spells/teaching items, multiline artwork/variants, interaction puzzles/locked doors, conditional descriptions, existing-enemy encounter tables, and supported FIG settings. Review previews and explicitly confirm Save; validate and play from the same menu. Type `quit` in play to return. Content remains ordinary editable TOML, FIG and text files.
+
+**Creator status:** Phases 2D–2F are implemented candidates in stacked draft PRs, pending human review. See the [creator guide](docs/CREATOR_QUICKSTART.md) and [development report, tests and merge order](docs/CREATOR_COMPLETION_REVIEW.md). The complete guided demonstration requires no manual TOML/FIG editing. Enemy/weapon/shop definition editors and packaging are separate work; existing definitions remain supported and preserved.
 
 To try prewritten demonstrations:
 
@@ -76,6 +78,6 @@ MIT. Consult the repository's license file for the complete terms.
 Optional engine configuration uses TOML syntax in config/character.fig (RPG opt-in) and config/terminology.fig (display labels). No config files are required for a narrative-only game. See docs/CONFIG_FIG_SPEC.md in the source repository. Root character.toml is obsolete; move it into config/character.fig. Player saves remain strictly manual .rork files.
 
 <!-- lupine-phase-2c2-spec -->
-## Creator configuration direction (planned)
+## Generated creator configuration
 
 New adventures include all standard content folders and self-documenting `config/character.fig` and `config/terminology.fig`. RPG is disabled by default (`enabled = false`); set it to true and validate/reload to opt in. Existing FIGs without the key retain their prior enabled behavior. See [self-documenting configuration](docs/SELF_DOCUMENTING_CONFIG_SPEC.md) and [FIG settings](docs/CONFIG_FIG_SPEC.md).

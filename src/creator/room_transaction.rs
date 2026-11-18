@@ -455,6 +455,60 @@ mod tests {
             fs::remove_dir_all(&self.0).unwrap();
         }
     }
+
+    #[test]
+    fn mixed_category_rollback_restores_rules_and_removes_only_created_content() {
+        let f = Fixture::new();
+        fs::remove_dir(f.0.join("items")).unwrap();
+        let original = fs::read(f.0.join("interactions.toml")).unwrap();
+        let snapshot = Snapshot::capture(&f.0).unwrap();
+        let changes = BTreeMap::from([
+            (
+                PathBuf::from("interactions.toml"),
+                "# changed rules\n".into(),
+            ),
+            (
+                PathBuf::from("items/a.toml"),
+                "id='a'\nname='A'\ndescription='A'\nportable=true\nstarting_room='start'\n".into(),
+            ),
+            (
+                PathBuf::from("items/z.toml"),
+                "id='z'\nname='Z'\ndescription='Z'\nportable=true\nstarting_room='start'\n".into(),
+            ),
+        ]);
+        let error = snapshot
+            .commit_with(&changes, |i| {
+                if i == 2 {
+                    Err("injected failure".into())
+                } else {
+                    Ok(())
+                }
+            })
+            .unwrap_err();
+        assert!(error.contains("original content restored"));
+        assert_eq!(fs::read(f.0.join("interactions.toml")).unwrap(), original);
+        assert!(!f.0.join("items").exists());
+        assert!(!f.0.join(LOCK).exists());
+    }
+    #[test]
+    fn unsupported_fig_and_oversized_unreferenced_art_are_never_published() {
+        let f = Fixture::new();
+        let snapshot = Snapshot::capture(&f.0).unwrap();
+        assert!(snapshot
+            .commit(&BTreeMap::from([(
+                PathBuf::from("config/combat.fig"),
+                String::new()
+            )]))
+            .is_err());
+        assert!(snapshot
+            .commit(&BTreeMap::from([(
+                PathBuf::from("art/huge.txt"),
+                "x".repeat(65537)
+            )]))
+            .is_err());
+        assert!(!f.0.join("art/huge.txt").exists());
+        assert!(!f.0.join(LOCK).exists());
+    }
     #[test]
     fn content_transaction_rejects_escape_stale_and_invalid_references() {
         let f = Fixture::new();

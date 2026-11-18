@@ -4,13 +4,11 @@ use lupine::save::{decode_save, encode_save};
 use lupine::state::{GameState, ItemLocation};
 use lupine::story_loader::load_game;
 use std::fs;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::sync::atomic::{AtomicU64, Ordering};
 
 fn temp() -> std::path::PathBuf {
-    let id = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_nanos();
+    static NEXT: AtomicU64 = AtomicU64::new(0);
+    let id = NEXT.fetch_add(1, Ordering::Relaxed);
     let path = std::env::temp_dir().join(format!("lupine_abilities_{}_{}", std::process::id(), id));
     fs::create_dir(&path).unwrap();
     path

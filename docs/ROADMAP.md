@@ -54,15 +54,17 @@ Optional weapon and spell TOML definitions; learned abilities tracked separately
 
 ## Current creator delivery sequence (2026-11-18)
 
-| Phase | Scope | Current status |
+| Phase | Scope | Status |
 |---|---|---|
-| 2A / 2A.1 | Safe setup, beginner/advanced modes, exact previews | Merged in PR #2 |
-| 2B | Persistent session, actual tree, reopen, play/validate and return | Merged in PR #3; verification in CODEX_HANDOFF.md |
-| 2C | Guided room creation/editing, connections/reverse exits, safe existing-file persistence | Implemented candidate on codex/phase-2c-room-editor; awaiting human review |
-| 2D | Guided items, spells and artwork | Proposed; reuse the shared editor/persistence foundation |
-| 2E | Conditional exits, doors, supported FIG editing and advanced room properties | Proposed; no unsupported FIG categories |
+| 2A–2C.2 | Setup, persistent navigation, rooms, presentation and self-documenting FIGs | Merged through PR #7 |
+| 2D-A | Items and shared content transactions | Implemented candidate, PR #8 |
+| 2D-B | Spell/ability fields and teaching links | Implemented candidate, PR #9; depends on #8 |
+| 2D-C | Multiline artwork and room variants | Implemented candidate, PR #10; depends on #9 |
+| 2E-A | Interaction rules, locked doors, conditional prose and encounter settings | Implemented candidate, PR #11; depends on #10 |
+| 2E-B | Supported FIG configuration editor | Implemented candidate, PR #12; depends on #11 |
+| 2F | Integration, safeguards, scripted acceptance, cross-platform CI and documentation | Implemented candidate, PR #13; depends on #12 |
 
-The final no-TOML-editing author journey remains a goal, not a Phase 2B completion claim. No unrelated parser or RPG changes are included. Each later phase should have its own reviewable PR.
+See [completion review](CREATOR_COMPLETION_REVIEW.md) for exact verification and remaining limits. These PRs remain open for human review. The scripted no-manual-TOML demonstration is implemented; human beginner usability and standalone packaging remain distinct requirements.
 
 <!-- lupine-phase-2c2-spec -->
 ## Current creator follow-up â€” Phase 2C.2 (implemented candidate)

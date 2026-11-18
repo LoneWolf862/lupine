@@ -38,6 +38,10 @@ Phase 1 relocates existing character fields/defaults/calculations without redesi
 - The user prefers collaborative file/patch/ZIP updates and reviews changes before implementation; don't assume Codex automation is the default.
 - Protect CSE 310 requirements and the instructor README-template obligation; do not invent time logs or submission evidence.
 
+## Current creator implementation candidate (2026-11-18)
+
+Phases 2D-A through 2F are implemented on the stacked draft PRs #8–#13, not merged. See docs/CREATOR_COMPLETION_REVIEW.md and docs/CREATOR_QUICKSTART.md for actual capabilities and verification. Preserve shared Snapshot transactions for all editors, stable existing IDs, exact previews and explicit confirmation. Use current schemas, preserve unedited TOML/FIG properties/comments, never autosave player progress. Conditional descriptions/variants are first-match; table source positions must agree with edited order. Item teaching links require portable items. New RPG enablement remains explicit. Enemy/weapon/shop definition editors, ID migrations and automated recovery remain separate work. Every task still requires an isolated branch, checkpoint pushes, reviewable PR and no self-merge.
+
 ## Historical milestones -- not current instructions
 
 The following sections record prior development stages. Their compatibility requirements and feature-status claims are superseded by the current policy above and current source.

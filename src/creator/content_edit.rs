@@ -206,24 +206,36 @@ fn item_form<R: BufRead, W: Write>(
     snapshot: &Snapshot,
     w: &mut Wizard<'_, R, W>,
 ) -> Result<bool, String> {
+    let adventure = Adventure::load(&snapshot.root)?;
+    let teaching = adventure
+        .rpg
+        .abilities
+        .values()
+        .filter(|a| a.learn_from_item.as_deref() == Some(d.text("id")))
+        .map(|a| a.name.clone())
+        .collect::<Vec<_>>();
+    if !teaching.is_empty() {
+        w.say(&format!("This item teaches: {}. It must remain portable so players can carry and learn from it.", teaching.join(", ")))?;
+    }
     loop {
         w.heading("ITEM OPTIONS")?;
-        w.say(&format!("{} ({})\n1. Display name\n2. Description\n3. Aliases\n4. Portable\n5. Starting room\n6. Inspect / preview TOML\nS. Save\n0. Discard and return", d.text("name"), d.text("id")))?;
+        w.say(&format!("{} ({})\n1. Display name\n2. Description\n3. Aliases\n4. Portable\n5. Starting room\n6. Inspect / preview TOML\n7. Conditional descriptions\nS. Save\n0. Discard and return", d.text("name"), d.text("id")))?;
         match w.line("Selection:")?.trim().to_ascii_lowercase().as_str() {
             "0" | "back" => return Ok(false),
             "1" => if let Some(s) = w.ask("Display name", d.text("name"), "The name shown to players; the stable ID does not change", |s| super::validate_text(s,120))? { d.set("name", value(s)); },
-            "2" => { w.say("Describe what players see when examining this object.")?; if let Some(s) = w.description(d.text("description"))? { d.set("description", value(s)); } },
+            "2" => { w.say("Describe what players see when examining this object.")?; if let Some(s) = w.description_labeled("Description", d.text("description"))? { d.set("description", value(s)); } },
             "3" => aliases(d,w)?,
             "4" => {
                 w.say("Portable objects can be picked up and carried. A teaching scroll must be carried to learn from it. Fixed objects stay in the room.")?;
                 let default = if d.doc["portable"].as_bool() == Some(true) { "yes" } else { "no" };
-                if let Some(s) = w.ask("Portable?", default, "yes permits taking; no makes a fixed object", |s| if ["yes","no"].contains(&s) { Ok(()) } else { Err("Enter yes or no".into()) })? { d.set("portable", value(s=="yes")); }
+                if let Some(s) = w.ask("Portable?", default, "yes permits taking; no makes a fixed object", |s| if ["yes","no"].contains(&s) { Ok(()) } else { Err("Enter yes or no".into()) })? { if s=="no" && !teaching.is_empty() { w.say("Cannot make a teaching item fixed. Remove or change its teaching link in Spell Manager first.")?; } else { d.set("portable", value(s=="yes")); } }
             },
             "5" => { w.say("Starting room affects new play sessions; existing player saves are not rewritten.")?; if let Some(id) = choose(w,"Starting room:",&entries(snapshot,"rooms")?)? { d.set("starting_room",value(id)); } },
             "6" => d.preview(&snapshot.root,w.output)?,
+            "7" => super::room_advanced::descriptions(&mut d.doc, snapshot, w)?,
             "s" => if save(snapshot, d, w)? { return Ok(true); },
             "?" | "help" => w.say("Select a field to revise it, 6 to inspect all properties, S to review/save, or 0 to discard. IDs remain stable so weapons, scrolls, shops and puzzles keep their references.")?,
-            _ => w.say("Choose 1-6, S, or 0.")?,
+            _ => w.say("Choose 1-7, S, or 0.")?,
         }
     }
 }
@@ -325,7 +337,7 @@ fn manage<R: BufRead, W: Write>(
         {
             Document::load(&snapshot, path.clone(), "")?
         } else {
-            w.say("Choose a listed item, N, or 0. Changes are held until confirmed Save.")?;
+            w.say("Choose a listed definition, N, or 0. Changes are held until confirmed Save.")?;
             continue;
         };
         let result = if category == "spells" {

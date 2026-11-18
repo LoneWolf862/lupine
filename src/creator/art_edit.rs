@@ -61,7 +61,7 @@ fn room<R: BufRead, W: Write>(snapshot: &Snapshot, w: &mut Wizard<'_, R, W>) -> 
     let mut d = Document::load(snapshot, path, "")?;
     loop {
         w.heading("ROOM ARTWORK")?;
-        w.say("1. Set default artwork\n2. Remove default reference\n3. Add conditional variant\n4. Remove variant\n5. Inspect/preview\nS. Save\n0. Discard and return\nVariants use first-match order, then fall back to default artwork.")?;
+        w.say("1. Set default artwork\n2. Remove default reference\n3. Add conditional variant\n4. Remove variant\n5. Inspect/preview\n6. Edit a variant\n7. Move a variant earlier\nS. Save\n0. Discard and return\nVariants use first-match order, then fall back to default artwork.")?;
         match w.line("Selection:")?.trim().to_ascii_lowercase().as_str() {
             "0"|"back"=>return Ok(()),
             "1"=>if let Some(file)=choose(w,"Artwork file:",&art_entries(snapshot))? {
@@ -82,8 +82,27 @@ fn room<R: BufRead, W: Write>(snapshot: &Snapshot, w: &mut Wizard<'_, R, W>) -> 
                 }
             },
             "5"=>d.preview(&snapshot.root,w.output)?,
+            "6"=>if let Some(i)=rules_ui::select_entry(&d.doc,"art_variants",w)? {
+                let t=rules_ui::entry_mut(&mut d.doc,"art_variants",i)?;
+                w.say("1. Choose artwork file\n2. Edit inline artwork\n3. Edit conditions\n0. Return")?;
+                match w.line("Variant field:")?.trim(){
+                    "1"=>if let Some(file)=choose(w,"Artwork:",&art_entries(snapshot))? {
+                        if t.get("text").is_none() || confirm(w,"Replace this variant's inline text with a file?")? {t.remove("text");rules_ui::set(t,"file",value(file));}
+                    },
+                    "2"=>if let Some(text)=read_art(w)? {
+                        if t.get("file").is_none() || confirm(w,"Replace this variant's file reference with inline artwork?")? {t.remove("file");rules_ui::set(t,"text",value(text));}
+                    },
+                    "3"=>if let Some(a)=rules_ui::edit_conditions(t.get("when").unwrap_or(&toml_edit::Item::None),snapshot,w)? {
+                        if a.is_empty(){w.say("Keep at least one condition for a variant.")?;}else{rules_ui::set(t,"when",value(a));}
+                    },
+                    _=>(),
+                }
+            },
+            "7"=>if let Some(i)=rules_ui::select_entry(&d.doc,"art_variants",w)? {
+                if i==0 {w.say("That variant is already first.")?;}else{rules_ui::move_earlier(&mut d.doc,"art_variants",i)?;}
+            },
             "s"=>if save(snapshot,&d,w)? {return Ok(());},
-            _=>w.say("Choose 1-5, S, or 0. Conditions change pictures as flags/inventory change; they are not saved as artwork in player saves.")?,
+            _=>w.say("Choose 1-7, S, or 0. Conditions change pictures as flags/inventory change; they are not saved as artwork in player saves.")?,
         }
     }
 }

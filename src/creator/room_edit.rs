@@ -419,7 +419,7 @@ fn properties<R: BufRead, W: Write>(
             ))?;
         }
     }
-    w.say("\nConditional descriptions choose text based on flags or inventory. ASCII artwork\nand art variants decorate a room. Items are placed by their own starting_room field;\nconditional exits live in interactions.toml. Encounters are optional RPG content.\nThese advanced properties are preserved; their guided editors come later.")
+    w.say("\nConditional descriptions choose text based on flags or inventory. ASCII artwork\nand art variants decorate a room. Items are placed by their own starting_room field;\nconditional exits live in interactions.toml. Encounters are optional RPG content.\nRoom Options > 7 edits descriptions/encounters; main menu 6 edits artwork and 9 edits puzzle rules.")
 }
 fn create<R: BufRead, W: Write>(
     draft: &mut Draft,

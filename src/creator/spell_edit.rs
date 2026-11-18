@@ -41,7 +41,7 @@ pub(super) fn form<R: BufRead, W: Write>(
         match w.line("Selection:")?.trim().to_ascii_lowercase().as_str() {
             "0" | "back" => return Ok(false),
             "1" => if let Some(s)=w.ask("Spell name",d.text("name"),"Displayed name; ID remains stable",|s| super::validate_text(s,120))? {d.set("name",value(s));},
-            "2" => if let Some(s)=w.description(d.text("description"))? {d.set("description",value(s));},
+            "2" => if let Some(s)=w.description_labeled("Description", d.text("description"))? {d.set("description",value(s));},
             s @ ("3" | "5") => {
                 let (key, label, min) = if s=="3" { ("mana_cost", "MP spent per cast", 0) } else { ("power", "Damage or restoration amount", 1) };
                 let current=d.doc.get(key).and_then(Item::as_integer).unwrap_or(min);

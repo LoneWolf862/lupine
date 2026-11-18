@@ -27,19 +27,67 @@ pub(super) fn suggested_id(title: &str) -> String {
 
 // IDs are checked among adventures immediately inside the selected parent.
 // There is no global registry; do not crawl the user's disk or alter existing games.
-fn sibling_ids(parent: &Path) -> Result<HashSet<String>, String> {
+fn sibling_ids<R: BufRead, W: Write>(
+    parent: &Path,
+    w: &mut Wizard<'_, R, W>,
+) -> Result<HashSet<String>, String> {
+    let mut skipped = 0;
     let mut ids = HashSet::new();
     for entry in
         fs::read_dir(parent).map_err(|e| format!("Cannot inspect {}: {e}", parent.display()))?
     {
-        let entry = entry.map_err(|e| e.to_string())?;
-        if !entry.file_type().map_err(|e| e.to_string())?.is_dir() {
+        let entry = match entry {
+            Ok(entry) => entry,
+            Err(e)
+                if matches!(
+                    e.kind(),
+                    std::io::ErrorKind::NotFound | std::io::ErrorKind::PermissionDenied
+                ) =>
+            {
+                skipped += 1;
+                continue;
+            }
+            Err(e) => return Err(e.to_string()),
+        };
+        let meta = match fs::symlink_metadata(entry.path()) {
+            Ok(meta) => meta,
+            Err(e)
+                if matches!(
+                    e.kind(),
+                    std::io::ErrorKind::NotFound | std::io::ErrorKind::PermissionDenied
+                ) =>
+            {
+                skipped += 1;
+                continue;
+            }
+            Err(e) => return Err(e.to_string()),
+        };
+        if files::is_link(&meta) {
+            skipped += 1;
+            continue;
+        }
+        if !meta.is_dir() {
             continue;
         }
         let manifest = entry.path().join("game.toml");
+        match fs::symlink_metadata(&manifest) {
+            Ok(meta) if files::is_link(&meta) || !meta.is_file() => {
+                skipped += 1;
+                continue;
+            }
+            Err(e) if e.kind() == std::io::ErrorKind::PermissionDenied => {
+                skipped += 1;
+                continue;
+            }
+            _ => (),
+        }
         let text = match fs::read_to_string(&manifest) {
             Ok(text) => text,
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => continue,
+            Err(e) if e.kind() == std::io::ErrorKind::PermissionDenied => {
+                skipped += 1;
+                continue;
+            }
             Err(e) => {
                 return Err(format!(
                     "Cannot check adventure ID in {}: {e}",
@@ -52,6 +100,9 @@ fn sibling_ids(parent: &Path) -> Result<HashSet<String>, String> {
                 ids.insert(id.to_owned());
             }
         }
+    }
+    if skipped > 0 {
+        w.say("Some nearby folders/files are unavailable or linked. The advisory ID check covers readable regular adventures only; choose a distinct game ID. The new project destination is still checked separately.")?;
     }
     Ok(ids)
 }
@@ -147,7 +198,7 @@ pub(super) fn run<R: BufRead, W: Write>(input: &mut R, output: &mut W) -> Result
                 let answer = w.ask("Save adventure in", &default, "Enter a new folder name or a full local path, without surrounding quotes. The parent must already exist. Existing content is never overwritten.", |v| absolute_destination(v).map(|_| ()))?;
                 let Some(value) = answer else { step = if advanced { 1 } else { 0 }; continue; };
                 let path = absolute_destination(&value)?;
-                let ids = sibling_ids(path.parent().ok_or("Missing parent folder")?)?;
+                let ids = sibling_ids(path.parent().ok_or("Missing parent folder")?, &mut w)?;
                 if advanced && ids.contains(&id) {
                     w.say(&format!("Another adventure in this parent folder uses ID '{id}'. Choose a different game ID to keep player saves separate."))?;
                     location = value;
@@ -186,7 +237,7 @@ pub(super) fn run<R: BufRead, W: Write>(input: &mut R, output: &mut W) -> Result
                     })?.as_deref() {
                         Some("1") => {
                             // Recheck local identity before publishing; never silently change a previewed ID.
-                            if sibling_ids(path.parent().ok_or("Missing parent folder")?)?.contains(&id) {
+                            if sibling_ids(path.parent().ok_or("Missing parent folder")?, &mut w)?.contains(&id) {
                                 w.say("Another adventure now uses this ID. Let's check the folder and ID again.")?;
                                 step = if advanced { 1 } else { 2 };
                                 break;
