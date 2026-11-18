@@ -15,9 +15,10 @@ struct GameManifest<'a> {
 }
 
 mod files;
+mod setup;
 mod wizard;
 use files::{create_file, validate_destination};
-use wizard::{DraftFile, Wizard};
+use wizard::DraftFile;
 
 const DEFAULT_DESCRIPTION: &str = "You stand at the beginning of your adventure.";
 
@@ -61,7 +62,7 @@ fn project_files(
             id: "start", title: room_title, description, exits: Default::default(),
         }, "title and description appear in play. The empty exits table means no connected rooms yet.")?,
         DraftFile::text("interactions.toml", "# Define [[interactions]] and [[exit_rules]] here when needed.\n", "Optional interaction rules; this adventure starts without any."),
-        DraftFile::text("README.txt", "Welcome to your Lupine adventure!\n\nEdit game.toml and rooms/start.toml; add TOML files to rooms/ and items/.\nRun: lupine validate <project-folder>\nThen: lupine play <project-folder>\nOptional engine settings use TOML syntax: config/character.fig enables RPG; config/terminology.fig customizes display labels. Create only the files you need; see docs/CONFIG_FIG_SPEC.md.\nPlayer .rork saves are strictly manual.\n", "Content is editable TOML. Optional FIG files configure the engine; RORK files hold manual player saves."),
+        DraftFile::text("README.txt", "Welcome to your Lupine adventure!\n\nEdit game.toml and rooms/start.toml; add TOML files to rooms/ and items/.\nFrom the Lupine source folder: cargo run -- validate <project-folder>\nThen: cargo run -- play <project-folder>\nWith a standalone executable, use its full path followed by play <project-folder>. Quote paths containing spaces.\nOptional engine settings use TOML syntax: config/character.fig enables RPG; config/terminology.fig customizes display labels. Create only the files you need; see docs/CONFIG_FIG_SPEC.md.\nPlayer .rork saves are strictly manual.\n", "Content is editable TOML. Optional FIG files configure the engine; RORK files hold manual player saves."),
     ])
 }
 
@@ -227,38 +228,13 @@ fn validate_id(id: &str) -> Result<(), String> {
     Ok(())
 }
 
-/// Guided project creation. Cancellation and EOF return an explanatory error;
-/// nothing is written until the complete preview has been confirmed.
+/// Beginner-first project setup. No files are written until review is confirmed.
+/// Cancellation and EOF return an explanatory error without creating a project.
 pub fn new_game_wizard<R: BufRead, W: Write>(
     input: &mut R,
     output: &mut W,
 ) -> Result<PathBuf, String> {
-    let mut wizard = Wizard { input, output };
-    wizard.say("Lupine adventure setup — no Rust required. Enter accepts defaults; ? explains; cancel stops. Prefix literal control words with a backslash.")?;
-    let title = wizard.ask(
-        "Adventure title",
-        "My Adventure",
-        "The title is shown to players and can change later.",
-        |v| validate_text(v, 120),
-    )?;
-    let id = wizard.ask("Stable game ID", "my_adventure", "Use lowercase a-z, digits, - or _. Keep this ID stable: it identifies your game's manual saves.", validate_id)?;
-    let destination = wizard.ask("Project location", &id, "Choose a NEW folder in an existing directory. Parent traversal and symlink components are rejected.", |v| validate_destination(Path::new(v)))?;
-    let room_title = wizard.ask(
-        "Starting room title",
-        "Starting Room",
-        "The player sees this title. The internal room ID is start.",
-        |v| validate_text(v, 120),
-    )?;
-    let description = wizard.description(DEFAULT_DESCRIPTION)?;
-    let files = project_files(&id, &title, &room_title, &description)?;
-    let path = PathBuf::from(destination);
-    for file in &files {
-        file.preview(&path, wizard.output)?;
-    }
-    wizard.confirm()?;
-    let path = write_project(&path, &files)?;
-    wizard.say(&format!("Created: {}\nValidated. Next: lupine play \"{}\"\nEdit the TOML files anytime; run lupine validate \"{}\" after changes.", path.display(), path.display(), path.display()))?;
-    Ok(path)
+    setup::run(input, output)
 }
 
 #[cfg(test)]

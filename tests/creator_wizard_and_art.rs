@@ -72,7 +72,7 @@ fn bad_art_ids_and_preexisting_files_are_protected() {
 fn wizard_creates_valid_game_without_overwriting() {
     let dir = temp();
     let script = format!(
-        "A Wizard's Tale\ncustom_story\n{}\n\n\nyes\n",
+        "advanced\nA Wizard's Tale\ncustom_story\n{}\n\n\n1\n",
         dir.display()
     );
     let mut input = Cursor::new(script.into_bytes());
@@ -80,7 +80,9 @@ fn wizard_creates_valid_game_without_overwriting() {
     let path = new_game_wizard(&mut input, &mut output).unwrap();
     assert_eq!(path, dir);
     assert_eq!(load_game(&dir).unwrap().title, "A Wizard's Tale");
-    assert!(String::from_utf8(output).unwrap().contains("Created:"));
+    assert!(String::from_utf8(output)
+        .unwrap()
+        .contains("ADVENTURE CREATED!"));
     fs::remove_dir_all(dir).unwrap();
 }
 #[test]
@@ -90,11 +92,11 @@ fn wizard_eof_invalid_id_and_existing_dir_never_overwrite() {
     let short = format!("{}\n", dir.display());
     assert!(new_game_wizard(&mut Cursor::new(short.as_bytes()), &mut out).is_err());
     assert!(!dir.exists());
-    let invalid = "Title\n../bad\ncancel\n";
+    let invalid = "advanced\nTitle\n../bad\ncancel\n";
     assert!(new_game_wizard(&mut Cursor::new(invalid.as_bytes()), &mut Vec::new()).is_err());
     assert!(!dir.exists());
     new_game(&dir, "existing", "Existing").unwrap();
-    let valid = format!("Overwrite\nother\n{}\ncancel\n", dir.display());
+    let valid = format!("advanced\nOverwrite\nother\n{}\ncancel\n", dir.display());
     assert!(new_game_wizard(&mut Cursor::new(valid.as_bytes()), &mut Vec::new()).is_err());
     assert_eq!(load_game(&dir).unwrap().title, "Existing");
     fs::remove_dir_all(dir).unwrap();
@@ -103,7 +105,7 @@ fn wizard_eof_invalid_id_and_existing_dir_never_overwrite() {
 #[test]
 fn previews_equal_files_and_special_text_plays() {
     let dir = temp();
-    let script = format!("The \"Quoted\" Adventure\nquoted\n{}\n雪 & Stars\n/multi\nA \\\"quote\\\" and a path C:\\stories.\n\nSecond line: café.\n\\cancel\n/end\nyes\n", dir.display());
+    let script = format!("advanced\nThe \"Quoted\" Adventure\nquoted\n{}\n雪 & Stars\n/multi\nA \\\"quote\\\" and a path C:\\stories.\n\nSecond line: café.\n\\cancel\n/end\n1\n", dir.display());
     let mut output = Vec::new();
     new_game_wizard(&mut Cursor::new(script), &mut output).unwrap();
     let output = String::from_utf8(output).unwrap();
@@ -160,7 +162,10 @@ fn previews_equal_files_and_special_text_plays() {
 #[test]
 fn defaults_help_and_invalid_input_retry() {
     let dir = temp();
-    let script = format!("?\n\nBAD ID\n?\n\n{}\n\n\nmaybe\n?\ny\n", dir.display());
+    let script = format!(
+        "advanced\n?\n\nBAD ID\n?\n\n{}\n\n\nmaybe\n?\n1\n",
+        dir.display()
+    );
     let mut output = Vec::new();
     new_game_wizard(&mut Cursor::new(script), &mut output).unwrap();
     let game = load_game(&dir).unwrap();
@@ -173,7 +178,7 @@ fn defaults_help_and_invalid_input_retry() {
     );
     let output = String::from_utf8(output).unwrap();
     assert!(output.contains("Keep this ID stable"));
-    assert!(output.contains("Please enter yes"));
+    assert!(output.contains("Choose 1, 2, 3 or 4"));
     fs::remove_dir_all(dir).unwrap();
 }
 
@@ -181,6 +186,7 @@ fn defaults_help_and_invalid_input_retry() {
 fn cancellation_and_eof_at_every_step_create_nothing() {
     let dir = temp();
     let answers = [
+        "advanced".to_owned(),
         "Title".to_owned(),
         "test".into(),
         dir.display().to_string(),
@@ -202,8 +208,8 @@ fn cancellation_and_eof_at_every_step_create_nothing() {
             assert!(!dir.exists());
         }
     }
-    for ending in ["n\n", "\n"] {
-        let script = format!("Title\ntest\n{}\n\n\n{ending}", dir.display());
+    for ending in ["4\n", "cancel\n"] {
+        let script = format!("advanced\nTitle\ntest\n{}\n\n\n{ending}", dir.display());
         assert!(new_game_wizard(&mut Cursor::new(script), &mut Vec::new()).is_err());
         assert!(!dir.exists());
     }
@@ -238,7 +244,7 @@ fn output_failure_before_confirmation_creates_nothing() {
         }
     }
     let dir = temp();
-    let script = format!("Title\ntest\n{}\n\n\ny\n", dir.display());
+    let script = format!("advanced\nTitle\ntest\n{}\n\n\n1\n", dir.display());
     assert!(new_game_wizard(&mut Cursor::new(script), &mut Broken)
         .unwrap_err()
         .contains("broken output"));

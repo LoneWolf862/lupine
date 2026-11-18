@@ -44,7 +44,7 @@ impl<R: BufRead, W: Write> Wizard<'_, R, W> {
     pub fn say(&mut self, message: &str) -> Result<(), String> {
         writeln!(self.output, "{message}").map_err(|e| e.to_string())
     }
-    fn line(&mut self, prompt: &str) -> Result<String, String> {
+    pub fn line(&mut self, prompt: &str) -> Result<String, String> {
         write!(self.output, "{prompt}")
             .and_then(|()| self.output.flush())
             .map_err(|e| e.to_string())?;
@@ -64,10 +64,13 @@ impl<R: BufRead, W: Write> Wizard<'_, R, W> {
         default: &str,
         help: &str,
         validate: impl Fn(&str) -> Result<(), String>,
-    ) -> Result<String, String> {
+    ) -> Result<Option<String>, String> {
         loop {
             let line = self.line(&format!("{label} [{default}]: "))?;
             let value = line.trim();
+            if value.eq_ignore_ascii_case("back") {
+                return Ok(None);
+            }
             if value == "?" {
                 self.say(help)?;
                 continue;
@@ -75,32 +78,48 @@ impl<R: BufRead, W: Write> Wizard<'_, R, W> {
             let value = if value.is_empty() {
                 default
             } else {
-                if value == r"\cancel" || value == r"\?" {
+                if value.starts_with('\\')
+                    && matches!(
+                        &value[1..].to_ascii_lowercase()[..],
+                        "cancel" | "back" | "?"
+                    )
+                {
                     &value[1..]
                 } else {
                     value
                 }
             };
             match validate(value) {
-                Ok(()) => return Ok(value.to_owned()),
+                Ok(()) => return Ok(Some(value.to_owned())),
                 Err(error) => self.say(&error)?,
             }
         }
     }
-    pub fn description(&mut self, default: &str) -> Result<String, String> {
+    pub fn description(&mut self, default: &str) -> Result<Option<String>, String> {
         self.say(
-            "Describe what the player sees. Enter /multi for multiple lines, then /end to finish.",
+            "Write one line below, or type /multi to write several lines. Instructions will follow.",
         )?;
         loop {
             let first = self.line(&format!("Starting room description [{default}]: "))?;
+            if first.eq_ignore_ascii_case("back") {
+                return Ok(None);
+            }
             if first == "?" {
                 self.say("Plain story text, not TOML. Quotes and newlines are encoded for you. In /multi, prefix literal /end or cancel with a backslash.")?;
                 continue;
             }
             let value = if first == "/multi" {
+                self.say("Write as many lines as you like, including blank lines. Type /end on a line by itself when finished. back discards this edit; cancel stops setup. Prefix literal controls with a backslash.")?;
                 let mut lines = Vec::new();
                 loop {
                     let line = self.line("... ")?;
+                    if line.eq_ignore_ascii_case("back") {
+                        return Ok(None);
+                    }
+                    if line == "?" {
+                        self.say("Type /end to finish, back to discard this edit, or cancel to stop. Use \\? for a literal question mark.")?;
+                        continue;
+                    }
                     if line == "/end" {
                         break;
                     }
@@ -113,18 +132,8 @@ impl<R: BufRead, W: Write> Wizard<'_, R, W> {
                 first.strip_prefix('\\').unwrap_or(&first).to_owned()
             };
             match super::validate_text(&value, 65536) {
-                Ok(()) => return Ok(value),
+                Ok(()) => return Ok(Some(value)),
                 Err(e) => self.say(&e)?,
-            }
-        }
-    }
-    pub fn confirm(&mut self) -> Result<(), String> {
-        loop {
-            match self.line("Create all previewed files? [y/N]: ")?.trim().to_ascii_lowercase().as_str() {
-                "y" | "yes" => return Ok(()),
-                "" | "n" | "no" => return Err("Setup canceled; no files created".into()),
-                "?" => self.say("Only yes creates the exact files shown above. No existing project is overwritten.")?,
-                _ => self.say("Please enter yes, no, or cancel.")?,
             }
         }
     }
