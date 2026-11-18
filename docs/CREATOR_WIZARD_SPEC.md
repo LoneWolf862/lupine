@@ -111,3 +111,7 @@ The creator uses shared ASCII headings and separated label/input prompts, with u
 New adventures should expose actual file structure and **self-documenting** supported FIGs, not require users to discover defaults in separate documentation. Create standard empty content directories, emit commented supported defaults, and keep narrative-only adventures narrative-only via an explicit RPG opt-in setting. See [`SELF_DOCUMENTING_CONFIG_SPEC.md`](SELF_DOCUMENTING_CONFIG_SPEC.md). Future `.fig` categories are not valid placeholders.
 
 The implementation emits both FIGs in the same DraftFile preview/write path as TOML. Every new project includes config, rooms, items, spells, weapons, enemies, shops and art directories. Manual changes to FIGs apply on validation/play reload; a guided FIG value editor remains Phase 2E. Blank Open Adventure paths now explain which folder to enter and retry without a technical path error.
+
+## Phase 2D-A candidate
+
+Item Manager is implemented with confirmed validated transactions, stable IDs, aliases and comment-preserving field edits. See CREATOR_QUICKSTART.md and CODEX_HANDOFF.md. Remaining editors are pending.

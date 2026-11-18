@@ -1,4 +1,4 @@
-//! Recoverable room transactions. No gameplay state or player saves are touched.
+//! Shared recoverable content transactions. No gameplay state or player saves are touched.
 use super::{files, tree};
 use crate::adventure::Adventure;
 use std::{
@@ -122,6 +122,18 @@ impl Snapshot {
             })
             .map(|(p, o)| (p, o.bytes.as_slice()))
     }
+    pub fn sources<'a>(
+        &'a self,
+        category: &'a str,
+    ) -> impl Iterator<Item = (&'a PathBuf, &'a [u8])> {
+        self.files
+            .iter()
+            .filter(move |(p, _)| p.parent() == Some(Path::new(category)))
+            .map(|(p, o)| (p, o.bytes.as_slice()))
+    }
+    pub fn source(&self, path: &Path) -> Option<&[u8]> {
+        self.files.get(path).map(|o| o.bytes.as_slice())
+    }
     fn check(&self, changes: &BTreeMap<PathBuf, String>) -> Result<(), String> {
         // Capture without the transaction directory interfering; it is not content.
         tree::root(&self.root)?;
@@ -154,10 +166,16 @@ impl Snapshot {
             return Err("Project files changed externally since opening this editor. Cancel and reopen; no external edits will be overwritten.".into());
         }
         for path in changes.keys() {
-            if path.parent() != Some(Path::new("rooms"))
-                || path.extension().is_none_or(|e| e != "toml")
-            {
-                return Err("Only direct rooms/*.toml files may be edited".into());
+            let safe = path
+                .components()
+                .all(|c| matches!(c, std::path::Component::Normal(_)));
+            let category = path.parent().and_then(Path::to_str).unwrap_or("");
+            let allowed = match category {
+                "rooms" | "items" | "spells" => path.extension().is_some_and(|e| e == "toml"),
+                _ => false,
+            };
+            if !safe || !allowed {
+                return Err("This path is not an editable content file".into());
             }
             if let Some(original) = self.files.get(path) {
                 if original.permissions.readonly() {
@@ -191,8 +209,9 @@ impl Snapshot {
         };
         let mut moved = Vec::new();
         let mut published = Vec::new();
+        let mut created_dirs = Vec::new();
         let result = (|| {
-            owned.write(&lock.join("RECOVERY.txt"), b"Interrupted room edit: do not run another edit until reviewed.\noriginal/ contains files moved from the adventure, with original bytes/metadata.\nproposed/ contains the validated proposed project; it is not automatically published.\nFor rollback, restore each original/<relative path> to its matching project path; remove newly created room files only after comparing with proposed/.\nCHANGES.txt lists all target paths and whether each existed before. Keep unrelated/external changes.\nAfter recovery run lupine validate, then remove this recovery folder. Never remove recovery data before checking the adventure.\n")?;
+            owned.write(&lock.join("RECOVERY.txt"), b"Interrupted content edit: do not run another edit until reviewed.\noriginal/ contains files moved from the adventure, with original bytes/metadata.\nproposed/ contains the validated proposed project; it is not automatically published.\nFor rollback, restore each original/<relative path> to its matching project path; remove newly created content files only after comparing with proposed/.\nCHANGES.txt lists all target paths and whether each existed before. Keep unrelated/external changes.\nAfter recovery run lupine validate, then remove this recovery folder. Never remove recovery data before checking the adventure.\n")?;
             let listing = changes
                 .keys()
                 .map(|p| {
@@ -211,9 +230,17 @@ impl Snapshot {
             let staged = lock.join("proposed");
             owned.dir(&staged)?;
             owned.dir(&lock.join("original"))?;
-            owned.dir(&lock.join("original/rooms"))?;
+            for category in ["rooms", "items", "spells"] {
+                owned.dir(&lock.join("original").join(category))?;
+            }
             for dir in &self.dirs {
                 owned.dir(&staged.join(dir))?;
+            }
+            for path in changes.keys() {
+                let parent = path.parent().unwrap();
+                if !staged.join(parent).exists() {
+                    owned.dir(&staged.join(parent))?;
+                }
             }
             for (path, original) in &self.files {
                 let bytes = changes
@@ -239,6 +266,11 @@ impl Snapshot {
             for (index, (relative, text)) in changes.iter().enumerate() {
                 before_publish(index)?;
                 let target = self.root.join(relative);
+                let parent = target.parent().unwrap();
+                if !parent.exists() {
+                    fs::create_dir(parent).map_err(|e| e.to_string())?;
+                    created_dirs.push(parent.to_owned());
+                }
                 if let Some(original) = self.files.get(relative) {
                     if Original::read(&target)? != *original {
                         return Err(format!("{} changed externally", target.display()));
@@ -260,7 +292,7 @@ impl Snapshot {
             }
             Adventure::load(&self.root)
                 .map_err(|e| format!("Post-write validation failed: {e}"))?;
-            owned.write(&lock.join("COMMITTED.txt"), b"All proposed room changes were published and the adventure passed validation. If this folder remains, cleanup was interrupted. Review the current adventure before removing recovery files; do not automatically roll back a completed edit.\n")?;
+            owned.write(&lock.join("COMMITTED.txt"), b"All proposed content changes were published and the adventure passed validation. If this folder remains, cleanup was interrupted. Review the current adventure before removing recovery files; do not automatically roll back a completed edit.\n")?;
             Ok(())
         })();
         if let Err(error) = result {
@@ -284,6 +316,9 @@ impl Snapshot {
                         )
                     })?;
                     fs::remove_file(&backup).map_err(|e| e.to_string())?;
+                }
+                for dir in created_dirs.iter().rev() {
+                    fs::remove_dir(dir).map_err(|e| e.to_string())?;
                 }
                 Ok(())
             })();
@@ -389,6 +424,36 @@ mod tests {
         fn drop(&mut self) {
             fs::remove_dir_all(&self.0).unwrap();
         }
+    }
+    #[test]
+    fn content_transaction_rejects_escape_stale_and_invalid_references() {
+        let f = Fixture::new();
+        let snapshot = Snapshot::capture(&f.0).unwrap();
+        for path in [
+            "../items/key.toml",
+            "items/../../outside.toml",
+            "game.toml",
+            "saves/slot.rork",
+        ] {
+            assert!(snapshot
+                .commit(&BTreeMap::from([(PathBuf::from(path), String::new())]))
+                .is_err());
+        }
+        let changes = BTreeMap::from([(
+            PathBuf::from("items/key.toml"),
+            "id='key'\nname='Key'\ndescription='Key'\nportable=true\nstarting_room='missing'\n"
+                .into(),
+        )]);
+        assert!(snapshot
+            .commit(&changes)
+            .unwrap_err()
+            .contains("Proposed changes"));
+        assert!(!f.0.join("items/key.toml").exists());
+        fs::write(f.0.join("rooms/start.toml"), "externally changed").unwrap();
+        assert!(snapshot
+            .commit(&changes)
+            .unwrap_err()
+            .contains("externally"));
     }
     #[test]
     fn rollback_after_first_publication_removes_only_new_files() {

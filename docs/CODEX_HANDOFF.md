@@ -144,3 +144,12 @@ Windows verification passed: `cargo fmt --all --check`, `cargo test` (175 tests)
 A separate scripted Windows CLI smoke created a disposable new adventure, validated/played stats with enabled false and true, and checked the actual nested FIG tree. Native Linux and human usability verification remain pending. Runtime remains offline. FIG editing is manual until Phase 2E; no unsupported categories are generated. Toggle/stat changes can invalidate saves: guidance requires deliberate game.toml save_compatibility_version management, never automatic version changes. Existing creation hard-link/recovery limits remain. Git cannot retain empty directories in copied templates; `new` creates all eight and the template README explains this distinction.
 
 See CREATOR_QUICKSTART.md for Windows manual steps. User untracked files/folders (including root README.txt, SELF_DOCUMENTING_CONFIG_SPEC.md, apply_docs.py and existing adventures) were left untouched and excluded from commits.
+
+
+## Adventure Creator completion: Phase 2D-A (2026-11-18)
+
+Started from fetched main 14eefce on codex/phase-2d-items. Item menu supports creation, editing, display names, descriptions, aliases, portability, room selection, property previews and explicitly confirmed saves. Stable IDs and existing filenames are retained. Shared recoverable transactions now permit direct item/spell TOML paths and safely create missing content folders; existing room recovery behavior is retained.
+
+Self-review: preserved scalar decorations, conditional descriptions, CRLF and unchanged bytes; rejected path traversal before staging; tested invalid references and stale snapshots. Windows automated checks: 179 tests passed, formatting and strict Clippy passed (target/creator-complete). Scripted item create/edit/play, alias removal, cancellation and EOF are covered; these are simulated walkthroughs, not human usability testing. No Linux verification. No package/save version changes or autosaving.
+
+Next stacked phases: spells, artwork, interactions/conditional room settings, FIG editor, integration and end-to-end acceptance. Overall creator completion is still pending. Existing untracked user files were excluded.
