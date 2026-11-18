@@ -64,3 +64,10 @@ Required verification: defaults, character fields, terminology output/commands, 
 The authoritative requirements are in [`SELF_DOCUMENTING_CONFIG_SPEC.md`](SELF_DOCUMENTING_CONFIG_SPEC.md). Generated character and terminology files share the starter template text; exact previews use those same bytes. Comments beside every setting explain units, accepted values, dependencies and save compatibility. No new configuration categories exist.
 
 Changing RPG enablement for existing campaigns can invalidate saves. Deliberately increase `game.toml` `save_compatibility_version` for incompatible changes; do not change Cargo or RORK format versions. Terminology-only edits need no revision change. The loader rejects root-level character.fig/terminology.fig with placement guidance; files belong under config/.
+
+
+## Phase 2E-B FIG editor candidate (2026-11-18)
+
+Menu 3 edits character enablement, every current progression field and both implemented display labels. Displayed defaults and explanations come from the same commented templates used for new adventures. Existing omitted-enabled semantics remain true; absent files are only created after confirmed Save. Inline display tables, comments and omitted unrelated defaults survive. Unsupported categories are not generated. Full validation prevents disabling RPG while dependent content remains and checks overflow/cross-field constraints even while disabled.
+
+Branch codex/phase-2e-fig-editor stacks on interactions #11 (after #8-#10). Windows: 193 tests, fmt and strict Clippy pass. Tests cover all fields, exact previews, new missing config directories, legacy semantics, inline labels, cancel, invalid cross-field repair and dependent RPG content. Self-review improved failed-save handling: proposed drafts remain available for correction; stale/recovery conflicts instruct users to discard/reopen after review. No save compatibility or Cargo version is changed automatically. Native Linux/human usability and final integrated acceptance remain pending.

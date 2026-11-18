@@ -73,9 +73,9 @@ fn navigation_play_validation_and_reopen_preserve_content_and_saves() {
     )
     .unwrap();
     let before = snapshot(&f.root);
-    let output = f.run("bad\nhelp\n3\n4\n5\n6\n7\n0\n2\n1\nlook\nquit\n2\n1\nquit\n0\n");
+    let output = f.run("bad\nhelp\n3\n0\n4\n0\n5\n6\n0\n7\n0\n2\n1\nlook\nquit\n2\n1\nquit\n0\n");
     assert!(output.contains("Please choose 0-9"));
-    assert!(output.contains("not available yet"));
+    assert!(output.contains("CONFIGURATION"));
     assert_eq!(output.matches("Validation successful!").count(), 2);
     assert_eq!(output.matches("Returned to the creator.").count(), 2);
     assert!(output.contains("Starting Room"));
