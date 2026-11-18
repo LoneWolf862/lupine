@@ -279,9 +279,30 @@ pub(super) fn manage<R: BufRead, W: Write>(
             w.say(&format!("{}. {name} ({id})", i + 1))?;
         }
         w.say("N. Create new definition\n0. Return to creator")?;
+        if category == "shops" {
+            w.say("I. Prerequisite items\nT. Prerequisite spells\nC. Currencies\nThese managers save separately; return before starting a shop draft.")?;
+        }
         let choice = w.line("Selection:")?.trim().to_ascii_lowercase();
         if matches!(choice.as_str(), "0" | "back") {
             return Ok(());
+        }
+        if category == "shops" {
+            match choice.as_str() {
+                "i" => {
+                    manage(root, "items", w)?;
+                    continue;
+                }
+                "t" => {
+                    manage(root, "spells", w)?;
+                    continue;
+                }
+                "c" => {
+                    super::currency_edit::run(root, w.input, w.output)
+                        .map_err(|e| e.to_string())?;
+                    continue;
+                }
+                _ => (),
+            }
         }
         let mut d = if choice == "n" {
             w.say("Give this definition a stable internal ID; player-facing names can change later. The ID connects authored references and player saves.")?;

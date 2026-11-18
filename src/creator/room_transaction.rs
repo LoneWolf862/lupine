@@ -460,6 +460,51 @@ mod tests {
     }
 
     #[test]
+    fn rpg_changes_roll_back_and_reject_external_edits() {
+        let f = Fixture::new();
+        fs::write(f.0.join("config/character.fig"), "enabled=true\n").unwrap();
+        let manifest = fs::read_to_string(f.0.join("game.toml")).unwrap();
+        let changes=BTreeMap::from([
+            (PathBuf::from("game.toml"),format!("{manifest}\n[currency]\nid='gold'\nname='Gold'\n")),
+            (PathBuf::from("enemies/guard.toml"),"id='guard'\nname='Guard'\ndescription='Test'\nlevel=1\nmax_hp=20\n".into()),
+            (PathBuf::from("items/sword.toml"),"id='sword'\nname='Sword'\ndescription='Test'\nportable=true\nstarting_room='start'\n".into()),
+            (PathBuf::from("weapons/sword.toml"),"item='sword'\ndamage=5\n".into()),
+            (PathBuf::from("shops/shop.toml"),"id='shop'\nname='Shop'\nroom='start'\noffers=[]\n".into()),
+        ]);
+        let snapshot = Snapshot::capture(&f.0).unwrap();
+        let err = snapshot
+            .commit_with(&changes, |n| {
+                if n == 3 {
+                    Err("injected RPG publication failure".into())
+                } else {
+                    Ok(())
+                }
+            })
+            .unwrap_err();
+        assert!(err.contains("original content restored"));
+        assert_eq!(fs::read_to_string(f.0.join("game.toml")).unwrap(), manifest);
+        for p in changes
+            .keys()
+            .filter(|p| p.as_path() != Path::new("game.toml"))
+        {
+            assert!(!f.0.join(p).exists());
+        }
+        assert!(!f.0.join(LOCK).exists());
+        snapshot.commit(&changes).unwrap();
+        for path in changes.keys() {
+            let snapshot = Snapshot::capture(&f.0).unwrap();
+            let original = fs::read_to_string(f.0.join(path)).unwrap();
+            let external = format!("# external\n{original}");
+            fs::write(f.0.join(path), &external).unwrap();
+            assert!(snapshot
+                .commit(&changes)
+                .unwrap_err()
+                .contains("externally"));
+            assert_eq!(fs::read_to_string(f.0.join(path)).unwrap(), external);
+        }
+        Adventure::load(&f.0).unwrap();
+    }
+    #[test]
     fn mixed_category_rollback_restores_rules_and_removes_only_created_content() {
         let f = Fixture::new();
         fs::remove_dir(f.0.join("items")).unwrap();

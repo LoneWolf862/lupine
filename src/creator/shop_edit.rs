@@ -1,8 +1,8 @@
 //! Guided shops expose existing atomic offers, not a second transaction format.
 use super::{
     content_edit::{choose, entries, save, Document},
-    enemy_edit::{currencies, numeric, text},
     room_transaction::Snapshot,
+    rpg_fields::{currencies, numeric, text},
     rules_ui,
     wizard::Wizard,
 };
