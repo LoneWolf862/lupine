@@ -26,7 +26,7 @@ fn take_all_drop_all_and_spellbook_alias() {
         &game.id,
         &save_root,
         game.save_compatibility_version,
-        game.progression,
+        game.config.character,
         content,
         encounters,
         Cursor::new(

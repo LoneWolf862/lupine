@@ -21,7 +21,8 @@ fn fixture() -> (
     let encounters = EncounterContent::load(&root, &ids, true).unwrap();
     let mut state = GameState::new(&game.world);
     state.character = Some(
-        game.progression
+        game.config
+            .character
             .as_ref()
             .unwrap()
             .create_character()

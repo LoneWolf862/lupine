@@ -30,7 +30,7 @@ fn growth_default() -> u32 {
     120
 }
 
-/// Optional `character.toml`. Integer AP units are percentage points: 100 = 1.00x.
+/// Optional `config/character.fig`. Integer AP units are percentage points: 100 = 1.00x.
 /// `max_level = 0` means no authored cap, still bounded by numeric limits.
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]

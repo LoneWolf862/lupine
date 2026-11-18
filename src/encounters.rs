@@ -251,7 +251,7 @@ impl EncounterContent {
             }
             if !rpg_enabled {
                 return Err(format!(
-                    "{}: encounter tables require character.toml",
+                    "{}: encounter tables require config/character.fig",
                     path.display()
                 ));
             }

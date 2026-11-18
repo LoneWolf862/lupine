@@ -26,7 +26,8 @@ fn fixture() -> (
     let content = RpgContent::load(&root, &game.world, true).unwrap();
     let mut state = GameState::new(&game.world);
     state.character = Some(
-        game.progression
+        game.config
+            .character
             .as_ref()
             .unwrap()
             .create_character()
@@ -51,7 +52,7 @@ fn hidden_loot_drops_and_is_persistent_state() {
     let result = award_defeat(
         &encounter,
         &game.world,
-        game.progression.as_ref(),
+        game.config.character.as_ref(),
         &mut state,
         &enemy,
         &mut FixedRng(0),
@@ -126,7 +127,7 @@ fn chance_zero_means_no_loot_and_levels_are_capped() {
     let text = award_defeat(
         &encounter,
         &game.world,
-        game.progression.as_ref(),
+        game.config.character.as_ref(),
         &mut state,
         &enemy,
         &mut FixedRng(0),

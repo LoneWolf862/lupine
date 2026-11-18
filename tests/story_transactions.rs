@@ -1,5 +1,5 @@
 use lupine::rpg_content::RpgContent;
-use lupine::runner::run_with_io_and_saves_progression_content_encounters_wallet_shops;
+use lupine::runner::run_configured_with_io;
 use lupine::shops::ShopContent;
 use lupine::state::GameState;
 use lupine::story_loader::load_game;
@@ -22,7 +22,8 @@ fn fixture() -> (
     let mut state = GameState::new(&game.world);
     state.wallet = wallet.initial_balances();
     state.character = Some(
-        game.progression
+        game.config
+            .character
             .as_ref()
             .unwrap()
             .create_character()
@@ -81,13 +82,13 @@ fn scripted_use_altar_reuses_normal_shop_without_implicit_save() {
     let save_root =
         std::env::temp_dir().join(format!("lupine_story_txn_no_save_{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&save_root);
-    run_with_io_and_saves_progression_content_encounters_wallet_shops(
+    run_configured_with_io(
         game.world,
         &game.title,
         &game.id,
         &save_root,
         game.save_compatibility_version,
-        game.progression,
+        game.config,
         rpg,
         encounters,
         wallet,

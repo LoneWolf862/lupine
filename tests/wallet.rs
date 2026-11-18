@@ -28,7 +28,8 @@ fn setup() -> (
     wallet.validate_encounters(&encounters).unwrap();
     let mut state = GameState::new(&game.world);
     state.character = Some(
-        game.progression
+        game.config
+            .character
             .as_ref()
             .unwrap()
             .create_character()

@@ -16,7 +16,7 @@ fn main() -> std::io::Result<()> {
             let content = lupine::rpg_content::RpgContent::load(
                 std::path::Path::new(path),
                 &game.world,
-                game.progression.is_some(),
+                game.config.character.is_some(),
             )
             .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
             let room_ids = game
@@ -28,12 +28,12 @@ fn main() -> std::io::Result<()> {
             let encounters = lupine::encounters::EncounterContent::load(
                 std::path::Path::new(path),
                 &room_ids,
-                game.progression.is_some(),
+                game.config.character.is_some(),
             )
             .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
             let wallet = lupine::wallet::WalletContent::load(
                 std::path::Path::new(path),
-                game.progression.is_some(),
+                game.config.character.is_some(),
             )
             .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
             let shops = lupine::shops::ShopContent::load(
@@ -43,12 +43,12 @@ fn main() -> std::io::Result<()> {
                 &content,
             )
             .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
-            lupine::runner::run_with_game_id_compat_progression_content_encounters_wallet_shops(
+            lupine::runner::run_configured(
                 game.world,
                 &game.title,
                 &game.id,
                 game.save_compatibility_version,
-                game.progression,
+                game.config,
                 content,
                 encounters,
                 wallet,
@@ -61,7 +61,7 @@ fn main() -> std::io::Result<()> {
             let content = lupine::rpg_content::RpgContent::load(
                 std::path::Path::new(path),
                 &game.world,
-                game.progression.is_some(),
+                game.config.character.is_some(),
             )
             .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
             let room_ids = game
@@ -73,7 +73,7 @@ fn main() -> std::io::Result<()> {
             let encounters = lupine::encounters::EncounterContent::load(
                 std::path::Path::new(path),
                 &room_ids,
-                game.progression.is_some(),
+                game.config.character.is_some(),
             )
             .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
             encounters
@@ -81,7 +81,7 @@ fn main() -> std::io::Result<()> {
                 .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
             let wallet = lupine::wallet::WalletContent::load(
                 std::path::Path::new(path),
-                game.progression.is_some(),
+                game.config.character.is_some(),
             )
             .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
             wallet

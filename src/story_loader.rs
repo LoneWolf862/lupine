@@ -18,7 +18,7 @@ pub struct LoadedGame {
     pub title: String,
     pub save_compatibility_version: u32,
     pub world: World,
-    pub progression: Option<crate::rpg::Progression>,
+    pub config: crate::config::GameConfig,
 }
 
 #[derive(Debug, Deserialize)]
@@ -347,16 +347,7 @@ fn resolve_art_variants(
 pub fn load_game(directory: impl AsRef<Path>) -> Result<LoadedGame, String> {
     let directory = directory.as_ref();
     let manifest: Manifest = read_toml(&directory.join("game.toml"))?;
-    let progression_path = directory.join("character.toml");
-    let progression: Option<crate::rpg::Progression> = if progression_path.exists() {
-        let config: crate::rpg::Progression = read_toml(&progression_path)?;
-        config
-            .validate()
-            .map_err(|e| format!("{}: {e}", progression_path.display()))?;
-        Some(config)
-    } else {
-        None
-    };
+    let config = crate::config::GameConfig::load(directory)?;
     if manifest.format_version != 1 {
         return Err(format!(
             "{}: unsupported story format_version {} (expected 1)",
@@ -487,7 +478,7 @@ pub fn load_game(directory: impl AsRef<Path>) -> Result<LoadedGame, String> {
         title: manifest.title,
         save_compatibility_version: manifest.save_compatibility_version,
         world,
-        progression,
+        config,
     })
 }
 

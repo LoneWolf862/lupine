@@ -52,7 +52,7 @@ pub fn new_game(destination: &Path, id: &str, title: &str) -> Result<PathBuf, St
             &destination.join("interactions.toml"),
             "# Define [[interactions]] and [[exit_rules]] here when needed.\n",
         )?;
-        create_file(&destination.join("README.txt"), "Welcome to your Lupine adventure!\n\nEdit game.toml, rooms/start.toml, and add TOML files to rooms/ and items/.\nRun: lupine validate <project-folder>\nThen: lupine play <project-folder>\nFor examples see docs/CREATING_A_GAME.md in the Lupine source repository.\n")?;
+        create_file(&destination.join("README.txt"), "Welcome to your Lupine adventure!\n\nEdit game.toml, rooms/start.toml, and add TOML files to rooms/ and items/.\nRun: lupine validate <project-folder>\nThen: lupine play <project-folder>\nOptional engine settings: config/character.fig enables RPG; config/terminology.fig customizes display labels. Create only the files you need; see docs/CONFIG_FIG_SPEC.md. Player .rork saves are strictly manual.\nFor examples see docs/CREATING_A_GAME.md in the Lupine source repository.\n")?;
         Ok(())
     })();
     if let Err(error) = result {

@@ -2,7 +2,7 @@
 
 **Lupine v0.8.4** is a lightweight, offline, terminal-based interactive fiction engine written in Rust. It is inspired by the *command-driven interface* of classic text adventures; no original Zork story content is included. Game creators define their own adventures through TOML files rather than modifying Rust code. **HOWLBOUND** is only a tentative name for a future original adventure.
 
-> **Status:** v0.8.4-C is a test candidate pending Windows verification. Prebuilt Windows/Linux releases are planned for v0.9; at present, the commands below require the Rust toolchain.
+> **Status:** Unreleased, pre-1.0 development. Phase 1 introduces FIG configuration; see [configuration contract](docs/CONFIG_FIG_SPEC.md). A manual Windows/Linux packaging workflow exists; this source checkout uses the Rust toolchain. Native Linux and published-release claims require separate verification.
 
 ## Start here
 
@@ -35,7 +35,7 @@ Explore with `look`, `north`/`n` (and other directions), `examine <object>`, `ta
 
 ### Optional RPG features
 
-- `character.toml`: HP, MP, AP, level and XP.
+- `config/character.fig`: HP, MP, AP, level and XP.
 - `weapons/`, `spells/`: weapons, learned abilities and scrolls.
 - `enemies/` and room `[encounters]`: weighted combat encounters, XP, loot, hidden HP bars.
 - Encounter `persistence`: `temporary` (default), `room` (retains surviving enemy HP after retreat), `unique` (one-time cleared encounter).
@@ -72,3 +72,5 @@ For sample-level verification, `cargo run -- validate samples/rpg_persistent` an
 ## License
 
 MIT. Consult the repository's license file for the complete terms.
+
+Optional engine configuration uses TOML syntax in config/character.fig (RPG opt-in) and config/terminology.fig (display labels). No config files are required for a narrative-only game. See docs/CONFIG_FIG_SPEC.md in the source repository. Root character.toml is obsolete; move it into config/character.fig. Player saves remain strictly manual .rork files.

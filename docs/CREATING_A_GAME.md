@@ -46,6 +46,8 @@ Replace `my_adventure` with the actual relative or absolute folder path. When us
 
 If validation reports a filename and an unknown room/item, check that the referenced ID is spelled exactly as defined in another file. The starter is deliberately small: duplicate it and make one change at a time.
 
-## What is not implemented yet?
+## Configuration and manual saves
 
-The `save`, `load`, and `saves` commands and the `.rork` format are **planned for v0.6.0**; no autosaving will be added. A creator-side `lupine new` generator and standalone packaging are future milestones.
+Game content remains TOML. Optional engine settings belong in config/character.fig and config/terminology.fig; see CONFIG_FIG_SPEC.md for supported fields and defaults. The former root character.toml file is obsolete and must be moved, not duplicated.
+
+`new`, `add room`, `add item`, `add art` and manual `save`, `load`, `saves` are implemented. Never autosave. Full guided wizard editing is future work. Portable build automation exists; published releases and native platform verification must be reported separately.

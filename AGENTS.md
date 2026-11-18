@@ -7,6 +7,18 @@
 - Preserve the distinction between **engine**, **example/test fixtures**, **story content**, and any **future authoring tools**.
 - The long-term final release must enable **nontechnical authors** to create, validate, test, and package games without writing Rust. This is **not** a v0.3.0 or course-MVP gate. Read `docs/CREATOR_VISION.md`.
 
+## Current pre-release policy (2026-11-18)
+
+Lupine is unreleased and pre-1.0, with no external users, published games or production deployments requiring development-version compatibility. Justified breaking API and format changes are allowed. Do not add obsolete-format loaders or unnecessary compatibility layers. Update bundled samples, templates, tests and current documentation together; preserve gameplay unless a change is intentional.
+
+File responsibilities:
+
+- `.toml`: adventure content, identity/metadata, rooms/exits, items, spells/abilities, enemies/encounters, interactions/puzzles.
+- `.fig`: game-wide engine configuration and presets, using standard TOML syntax. Character settings belong exclusively in `config/character.fig`; terminology belongs in `config/terminology.fig`. Starting stats, progression and XP scaling are configuration. Future gameplay/balancing options require implemented behavior.
+- `.rork`: mutable player progress, saved strictly manually. No autosaving, save-on-quit or automatic checkpoints.
+
+Phase 1 relocates existing character fields/defaults/calculations without redesigning progression, adds display terminology, and updates creator guidance. No legacy `character.toml` loader. No save-format change is needed. Full wizard and parser upgrades are later phases.
+
 ## Architecture rules
 
 - Deterministic, small, offline terminal *runtime*: no LLM, cloud calls, accounts, web server, or networking dependency at play time.
@@ -15,7 +27,7 @@
 - Prefer stable identifiers and immutable content definitions distinct from mutable `GameState`.
 - Preserve Windows 10 and CachyOS/Linux portability; avoid machine-specific paths, commit `Cargo.lock`, and do not commit `target/`.
 - Choose the smallest maintainable implementation. Prefer the Rust standard library unless a dependency solves a concrete need.
-- Future game content should be loadable without editing engine Rust code. **The version-1 TOML schema is approved; the v0.5.0-B loader requires validation before marking it released.**
+- Content is loadable without Rust edits. Use the current FIG configuration specification and validate before play.
 
 ## Development workflow
 
@@ -25,6 +37,10 @@
 - Update documentation and record what is **implemented**, **proposed**, or **not verified**; do not claim features exist until tested.
 - The user prefers collaborative file/patch/ZIP updates and reviews changes before implementation; don't assume Codex automation is the default.
 - Protect CSE 310 requirements and the instructor README-template obligation; do not invent time logs or submission evidence.
+
+## Historical milestones -- not current instructions
+
+The following sections record prior development stages. Their compatibility requirements and feature-status claims are superseded by the current policy above and current source.
 
 ## Scope control
 
@@ -81,6 +97,6 @@ Build an optional TOML-configured RPG system, detailed in `docs/COMBAT_RPG_SPEC.
 
 - v0.8.0-B: RPG abilities in `src/rpg_content.rs`; RORK includes `learned_abilities`; `ItemLocation::Consumed` for one-use teaching scrolls. Never autosave. Do not imply damage spells currently attack enemies.
 
-## Current handoff — v0.8.4-C (2026-11-17 candidate)
+## Historical handoff — v0.8.4-C (2026-11-17 candidate)
 
 Prior sections are historical milestone instructions, not the current feature inventory. v0.8.4-A and v0.8.4-B were verified by the user on Windows. The v0.8.4-C candidate consolidates defeat text, moves the test module to end-of-file for Clippy, updates documentation and Cargo version, and adds sample-loading regression coverage. Before marking C released, verify with `cargo fmt --all && cargo test && cargo clippy --all-targets -- -D warnings` and interactive play on the user's Windows setup. **Do not change save format or game save compatibility versions just to change the Cargo crate version.** Never autosave. Target v0.9 for standalone Windows/Linux packaging, and do not claim Linux native testing before actually running it.

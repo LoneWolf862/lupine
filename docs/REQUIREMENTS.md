@@ -1,5 +1,7 @@
 # Lupine Interactive Fiction Engine — Requirements
 
+> Historical design/stage record: feature-status and compatibility claims below describe earlier development. Current policy and file paths are in [NEXT_PHASE_REQUIREMENTS.md](NEXT_PHASE_REQUIREMENTS.md) and [CONFIG_FIG_SPEC.md](CONFIG_FIG_SPEC.md). Character configuration now belongs in `config/character.fig`.
+
 **Status:** v0.5.0-A verified on Windows; v0.5.0-B TOML loader candidate in testing  
 **Language:** Rust (Cargo)  
 **Course:** CSE 310 Applied Programming — Rust module  

@@ -110,7 +110,7 @@ pub fn run_with_io_and_saves_compat<R: BufRead, W: Write>(
     )
 }
 
-/// Optional RPG progression is activated only by a game's `character.toml`.
+/// Optional RPG progression is activated only by a game's `config/character.fig`.
 #[allow(clippy::too_many_arguments)]
 pub fn run_with_io_and_saves_progression<R: BufRead, W: Write>(
     world: World,
@@ -189,12 +189,15 @@ pub fn run_with_game_id_compat_progression_content_encounters_wallet(
     encounters: EncounterContent,
     wallet: WalletContent,
 ) -> io::Result<()> {
-    run_with_game_id_compat_progression_content_encounters_wallet_shops(
+    run_configured(
         world,
         title,
         game_id,
         compatibility_version,
-        progression,
+        crate::config::GameConfig {
+            character: progression,
+            ..Default::default()
+        },
         content,
         encounters,
         wallet,
@@ -204,25 +207,25 @@ pub fn run_with_game_id_compat_progression_content_encounters_wallet(
 
 /// Run with creator-authored shop definitions (opt-in).
 #[allow(clippy::too_many_arguments)]
-pub fn run_with_game_id_compat_progression_content_encounters_wallet_shops(
+pub fn run_configured(
     world: World,
     title: &str,
     game_id: &str,
     compatibility_version: u32,
-    progression: Option<crate::rpg::Progression>,
+    config: crate::config::GameConfig,
     content: crate::rpg_content::RpgContent,
     encounters: EncounterContent,
     wallet: WalletContent,
     shops: ShopContent,
 ) -> io::Result<()> {
     let root = default_save_root()?;
-    run_with_io_and_saves_progression_content_encounters_wallet_shops(
+    run_configured_with_io(
         world,
         title,
         game_id,
         &root,
         compatibility_version,
-        progression,
+        config,
         content,
         encounters,
         wallet,
@@ -303,13 +306,16 @@ pub fn run_with_io_and_saves_progression_content_encounters_wallet<R: BufRead, W
     input: R,
     output: W,
 ) -> io::Result<()> {
-    run_with_io_and_saves_progression_content_encounters_wallet_shops(
+    run_configured_with_io(
         world,
         title,
         game_id,
         root,
         compatibility_version,
-        progression,
+        crate::config::GameConfig {
+            character: progression,
+            ..Default::default()
+        },
         content,
         encounters,
         wallet,
@@ -321,13 +327,13 @@ pub fn run_with_io_and_saves_progression_content_encounters_wallet<R: BufRead, W
 
 /// Testable runner with creator-configured shops.
 #[allow(clippy::too_many_arguments)]
-pub fn run_with_io_and_saves_progression_content_encounters_wallet_shops<R: BufRead, W: Write>(
+pub fn run_configured_with_io<R: BufRead, W: Write>(
     world: World,
     title: &str,
     game_id: &str,
     root: &Path,
     compatibility_version: u32,
-    progression: Option<crate::rpg::Progression>,
+    config: crate::config::GameConfig,
     content: crate::rpg_content::RpgContent,
     encounters: EncounterContent,
     wallet: WalletContent,
@@ -335,6 +341,7 @@ pub fn run_with_io_and_saves_progression_content_encounters_wallet_shops<R: BufR
     mut input: R,
     mut output: W,
 ) -> io::Result<()> {
+    let progression = &config.character;
     if compatibility_version == 0 {
         return Err(io::Error::new(
             io::ErrorKind::InvalidInput,
@@ -640,7 +647,11 @@ pub fn run_with_io_and_saves_progression_content_encounters_wallet_shops<R: BufR
         if (verb.eq_ignore_ascii_case("spellbook") || verb.eq_ignore_ascii_case("spells"))
             && argument.is_empty()
         {
-            writeln!(output, "{}\n", content.spellbook(&state))?;
+            writeln!(
+                output,
+                "{}\n",
+                content.spellbook(&state, &config.terminology.display)
+            )?;
             continue;
         }
         if verb.eq_ignore_ascii_case("weapons") && argument.is_empty() {
@@ -775,7 +786,7 @@ pub fn run_with_io_and_saves_progression_content_encounters_wallet_shops<R: BufR
                         continue;
                     }
                     if progression.is_none() && restored.character.is_some() {
-                        writeln!(output, "Load failed: this save contains RPG character data but the game has no character.toml.\n")?;
+                        writeln!(output, "Load failed: this save contains RPG character data but the game has no config/character.fig.\n")?;
                         continue;
                     }
                     if restored
@@ -830,6 +841,13 @@ pub fn run_with_io_and_saves_progression_content_encounters_wallet_shops<R: BufR
                         break;
                     }
                 }
+            }
+            Ok(crate::commands::Command::Help) => {
+                writeln!(
+                    output,
+                    "{}\n",
+                    crate::render::help_with_terms(&config.terminology.display)
+                )?;
             }
             Ok(command) => {
                 let old_room = state.current_room.clone();

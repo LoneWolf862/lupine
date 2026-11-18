@@ -143,7 +143,7 @@ impl RpgContent {
             }
         }
         if !has_character && (!result.weapons.is_empty() || !result.abilities.is_empty()) {
-            return Err("Weapons and spells require character.toml for HP/MP/AP".into());
+            return Err("Weapons and spells require config/character.fig for HP/MP/AP".into());
         }
         Ok(result)
     }
@@ -184,7 +184,7 @@ impl RpgContent {
         format!("You learn {}. The teaching item is consumed.", ability.name)
     }
 
-    pub fn spellbook(&self, state: &GameState) -> String {
+    pub fn spellbook(&self, state: &GameState, terms: &crate::config::DisplayTerms) -> String {
         let mut spells = state
             .learned_abilities
             .iter()
@@ -192,9 +192,9 @@ impl RpgContent {
             .collect::<Vec<_>>();
         spells.sort_by(|a, b| a.name.cmp(&b.name));
         if spells.is_empty() {
-            return "Your spellbook is empty.".into();
+            return format!("Your {} is empty.", terms.spellbook);
         }
-        let mut output = String::from("Known abilities:\n");
+        let mut output = format!("Known {}:\n", terms.spells);
         for spell in spells {
             output.push_str(&format!(
                 "  {} ({} MP) — {}\n",

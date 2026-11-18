@@ -1,6 +1,18 @@
 # Lupine — Codex Development Handoff
 
-**Status:** Documentation handoff **only**. Do not start implementation until the user supplies the first Codex prompt.
+## Current pre-release policy (2026-11-18)
+
+Lupine is unreleased and pre-1.0, with no external users, published games or production deployments requiring development-version compatibility. Justified breaking API and format changes are allowed. Do not add obsolete-format loaders or unnecessary compatibility layers. Update bundled samples, templates, tests and current documentation together; preserve gameplay unless a change is intentional.
+
+File responsibilities:
+
+- `.toml`: adventure content, identity/metadata, rooms/exits, items, spells/abilities, enemies/encounters, interactions/puzzles.
+- `.fig`: game-wide engine configuration and presets, using standard TOML syntax. Character settings belong exclusively in `config/character.fig`; terminology belongs in `config/terminology.fig`. Starting stats, progression and XP scaling are configuration. Future gameplay/balancing options require implemented behavior.
+- `.rork`: mutable player progress, saved strictly manually. No autosaving, save-on-quit or automatic checkpoints.
+
+Phase 1 relocates existing character fields/defaults/calculations without redesigning progression, adds display terminology, and updates creator guidance. No legacy `character.toml` loader. No save-format change is needed. Full wizard and parser upgrades are later phases.
+
+**Status:** Phase 1 implemented and automatically verified on Windows; pending user review. Wizard/parser expansion remains future work.
 
 ## Project identity and baseline
 
@@ -23,7 +35,7 @@
 
 ## Workstreams
 
-1. Optional, default-compatible, TOML-under-the-hood `.fig` configurations for suitable game-wide settings and flavoring.
+1. Per-game, TOML-under-the-hood `.fig` configurations for suitable game-wide settings and flavoring.
 2. Expand existing **text-only** creator wizard to build rooms, exits, items, interactions and optional FIG settings; display **actual file previews** to passively teach authoring.
 3. Improve deterministic parser/object resolution, ambiguity handling, typo suggestions and errors; never require an LLM.
 4. Low-risk cleanup with regression tests and updated current-state documentation.
@@ -34,14 +46,20 @@
 - Authoring is text/TOML/FIG; no story-specific engine code.
 - `.rork` retains explicit **manual only** saves; **absolutely no autosave**.
 - Do not modify `.rork` format or compatibility versions as a side-effect.
-- Existing games without `.fig` must behave the same; protect old samples/CLI/Rust APIs.
+- Migrate bundled RPG games to `config/character.fig`; no duplicate legacy loader. Preserve gameplay, not obsolete development formats.
 - No destructive overwrites or file traversal via creator input.
 - Keep tests and changes small, reviewable and accurately reported.
 - Prefer architectural proposals before changes where the design is undecided.
 
-## Next action, after the user supplies a separate prompt
+## Phase 1 implementation and verification (2026-11-18)
 
-Perform a **read-only repository audit**: map existing functionality, identify exact integration points, verify current defaults and progression formulas, propose a minimal FIG schema, analyze wizard and parser gaps (including RPG paths), list risks and regression tests, and recommend the smallest first implementation PR. Make **no code changes** in that first audit. The user will review it before implementation.
+Implemented configuration foundation; pending user review. `config.rs` loads immutable per-game GameConfig; LoadedGame carries config instead of a separate progression field. Full runner entry points are run_configured and run_configured_with_io. Existing convenience entry points use default terminology. Spellbook rendering takes explicit display terms.
+
+All five bundled character files moved to config/character.fig with unchanged contents. Root character.toml is rejected with move guidance, not parsed. The RPG transactions sample demonstrates terminology.fig. Generated and starter narrative adventures remain minimal with no unnecessary config files; their instructions explain opt-in.
+
+Windows checks executed successfully: cargo fmt --all -- --check; cargo test (114 tests); cargo clippy --all-targets -- -D warnings. CLI validation passed for story_example, templates/starter and all four RPG samples. Scripted RPG play verified custom empty/populated spellbook labels and unchanged commands. The independent Rust sample compiled after refreshing its stale local Lupine package version in its Cargo.lock; its initial --locked check had correctly refused that update.
+
+No RORK serialization/version or progression arithmetic changes. No dependency additions, full wizard overhaul or parser upgrades. Native Linux, human interactive acceptance and published package execution were not performed. Existing extreme-XP arithmetic limitations identified in the audit are unchanged and remain separate work.
 
 ## Course obligations
 

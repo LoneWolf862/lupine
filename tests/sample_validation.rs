@@ -14,7 +14,7 @@ fn bundled_story_samples_pass_all_content_validators() {
             .join(name);
         let game =
             lupine::story_loader::load_game(&path).unwrap_or_else(|e| panic!("{name}: story: {e}"));
-        let has_rpg = game.progression.is_some();
+        let has_rpg = game.config.character.is_some();
         let rpg = lupine::rpg_content::RpgContent::load(&path, &game.world, has_rpg)
             .unwrap_or_else(|e| panic!("{name}: RPG: {e}"));
         let room_ids: Vec<String> = game.world.rooms.iter().map(|r| r.id.clone()).collect();
