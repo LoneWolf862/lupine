@@ -17,6 +17,8 @@ struct GameManifest<'a> {
 mod art_edit;
 mod content_edit;
 mod files;
+mod interaction_edit;
+mod room_advanced;
 mod room_edit;
 mod room_transaction;
 mod rules_ui;

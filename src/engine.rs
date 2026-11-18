@@ -20,13 +20,23 @@ fn resolve<'a>(world: &'a World, state: &GameState, text: &str) -> Result<&'a It
     let exact: Vec<&Item> = accessible
         .iter()
         .copied()
-        .filter(|item| item.name == text || item.aliases.iter().any(|alias| alias.as_str() == text))
+        .filter(|item| {
+            item.name.to_lowercase() == text
+                || item
+                    .aliases
+                    .iter()
+                    .any(|alias| alias.to_lowercase() == text)
+        })
         .collect();
     let candidates = if exact.is_empty() {
         accessible
             .into_iter()
             .filter(|item| {
-                item.name.contains(text) || item.aliases.iter().any(|alias| alias.contains(text))
+                item.name.to_lowercase().contains(text)
+                    || item
+                        .aliases
+                        .iter()
+                        .any(|alias| alias.to_lowercase().contains(text))
             })
             .collect::<Vec<_>>()
     } else {

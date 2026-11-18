@@ -167,3 +167,86 @@ fn unreferenced_artwork_control_codes_are_rejected() {
     assert!(out.contains("terminal control characters"), "{out}");
     assert!(!f.game.join("art/unsafe.txt").exists());
 }
+
+#[test]
+fn locked_door_and_conditional_prose_are_created_without_toml_edits() {
+    let f = Fixture::new();
+    let out=f.run("7\nn\nHall\n\nA hall.\n1\n1\nnorth\n\n0\n6\nyes\n0\n9\n2\n2\n1\nn\nkey\nKey\nA brass key.\nn\ndoor\nDoor\nA fixed door.\n\nUnlocked.\nAlready unlocked.\nLocked.\nyes\n0\n7\n2\n7\n1\n1\n1\ndoor_open\n0\nThe doorway stands open.\n0\n0\n6\nyes\n0\n2\n1\nnorth\ntake key\nuse key on door\nlook\nnorth\nsouth\nsave door_test\nload door_test\nquit\n0\n");
+    assert!(out.contains("Locked door saved and validated"), "{out}");
+    assert!(out.contains("The doorway stands open."), "{out}");
+    assert!(out.contains("> Locked."), "{out}");
+    assert!(out.contains("Unlocked."));
+    assert!(out.contains("Loaded: door_test"));
+    let rules: toml::Value = f.read("interactions.toml").parse().unwrap();
+    assert_eq!(
+        rules["exit_rules"][0]["requires"][0]["flag_set"].as_str(),
+        Some("door_open")
+    );
+    let door: toml::Value = f.read("items/door.toml").parse().unwrap();
+    assert_eq!(door["portable"].as_bool(), Some(false));
+}
+#[test]
+fn canceled_locked_door_publishes_none_of_its_related_files() {
+    let f = Fixture::new();
+    f.run("7\nn\nHall\n\nA hall.\n1\n1\nnorth\n\n0\n6\nyes\n0\n0\n");
+    let old = f.read("interactions.toml");
+    f.run("9\n2\n2\n1\nn\nkey\nKey\nKey.\nn\ndoor\nDoor\nDoor.\ncancel\n0\n0\n");
+    assert_eq!(f.read("interactions.toml"), old);
+    assert!(!f.game.join("items/key.toml").exists());
+    assert!(!f.game.join("items/door.toml").exists());
+}
+#[test]
+fn rules_edit_preserves_comments_and_existing_conditions() {
+    let f = Fixture::new();
+    f.run("4\nn\nkey\n1\ns\nyes\nn\ndoor\n1\ns\nyes\n0\n0\n");
+    fs::write(f.game.join("interactions.toml"),"# rules\n[[interactions]] # original\nitem='key'\ntarget='door'\nrequires=[{has_item='key'}, {flag_unset='opened'}] # requirements\neffects=[{set_flag='opened'}]\nsuccess_text='Old' # success\nfailure_text='No'\n").unwrap();
+    let out = f.run("9\n1\n2\n1\n5\nChanged.\n4\n2\nother\n3\n2\n1\n0\n0\ns\nyes\n0\n0\n");
+    assert!(out.contains("Changes saved"), "{out}");
+    let text = f.read("interactions.toml");
+    assert!(text.contains("# original"));
+    assert!(text.contains("# requirements"));
+    assert!(text.contains("# success"));
+    let v: toml::Value = text.parse().unwrap();
+    assert_eq!(
+        v["interactions"][0]["requires"].as_array().unwrap().len(),
+        2
+    );
+    assert_eq!(v["interactions"][0]["effects"].as_array().unwrap().len(), 3);
+}
+
+#[test]
+fn advanced_room_encounters_preserve_existing_weights_and_conditions() {
+    let f = Fixture::new();
+    fs::write(f.game.join("config/character.fig"), "enabled=true\n").unwrap();
+    fs::write(
+        f.game.join("enemies/guard.toml"),
+        "id='guard'\nname='Guard'\ndescription='A guard'\nlevel=1\nmax_hp=20\n",
+    )
+    .unwrap();
+    let room=f.read("rooms/start.toml")+"\n[encounters] # authored encounter\nchance=40 # probability\npersistence='room'\n[[encounters.enemies]] # keep this\nenemy='guard'\nweight=3\nrequires=[{flag_unset='peace'}]\n";
+    fs::write(f.game.join("rooms/start.toml"), room).unwrap();
+    let out = f.run("7\n1\n7\n2\n1\n60\n4\n3\n6\n1\n2\n5\n0\n0\n0\n6\nyes\n0\n0\n");
+    assert!(out.contains("Room changes saved"), "{out}");
+    let text = f.read("rooms/start.toml");
+    assert!(text.contains("# keep this"));
+    assert!(text.contains("# probability"));
+    let v: toml::Value = text.parse().unwrap();
+    assert_eq!(v["encounters"]["chance"].as_integer(), Some(60));
+    assert_eq!(v["encounters"]["persistence"].as_str(), Some("unique"));
+    assert_eq!(
+        v["encounters"]["enemies"][0]["weight"].as_integer(),
+        Some(5)
+    );
+    assert_eq!(
+        v["encounters"]["enemies"][0]["requires"][0]["flag_unset"].as_str(),
+        Some("peace")
+    );
+}
+#[test]
+fn mixed_case_item_names_match_without_aliases_and_keep_ambiguity() {
+    let f = Fixture::new();
+    f.run("4\nn\nkey\n1\n1\nBrass Key\ns\nyes\nn\nother\n1\n1\nIron Key\ns\nyes\n0\n0\n");
+    let out = f.run("1\ntake key\ntake BRASS KEY\ninventory\nquit\nyes\n0\n");
+    assert!(out.contains("Which key do you mean"), "{out}");
+    assert!(out.contains("You take the Brass Key"), "{out}");
+}

@@ -166,3 +166,12 @@ Choose 5 after explicitly enabling RPG. N creates a definition with a unique ID;
 ## Artwork Manager (Phase 2D-C candidate)
 
 Choose 6, then N to create an art filename or a number to edit. Option 1 accepts multiline artwork; /end finishes. Spaces, blank lines and ordinary backslashes survive exactly. Escape a literal /end, back or cancel line with a backslash. Option 2 previews and S confirms a validated save. R in Artwork Manager chooses a room: set/remove its default picture, append a conditional variant, remove a numbered variant, preview or save. Variant order is first-match; the default is the fallback. Multiple requirements must all be true. Artwork remains UTF-8 under art/, limited to 64 KiB without terminal controls. Existing nested .txt files can be edited; new names use the direct art/ folder. Files are not deleted when references are removed.
+
+
+## Puzzles and advanced rooms (Phase 2E-A candidate)
+
+Choose main menu 9. Option 1 manages interaction and conditional-exit rules: add, select/edit, remove, preview and S to save. Interactions use an object on a target; edit requirements, effects, success and failure messages. Requirements support carried items and set/unset flags; effects set/clear flags or move an item to a room. Each item/target pair and room/direction has one rule. A flag is a named yes/no memory, initially unset. All requirements must pass.
+
+Option 2 guides a locked door on an already-connected exit. Choose its room/direction, select or create a portable key and a fixed door, name the unlocked flag and write outcome messages. Review all generated files and explicitly confirm one transaction. Only the chosen direction is locked; add a reverse-direction rule if required. Existing conflicting rules are rejected by validation, not replaced silently. After saving, play: try the blocked exit, take the key, use key on door, then travel. Use authored object names in these commands.
+
+Room Manager > select room > 7 exposes conditional descriptions and encounter settings. Description variants are first-match and support {{objects}}; selecting one edits its text or conditions without replacing other variants. Encounters require explicitly enabled RPG and existing enemy definitions. Change probability, group bounds, persistence and weighted choices/flag requirements; return to Room Options and Save. Enemy HP remains private in gameplay. Removing rules/variants is explicit. Preview and full validation still precede publication.
