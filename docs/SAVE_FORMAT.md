@@ -1,5 +1,7 @@
 # RORK Save Format — v0.6.0-A Working Specification
 
+> Historical design/stage record: feature-status and compatibility claims below describe earlier development. Current policy and file paths are in [NEXT_PHASE_REQUIREMENTS.md](NEXT_PHASE_REQUIREMENTS.md) and [CONFIG_FIG_SPEC.md](CONFIG_FIG_SPEC.md). Character configuration now belongs in `config/character.fig`.
+
 **Stage A: serialization only (not yet integrated into gameplay).** `src/save.rs` provides `encode_save` and `decode_save`, with TOML-based save format version 1 and validation against the currently loaded `World`. The `save`, `load`, and `saves` commands, filesystem storage, overwrite confirmation, unsaved-progress warnings and cross-platform compatibility policy remain **planned for stages B/C**.
 
 ## Locked requirements

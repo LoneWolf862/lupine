@@ -10,11 +10,11 @@ cargo run -- validate my_adventure
 cargo run -- play my_adventure
 ```
 
-The interactive `cargo run -- new` wizard is an alternative to the positional form. `game.toml` defines the stable game ID, title and starting room. Place room definitions in `rooms/` and object definitions in `items/`. Run `validate` after each significant change. A story without `character.toml` can remain a pure puzzle/exploration adventure.
+The interactive `cargo run -- new` wizard is an alternative to the positional form. `game.toml` defines the stable game ID, title and starting room. Place room definitions in `rooms/` and object definitions in `items/`. Run `validate` after each significant change. A story without `config/character.fig` can remain a pure puzzle/exploration adventure.
 
 ## 2. Character and spells
 
-To add an RPG player, use `character.toml` following `samples/rpg_spellbook/character.toml`. Define weapon items in `items/` and their mechanics in `weapons/`; define spell effects in `spells/`. The player can check `stats`, `weapons`, `spellbook` or `spells`, learn from scrolls, and target enemies in combat. Learned spells, player stats and consumed scrolls are stored **only on explicit `save`**.
+To add an RPG player, use `config/character.fig` following `samples/rpg_spellbook/config/character.fig`. Define weapon items in `items/` and their mechanics in `weapons/`; define spell effects in `spells/`. The player can check `stats`, `weapons`, `spellbook` or `spells`, learn from scrolls, and target enemies in combat. Learned spells, player stats and consumed scrolls are stored **only on explicit `save`**.
 
 ## 3. Enemies and encounter behavior
 

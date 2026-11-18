@@ -1,5 +1,7 @@
 # Lupine RPG / Combat Architecture — Design Specification v0.8
 
+> Historical design/stage record: feature-status and compatibility claims below describe earlier development. Current policy and file paths are in [NEXT_PHASE_REQUIREMENTS.md](NEXT_PHASE_REQUIREMENTS.md) and [CONFIG_FIG_SPEC.md](CONFIG_FIG_SPEC.md). Character configuration now belongs in `config/character.fig`.
+
 **Status:** Design locked for staged implementation; only v0.8.0-A character foundations are included in the accompanying patch. Weapons, spells, enemies and encounters are NOT implemented yet. The system is optional: adventures without `character.toml` remain pure interactive fiction. No game-specific Rust code is necessary for the planned content formats.
 
 ## Non-negotiable requirements

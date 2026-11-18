@@ -1,6 +1,18 @@
 # Lupine — Next Development Phase Requirements
 
-**Status:** Design requirements; implementation pending Codex audit.  
+## Current pre-release policy (2026-11-18)
+
+Lupine is unreleased and pre-1.0, with no external users, published games or production deployments requiring development-version compatibility. Justified breaking API and format changes are allowed. Do not add obsolete-format loaders or unnecessary compatibility layers. Update bundled samples, templates, tests and current documentation together; preserve gameplay unless a change is intentional.
+
+File responsibilities:
+
+- `.toml`: adventure content, identity/metadata, rooms/exits, items, spells/abilities, enemies/encounters, interactions/puzzles.
+- `.fig`: game-wide engine configuration and presets, using standard TOML syntax. Character settings belong exclusively in `config/character.fig`; terminology belongs in `config/terminology.fig`. Starting stats, progression and XP scaling are configuration. Future gameplay/balancing options require implemented behavior.
+- `.rork`: mutable player progress, saved strictly manually. No autosaving, save-on-quit or automatic checkpoints.
+
+Phase 1 relocates existing character fields/defaults/calculations without redesigning progression, adds display terminology, and updates creator guidance. No legacy `character.toml` loader. No save-format change is needed. Full wizard and parser upgrades are later phases.
+
+**Status:** Phase 1 implemented; Windows checks passed; pending user review.
 **Baseline:** Existing Lupine v0.8.4 Rust engine; v0.8.4-C described as a Windows verification candidate in the reviewed repository (November 17, 2026).  
 **Scope:** Enhance the existing repository, not rebuild the engine or write the story for HOWLBOUND.
 
@@ -19,7 +31,7 @@ The current README identifies a TOML story loader and validator, `new` wizard, `
 3. **Story independence.** The same Lupine build runs unrelated adventures without game-specific Rust branches.
 4. **Data roles:** `.toml` for story content; optional `.fig` for game-wide flavor/configuration (using TOML syntax); `.rork` for existing manual player saves. Do not reinterpret saves as config.
 5. **No automatic saving.** Preserve the explicit `save`, `load`, and `saves` commands; no autosave, checkpoint save, or save-on-quit.
-6. **Backward compatibility.** Existing games lacking `.fig` must work with previous defaults. Preserve public APIs, story formats, RORK compatibility and previously demonstrated behavior where practical; propose and review any unavoidable change first.
+6. **Pre-release evolution.** Make justified API/format changes without obsolete-format loaders; migrate all bundled consumers. Preserve gameplay and default behavior. Narrative games need no FIG files; RPG games opt in with `config/character.fig`.
 7. **Safe authoring.** No silent overwrites; guard paths, IDs and input; canceling or an error must not destroy user-created files.
 8. **One underlying schema.** The wizard produces ordinary editable files that the same runtime/validator consumes; no hidden wizard-only logic.
 
@@ -27,7 +39,7 @@ The current README identifies a TOML story loader and validator, `new` wizard, `
 
 Create a configuration mechanism for engine-wide presentation and meaningful gameplay knobs, with defaults and validation. Candidate settings include display terms (spellbook, mana, currency), command aliases where safe, optional feature toggles, and progression scaling where the existing implementation supports it. Differentiate game-wide knobs from data for a particular item, spell, enemy, or room. Files are optional and hand-editable. See `CONFIG_FIG_SPEC.md`.
 
-**Acceptance:** An existing adventure with no config plays unchanged; a user can hand-edit an example FIG setting and see the documented effect; invalid settings produce understandable errors with file/key names; tests cover defaults and compatibility.
+**Acceptance:** A narrative adventure with no config works; migrated RPG examples retain their behavior; a user can hand-edit an example FIG setting and see the documented effect; invalid settings produce understandable errors with file/key names; tests cover defaults and compatibility.
 
 ## Workstream B — Guided creator wizard
 

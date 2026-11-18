@@ -34,7 +34,7 @@ fn defeat_blocks_gameplay_but_allows_manual_load_and_quit() {
         EncounterContent, EncounterEntry, EncounterPersistence, EncounterTable, EnemyAttack,
     };
     use lupine::rpg_content::RpgContent;
-    use lupine::runner::run_with_io_and_saves_progression_content_encounters_wallet_shops;
+    use lupine::runner::run_configured_with_io;
     use lupine::shops::ShopContent;
     use lupine::wallet::WalletContent;
     use std::io::Cursor;
@@ -75,13 +75,13 @@ fn defeat_blocks_gameplay_but_allows_manual_load_and_quit() {
     let _ = std::fs::remove_dir_all(&save_root);
     let script = "take dagger\nattack goblin with dagger\nbuy healing\ntake all\nsave Cheating\nsaves\nload not_found\nquit\nyes\n";
     let mut output = Vec::new();
-    run_with_io_and_saves_progression_content_encounters_wallet_shops(
+    run_configured_with_io(
         game.world,
         &game.title,
         &game.id,
         &save_root,
         game.save_compatibility_version,
-        game.progression,
+        game.config,
         rpg,
         encounters,
         wallet,

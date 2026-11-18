@@ -1,103 +1,58 @@
-# `.fig` Game Configuration — Design Specification
+# FIG configuration foundation
 
-**Status: Proposal. Not currently implemented.** All example TOML snippets are *candidate schema*, not working files until a schema is approved and implemented.
+Status: Phase 1 implementation contract. Verification results are recorded in CODEX_HANDOFF.md.
+
+Lupine is unreleased/pre-1.0. Justified breaking changes are permitted; there is no legacy configuration loader. Bundled consumers must use this contract.
 
 ## File responsibilities
 
-| Format | Contents |
-|---|---|
-| `*.toml` | Author-defined story: `game.toml`, rooms, items, spells, enemies, interactions and exits |
-| `config/*.fig` | Optional **game-wide** configuration: terminology, adjustable rules, balancing |
-| `*.rork` | Existing mutable save state, written **only on explicit player request** |
+- `.toml`: adventure content and identity/metadata, including rooms/exits, items, spells/abilities, enemies/encounters and interactions/puzzles.
+- `.fig`: game-wide engine settings and presets, with standard TOML syntax.
+- `.rork`: mutable gameplay progress, written only by explicit player saving. No autosave, save-on-quit or automatic checkpoints.
 
-A `.fig` file uses ordinary TOML syntax and the existing Rust `toml`/`serde` ecosystem. It is a distinctive file extension for creators, not a new custom grammar. The runtime should clearly document how to enable TOML editor syntax highlighting for `.fig`.
+## Supported configuration
 
-## Proposed layout
+Only `config/character.fig` and `config/terminology.fig` are supported. No directory or files are needed for a narrative-only game using default terminology. Unsupported `.fig` filenames are errors, not silently ignored options. Configure your editor to treat `*.fig` as TOML for syntax highlighting.
 
-```text
-adventure/
-  game.toml
-  config/
-    terminology.fig
-    progression.fig
-    gameplay.fig
-    combat.fig
-    parser.fig
-  rooms/
-  items/
-  interactions.toml
+`config/character.fig` has the same top-level fields, defaults and progression calculations as the former development-only `character.toml`. Move that file; do not keep both. The obsolete root file is rejected with migration guidance, never loaded. Presence of character.fig enables RPG; an empty file enables default RPG stats. Absence disables RPG, rather than implicitly creating a character.
+
+```toml
+starting_level = 1
+max_level = 0 # no authored cap
+starting_hp = 100
+starting_mp = 30
+starting_ap = 100 # 1.00x weapon damage
+hp_per_level = 10
+mp_per_level = 5
+ap_per_level = 10
+base_requirement = 100
+growth_percent = 120
 ```
 
-The filenames are candidates, not mandatory. Do not manufacture empty files or expose settings that the engine does not actually implement. Simple games can rely on defaults without any `config/` directory.
+Stats at level L are base + gain * (L - 1). XP cost starts at base_requirement and repeatedly multiplies by growth_percent / 100 with existing integer rounding and bounds. Level-ups consume thresholds and refill HP/MP. This phase does not change arithmetic or add gameplay settings. See CHARACTER_PROGRESS.md.
 
-## Configuration resolution contract
-
-1. Load **versioned, documented engine defaults**, preserving current v0.8.4 behavior.
-2. Read each optional recognized `.fig` file; merge defined keys only, leave omitted keys at defaults.
-3. Validate TOML parsing, key names, data types, ranges, references, duplicate/conflicting aliases, unsupported mechanics, and overflow before gameplay starts.
-4. Report errors with configuration file path, table/key and actionable explanation. Do not silently ignore misspelled keys.
-5. Store resolved settings as read-only configuration available to runtime systems; never mix it into mutable player state unless a specific game mechanic requires careful save-compatibility planning.
-6. Keep stable item/command/save IDs separate from player-facing terminology. Existing core commands should continue working after display renaming.
-7. Apply config per game, with no leakage between different games loaded in the same process.
-8. Keep configuration local and declarative; never execute scripts or fetch network data through configuration.
-
-## Candidate configuration groups
-
-### Terminology — `terminology.fig`
+`config/terminology.fig` supports exactly two optional display settings:
 
 ```toml
 [display]
 spellbook = "Ability Database"
 spells = "Programs"
-mana = "Energy"
-health = "Hull Integrity"
-currency = "Credits"
-level = "Rank"
-experience = "Research Points"
 ```
 
-These strings customize output flavor, **not** internal game state or command keywords. Consider pluralization and singular labels in the actual schema rather than naive global string substitution. Audit all relevant displays/help text before declaring a term supported. Different currencies in existing multi-currency wallets may require labels per currency, not a universal `currency` field.
+Defaults are `spellbook = "spellbook"` and `spells = "abilities"`, matching the existing empty-book message and `Known abilities:` heading. `spellbook` names the collection in its empty-state message and help; `spells` names its entries in the populated heading and help. Labels must be nonblank, at most 80 characters and contain no control characters. They do not rewrite authored prose, stable IDs, spell names, mana labels or other messages.
 
-### Progression — `progression.fig`
+Both `spellbook` and `spells` commands remain accepted. Display labels are not command aliases. Additional terms and parser vocabulary are future work; unsupported keys are rejected today.
 
-```toml
-[progression]
-enabled = true
-starting_level = 1
+## Resolution and validation
 
-[level_scaling]
-base_experience = 100
-growth_multiplier = 1.5
-maximum_level = 50
-```
+`config.rs` loads per-game immutable settings. `story_loader::LoadedGame` owns the resolved `GameConfig`, containing optional character progression and terminology. The runner reads configuration separately from mutable GameState. No globals, networking, scripts or config serialization in RORK.
 
-**Proposed examples only:** First inspect real RPG experience equations, defaults, boundaries, save behavior, and integer overflow constraints. The approved keys must map to meaningful implemented settings, not new speculative mechanics. Protect existing character saves if changing progression rules after a campaign starts.
+Missing optional files use the defaults above; unreadable or malformed files fail. Unknown keys/types and invalid values report the file and relevant key or TOML source location. Validation runs for both play and validate, including narrative games with terminology only. Configuration files are confined to the game's directory.
 
-### Parser vocabulary — `parser.fig`
+Changing character balancing during a campaign can affect subsequent level-ups; creators must deliberately manage their game's save compatibility revision for incompatible changes. Relocating identical configuration or changing terminology requires no save-format/revision change. Phase 1 leaves RORK serialization unchanged.
 
-```toml
-[command_aliases]
-spellbook = ["database", "programs", "abilities"]
-```
+## Creator integration and future scope
 
-Separate **display text** from **accepted command aliases**. Define a stable set of reserved commands; detect collisions with other actions/objects. Do not let custom aliases hijack `save`, `load`, `quit`, or other engine-critical actions. Decide whether this is necessary in the first config release; it is not a prerequisite for terminology support.
+`new` and the starter template remain minimal narrative adventures without empty config files. Their instructions explain how to opt in to character settings or terminology. Existing add commands validate FIG through the story loader. Full preview/guided configuration editing, parser aliases and broader balancing settings are later phases.
 
-### Combat and gameplay — optional
-
-Only expose demonstrably valuable global switches or coefficients already supported by core systems (e.g. a documented existing progression rule). Per-enemy health, particular spell effects, item descriptions, and individual puzzles remain in their respective `.toml` files.
-
-## Wizard behavior
-
-Offer "Use recommended defaults" (minimal setup) or "Customize game-wide settings". For each exposed setting: describe it briefly, show its default, offer an example, validate the answer, show **exact serialized FIG output**, and request confirmation. New authors may skip all configuration and return later by editing the FIG manually.
-
-## Acceptance testing
-
-- No FIG files: all existing sample games and their effective behaviors remain unchanged.
-- One hand-edited terminology setting visibly updates a supported UI label and preserves the associated command behavior.
-- Invalid key/value, malformed TOML, bad numeric scaling, conflicting aliases, and unrelated game settings fail with clear diagnostics.
-- Optional settings do not modify `.rork` save serialization or trigger any autosave.
-- A wizard-created FIG works identically when edited manually.
-
-## Architecture questions for Codex to answer before coding
-
-Where should the immutable resolved config live? What labels and equations currently exist? What are the exact old defaults? Which first **smallest** useful FIG subset can we ship? How is saving affected if balancing changes mid-campaign? Should the configuration loader be in `story_loader.rs` or a separate module? Codex should recommend answers, not invent a finalized schema before audit.
+Required verification: defaults, character fields, terminology output/commands, malformed/unknown settings, missing files, independent games, unchanged progression behavior, RPG regressions, save independence and bundled sample validation.

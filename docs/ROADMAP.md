@@ -1,5 +1,7 @@
 # Lupine development roadmap
 
+> Historical design/stage record: feature-status and compatibility claims below describe earlier development. Current policy and file paths are in [NEXT_PHASE_REQUIREMENTS.md](NEXT_PHASE_REQUIREMENTS.md) and [CONFIG_FIG_SPEC.md](CONFIG_FIG_SPEC.md). Character configuration now belongs in `config/character.fig`.
+
 Milestones are design targets unless marked verified; HOWLBOUND remains a tentative original game without a decided story.
 
 | Milestone | Status | Outcome |

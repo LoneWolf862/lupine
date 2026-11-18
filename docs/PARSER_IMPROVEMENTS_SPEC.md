@@ -1,5 +1,18 @@
 # Lupine Player Parser — Forgiving, Deterministic Input
 
+## Current pre-release policy (2026-11-18)
+
+Lupine is unreleased and pre-1.0, with no external users, published games or production deployments requiring development-version compatibility. Justified breaking API and format changes are allowed. Do not add obsolete-format loaders or unnecessary compatibility layers. Update bundled samples, templates, tests and current documentation together; preserve gameplay unless a change is intentional.
+
+File responsibilities:
+
+- `.toml`: adventure content, identity/metadata, rooms/exits, items, spells/abilities, enemies/encounters, interactions/puzzles.
+- `.fig`: game-wide engine configuration and presets, using standard TOML syntax. Character settings belong exclusively in `config/character.fig`; terminology belongs in `config/terminology.fig`. Starting stats, progression and XP scaling are configuration. Future gameplay/balancing options require implemented behavior.
+- `.rork`: mutable player progress, saved strictly manually. No autosaving, save-on-quit or automatic checkpoints.
+
+Phase 1 relocates existing character fields/defaults/calculations without redesigning progression, adds display terminology, and updates creator guidance. No legacy `character.toml` loader. No save-format change is needed. Full wizard and parser upgrades are later phases.
+
+
 **Status: Planned improvements; do not replace existing parser.**
 
 ## Player-facing objective
@@ -64,4 +77,4 @@ Test case/whitespace/articles, aliases, multiword names, exact-before-partial ma
 
 ## Implementation entry points
 
-Read `src/parser.rs`, `src/commands.rs`, `src/engine.rs`, `src/runner.rs`, and existing parser/gameplay/RPG tests. Begin with a read-only audit to determine where parsing, target resolution and RPG dispatch actually live before changing structure.
+Read `src/parser.rs`, `src/commands.rs`, `src/engine.rs`, `src/runner.rs`, and existing parser/gameplay/RPG tests. The Phase 0 audit is complete. Parser implementation remains a separate phase; Phase 1 changes display terminology only, not vocabulary.

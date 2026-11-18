@@ -1,5 +1,7 @@
 # Lupine Creator Vision — Nontechnical Game Authoring
 
+> Historical design/stage record: feature-status and compatibility claims below describe earlier development. Current policy and file paths are in [NEXT_PHASE_REQUIREMENTS.md](NEXT_PHASE_REQUIREMENTS.md) and [CONFIG_FIG_SPEC.md](CONFIG_FIG_SPEC.md). Character configuration now belongs in `config/character.fig`.
+
 **Status:** Final-release product goal; design direction, **not implemented** and **not an MVP/course acceptance gate**.  
 **Project:** Lupine (engine); HOWLBOUND (tentative first game and authoring-system test case).
 

@@ -1,40 +1,20 @@
-# Lupine Architecture — current implementation and planned extensions
+# Lupine architecture
 
-**Status:** v0.5.0-A verified on Windows; v0.5.0-B TOML story loading is a testing candidate.
+Lupine is an unreleased, offline terminal engine. Justified pre-1.0 API/format changes are allowed; migrate bundled consumers rather than adding obsolete-format loaders. Preserve gameplay and keep the engine story-independent.
 
-Lupine is an offline, deterministic, story-independent Rust terminal engine. It is not an LLM or Zork remake. The runtime remains text-only.
+## Content, configuration and state
 
-## Runtime flow
+- `story_loader.rs` reads TOML content into validated immutable `World` definitions, with stable IDs, rooms, items, conditions/effects and artwork.
+- `config.rs` reads optional TOML-syntax `config/character.fig` and `config/terminology.fig` into per-game `GameConfig`. LoadedGame owns this alongside world/identity. Character progression is optional; missing terminology uses defaults. See CONFIG_FIG_SPEC.md.
+- `rpg_content.rs`, `encounters.rs`, `wallet.rs` and `shops.rs` load optional story definitions. Currency definitions remain in game.toml; individual spell/enemy/item mechanics remain content.
+- `state.rs` holds mutable location, inventory, flags, character, learned abilities, wallet, purchases and encounter progress. Configuration is not player state.
+- `parser.rs` parses ordinary commands; `engine.rs` resolves objects, checks rules and applies effects. RPG/reserved commands currently dispatch in `runner.rs` and domain modules. Parser unification is future work.
+- `render.rs` and domain output functions render results. Terminology is passed explicitly to relevant output; no global string replacement.
+- `runner.rs` provides terminal and scriptable entry points, and reads immutable config separately from GameState. Full entry points are `run_configured` and `run_configured_with_io`; convenience entry points supply default terminology. Rust-defined worlds remain supported.
+- `save.rs` validates/serializes RORK state; `save_files.rs` stages, syncs and publishes manual slots. The runner validates a complete load before replacement. Never autosave, save on quit or checkpoint automatically.
 
-```text
-Rust-authored World -----------+
-                                +--> validated World --> GameState --> parser --> rules/effects --> renderer --> terminal
-TOML game/rooms/items/rules --+                                  ^
-           |                                                     |
-      story_loader.rs (v0.5.0-B candidate)                       +-- typed player commands
-```
+## Creator and distribution
 
-- `src/parser.rs`, `src/commands.rs`: normalize input and parse known grammar into typed commands.
-- `src/world.rs`: immutable `World`, `Room`, `Item`, `Interaction`, `ExitRule`, conditions and effects. Content strings/IDs are owned (`String`) and may be created at runtime.
-- `src/state.rs`: mutable `GameState` with room ID, item locations/inventory and flags.
-- `src/engine.rs`: resolve visible objects, verify preconditions, mutate state, and return outcome text.
-- `src/render.rs`: state-dependent room descriptions and help output.
-- `src/runner.rs`: reusable standard terminal loop. Rust game developers call `lupine::run(world, title)`.
-- `src/story_loader.rs` (v0.5.0-B candidate): parse versioned files via `serde`/`toml` DTOs, convert into `World`, validate before starting. The same engine and runner are used for both content sources.
-- `src/main.rs`: fixture launch (`cargo run`) or TOML story launch (`cargo run -- play story_example`).
+`new` (including the basic wizard), `add room`, `add item`, `add art`, `validate` and `play` exist. The generator uses editable content files; it does not generate unnecessary configuration or enable RPG implicitly. The full guided authoring journey is future work.
 
-## File format design
-
-The approved version-1 proposal uses `game.toml`, `rooms/*.toml`, `items/*.toml`, and optional `interactions.toml`. See `STORY_FORMAT_PROPOSAL.md` for fields and examples. A story is *data*, never executable code. Keep schema DTOs distinct from core world structs.
-
-## Creator workflow
-
-Creators edit TOML templates in any editor. Future helper CLI commands may generate templates, validate, test and package games. No graphical authoring application is planned. Players need no Rust toolchain or network once an appropriate binary and local story content are packaged.
-
-## Future save/load subsystem — not implemented
-
-`save`, `load`, `saves` will be reserved engine commands. Manual-only player saves will be TOML-encoded `.rork` files with per-game identifiers and safe validation before state replacement. Save only mutable game state and compatibility metadata, never duplicate immutable world content. **No autosaving**. See `SAVE_FORMAT.md`.
-
-## Quality expectations
-
-Keep both Rust-defined and file-defined games functioning; add automated tests for malformed TOML, missing/duplicate references, invalid directions and end-to-end gameplay. Confirm Windows and Linux separately; do not infer cross-platform testing from passing Windows tests.
+A manually triggered Windows/Linux packaging workflow exists; successful source checks do not establish native Linux verification or a published release. Run formatting, tests, strict Clippy and platform-specific smoke checks and report actual results. Preserve CSE 310 evidence and README-template obligations.

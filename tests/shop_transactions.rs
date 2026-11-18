@@ -21,7 +21,8 @@ fn fixture() -> (
     let mut state = GameState::new(&game.world);
     state.wallet = wallet.initial_balances();
     state.character = Some(
-        game.progression
+        game.config
+            .character
             .as_ref()
             .unwrap()
             .create_character()

@@ -66,7 +66,7 @@ fn room_entry_and_look_show_visible_enemies() {
         &game.id,
         &std::env::temp_dir().join("lupine_no_write_encounter_test"),
         game.save_compatibility_version,
-        game.progression,
+        game.config.character,
         lupine::rpg_content::RpgContent::default(),
         c,
         std::io::Cursor::new("look\nenemies\nquit\n"),

@@ -75,7 +75,8 @@ fn unique_defeat_does_not_respawn_after_exit_or_rork_load() {
     let (game, content) = sample();
     let mut state = GameState::new(&game.world);
     state.character = Some(
-        game.progression
+        game.config
+            .character
             .as_ref()
             .unwrap()
             .create_character()
@@ -103,7 +104,8 @@ fn saved_retreating_boss_survives_but_duplicate_ids_are_rejected() {
     let (game, content) = sample();
     let mut state = GameState::new(&game.world);
     state.character = Some(
-        game.progression
+        game.config
+            .character
             .as_ref()
             .unwrap()
             .create_character()

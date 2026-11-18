@@ -24,6 +24,6 @@ Keep the existing command-line interface for advanced users.
 ## Constraints
 
 - Remain lightweight, offline, and terminal-based.
-- Preserve TOML adventure and RORK save compatibility.
+- Preserve gameplay. Justified pre-1.0 format/API changes are permitted; migrate bundled consumers without obsolete loaders. Avoid unrelated RORK changes.
 - Never autosave; players control saving explicitly.
 - Implement these improvements in a future Codex development pass.

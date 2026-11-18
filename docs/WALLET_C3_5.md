@@ -1,5 +1,7 @@
 # Lupine v0.8.0-C3.5 — Optional Currency Wallet
 
+> Historical design/stage record: feature-status and compatibility claims below describe earlier development. Current policy and file paths are in [NEXT_PHASE_REQUIREMENTS.md](NEXT_PHASE_REQUIREMENTS.md) and [CONFIG_FIG_SPEC.md](CONFIG_FIG_SPEC.md). Character configuration now belongs in `config/character.fig`.
+
 Opt-in `[currency]` in `game.toml`; `[[currencies]]` adds additional independent balances.
 Each currency has `id` (stable lowercase identifier), `name`, `symbol`, and `starting_amount`.
 The primary currency appears first. A story without currency continues unchanged.

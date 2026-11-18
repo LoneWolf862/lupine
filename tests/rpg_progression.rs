@@ -83,14 +83,14 @@ fn optional_config_file_is_loaded_and_validated() {
         std::process::id(),
         std::thread::current().name().unwrap_or("test")
     ));
-    std::fs::create_dir_all(&root).unwrap();
+    std::fs::create_dir_all(root.join("config")).unwrap();
     // Validate malformed RPG metadata without duplicating the rest of a game.
     std::fs::write(
         root.join("game.toml"),
         "format_version = 1\nid = \"test\"\ntitle = \"Test\"\nstarting_room = \"start\"\n",
     )
     .unwrap();
-    std::fs::write(root.join("character.toml"), "starting_level = 0\n").unwrap();
+    std::fs::write(root.join("config/character.fig"), "starting_level = 0\n").unwrap();
     assert!(load_game(&root).unwrap_err().contains("starting_level"));
     std::fs::remove_dir_all(&root).unwrap();
 }
