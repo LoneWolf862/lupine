@@ -97,7 +97,8 @@ fn text_title(value: &str) -> Result<(), String> {
 
 pub(super) fn run<R: BufRead, W: Write>(input: &mut R, output: &mut W) -> Result<PathBuf, String> {
     let mut w = Wizard { input, output };
-    w.say("========================================\n        LUPINE ADVENTURE CREATOR\n========================================\nWelcome! Create your own interactive text adventure.\nYou will name your adventure, describe its first location,\nand choose a folder for its files. No programming experience needed.\nYou can edit the story later. Nothing is created until you approve.\n\nEnter accepts a suggestion. ? gives help. back returns to the previous\nquestion; cancel stops. To write a control word as text, put a backslash\nbefore it, for example \\back. Controls only apply to whole answers.")?;
+    w.heading("LUPINE ADVENTURE CREATOR")?;
+    w.say("Welcome! Create your own interactive text adventure.\nYou will name your adventure, describe its first location,\nand choose a folder for its files. No programming experience needed.\nYou can edit the story later. Nothing is created until you approve.\n\nEnter accepts a suggestion. ? gives help. back returns to the previous\nquestion; cancel stops. To write a control word as text, put a backslash\nbefore it, for example \\back. Controls only apply to whole answers.")?;
     let advanced = loop {
         let mode = w.ask("Press Enter to begin (or type advanced for shorter prompts)", "beginner", "Beginner explains each step and handles internal names for you. Advanced lets you edit the game ID and shows files directly.", |v| {
             if matches!(v.to_ascii_lowercase().as_str(), "beginner" | "advanced") { Ok(()) } else { Err("Press Enter, or type beginner or advanced".into()) }
@@ -117,7 +118,7 @@ pub(super) fn run<R: BufRead, W: Write>(input: &mut R, output: &mut W) -> Result
     loop {
         match step {
             0 => {
-                if !advanced { w.say("\nSTEP 1 OF 4 - NAME YOUR ADVENTURE\nThis is the name players see when your game begins.\nExamples: The Forgotten Forest; Journey to the Mountains.\nYou can change this display name later.")?; }
+                if !advanced { w.heading("STEP 1 OF 4 - NAME YOUR ADVENTURE")?; w.say("This is the name players see when your game begins.\nExamples: The Forgotten Forest; Journey to the Mountains.\nYou can change this display name later.")?; }
                 match w.ask("Adventure name", &title, "Choose a name for your story, up to 120 characters. Enter keeps the suggested name.", text_title)? {
                     Some(value) => {
                         if value != title && !custom_id { id = suggested_id(&value); }
@@ -135,7 +136,7 @@ pub(super) fn run<R: BufRead, W: Write>(input: &mut R, output: &mut W) -> Result
             }
             2 => {
                 if !advanced {
-                    w.say("\nSTEP 2 OF 4 - SAVE YOUR ADVENTURE\nA project folder keeps your game's locations, objects and other files\ntogether. Lupine creates this new folder for you.\nExample: my_adventure creates a folder inside your current folder.\nA full (absolute) path chooses a specific place on your computer.\nYou can move the folder later; keep its files together.")?;
+                    w.heading("STEP 2 OF 4 - SAVE YOUR ADVENTURE")?; w.say("A project folder keeps your game's locations, objects and other files\ntogether. Lupine creates this new folder for you.\nExample: my_adventure creates a folder inside your current folder.\nA full (absolute) path chooses a specific place on your computer.\nYou can move the folder later; keep its files together.")?;
                     w.say(&format!("Current folder: {}", std::env::current_dir().map_err(|e| e.to_string())?.display()))?;
                     #[cfg(windows)]
                     w.say("Full path example: C:\\Users\\YourName\\Documents\\my_adventure")?;
@@ -159,7 +160,7 @@ pub(super) fn run<R: BufRead, W: Write>(input: &mut R, output: &mut W) -> Result
                 step = 3;
             }
             3 => {
-                if !advanced { w.say("\nSTEP 3 OF 4 - YOUR STARTING LOCATION\nEvery adventure begins somewhere. In Lupine, a place a player can\nvisit is called a room; it does not have to be inside a building.\nExamples: Forest Clearing; Spaceship Bridge; Mountain Village.\nThis is the first location players see. You can rename it later.")?; }
+                if !advanced { w.heading("STEP 3 OF 4 - YOUR STARTING LOCATION")?; w.say("Every adventure begins somewhere. In Lupine, a place a player can\nvisit is called a room; it does not have to be inside a building.\nExamples: Forest Clearing; Spaceship Bridge; Mountain Village.\nThis is the first location players see. You can rename it later.")?; }
                 match w.ask("Starting location name", &room, "The location's name is shown above its description. You can edit it later in rooms/start.toml.", text_title)? {
                     Some(value) => { room = value; step = 4; }
                     None => step = 2,
@@ -175,10 +176,11 @@ pub(super) fn run<R: BufRead, W: Write>(input: &mut R, output: &mut W) -> Result
             _ => {
                 let path = absolute_destination(&location)?;
                 let drafts = project_files(&id, &title, &room, &description)?;
-                w.say(&format!("\nSTEP 4 OF 4 - REVIEW YOUR ADVENTURE\nAdventure: {title}\nStarting location: {room}\nDescription:\n{description}\nProject folder: {}\nInternal adventure name: {id}", path.display()))?;
+                w.heading("STEP 4 OF 4 - REVIEW YOUR ADVENTURE")?;
+                w.say(&format!("Adventure: {title}\nStarting location: {room}\nDescription:\n{description}\nProject folder: {}\nInternal adventure name: {id}", path.display()))?;
                 if advanced { preview(&mut w, &path, &drafts)?; }
                 loop {
-                    w.say("\n1. Create my adventure\n2. Review the game files\n3. Change an earlier answer\n4. Cancel")?;
+                    w.say("\n  1. Create my adventure\n  2. Review the game files\n  3. Change an earlier answer\n  4. Cancel")?;
                     match w.ask("Selection", "1", "1 creates the adventure. 2 explains and previews the exact files. 3 revisits your answers without losing them. 4 cancels without creating files.", |v| {
                         if matches!(v, "1" | "2" | "3" | "4") { Ok(()) } else { Err("Choose 1, 2, 3 or 4".into()) }
                     })?.as_deref() {
@@ -234,7 +236,8 @@ fn completion<R: BufRead, W: Write>(
     title: &str,
     room: &str,
 ) -> Result<(), String> {
-    w.say(&format!("\n========================================\n          ADVENTURE CREATED!\n========================================\nYour adventure is ready and has passed validation.\nName: {title}\nStarting location: {room}\nSaved in: {}", path.display()))?;
+    w.heading("ADVENTURE CREATED!")?;
+    w.say(&format!("Your adventure is ready and has passed validation.\n\nName: {title}\nStarting location: {room}\nSaved in: {}", path.display()))?;
     #[cfg(windows)]
     w.say("\nCopy the following commands into PowerShell. If you use Command Prompt,\ntype powershell first to open PowerShell in the same folder.")?;
     #[cfg(not(windows))]

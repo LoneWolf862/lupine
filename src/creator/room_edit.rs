@@ -166,7 +166,7 @@ fn choose_room<R: BufRead, W: Write>(
         .collect::<Vec<_>>();
     for (i, id) in ids.iter().enumerate() {
         w.say(&format!(
-            "{}. {} ({id})",
+            "  {}. {} ({id})",
             i + 1,
             draft.rooms[id].text("title")
         ))?;
@@ -215,9 +215,10 @@ fn connections<R: BufRead, W: Write>(
     id: &str,
     w: &mut Wizard<'_, R, W>,
 ) -> Result<(), String> {
-    w.say("STEP 3 - CONNECT YOUR LOCATION\nExits let players travel by typing north, south, east, west, up or down.\nA reverse exit lets them return. One-way exits allow travel only in the shown direction.\nA room without a route from the starting location may be unreachable.")?;
+    w.heading("STEP 3 - CONNECT YOUR LOCATION")?;
+    w.say("Exits let players travel by typing north, south, east, west, up or down.\nA reverse exit lets them return. One-way exits allow travel only in the shown direction.\nA room without a route from the starting location may be unreachable.")?;
     loop {
-        w.say("1. Connect an existing location TO this room\n2. Connect this room TO another location\n3. Remove an outgoing connection\n0. Done / leave connections as they are")?;
+        w.say("\n  1. Connect an existing location TO this room\n  2. Connect this room TO another location\n  3. Remove an outgoing connection\n  0. Done / leave connections as they are")?;
         let choice = menu(w, "Connection choice: ")?;
         if matches!(choice.as_str(), "0" | "back") {
             return Ok(());
@@ -266,11 +267,18 @@ fn connections<R: BufRead, W: Write>(
         let Some(dir) = direction(w)? else {
             continue;
         };
+        w.heading("CONNECTION PREVIEW")?;
         w.say(&format!(
-            "CONNECTION PREVIEW\n{} ({from}) --{}--> {} ({to})",
+            "From: {} ({from})\nDirection: {}\nTo:   {} ({to})",
             draft.rooms[from].text("title"),
             DIRECTIONS[dir],
             draft.rooms[to].text("title")
+        ))?;
+        w.say(&format!(
+            "\nReverse connection:\n  {} --{}--> {}\n",
+            draft.rooms[to].text("title"),
+            REVERSE[dir],
+            draft.rooms[from].text("title")
         ))?;
         let reverse = w.ask(
             &format!(
@@ -311,6 +319,11 @@ fn connections<R: BufRead, W: Write>(
                     .unwrap()
                     .set_exit(direction, target)?;
             }
+            w.say(if reverse {
+                "\nBidirectional connection drafted (outgoing and reverse exits)."
+            } else {
+                "\nOne-way connection drafted. Existing reverse exits, if any, stay unchanged."
+            })?;
             w.say("Connection added to the draft. Add more, or choose 0 to review. Existing conditional exit rules still apply; they are not edited here.")?;
         } else {
             w.say("Connection left unchanged.")?;
@@ -321,17 +334,30 @@ fn properties<R: BufRead, W: Write>(
     draft: &Draft,
     id: &str,
     w: &mut Wizard<'_, R, W>,
+    detailed: bool,
 ) -> Result<(), String> {
     let room = &draft.rooms[id];
-    w.say(&format!(
-        "ROOM SUMMARY\nName: {}\nStable ID: {id}\nDescription:\n{}\nOutgoing connections:",
-        room.text("title"),
-        room.text("description")
-    ))?;
-    for dir in DIRECTIONS {
+    w.heading("ROOM SUMMARY")?;
+    w.say(&format!("Name: {}\nStable ID: {id}", room.text("title")))?;
+    if detailed {
+        w.say(&format!("\nDescription:\n{}", room.text("description")))?;
+    }
+    w.say("\nOutgoing connections:")?;
+    let mut outgoing = false;
+    for (index, dir) in DIRECTIONS.iter().enumerate() {
         if let Some(target) = room.exit(dir) {
+            outgoing = true;
+            let kind = if draft
+                .rooms
+                .get(target)
+                .is_some_and(|r| r.exit(REVERSE[index]) == Some(id))
+            {
+                "bidirectional"
+            } else {
+                "one-way"
+            };
             w.say(&format!(
-                "  {dir} -> {} ({target})",
+                "  {dir} -> {} ({target}) [{kind}]",
                 draft
                     .rooms
                     .get(target)
@@ -340,16 +366,27 @@ fn properties<R: BufRead, W: Write>(
             ))?;
         }
     }
-    w.say("Incoming connections:")?;
+    if !outgoing {
+        w.say("  None - this room has no outgoing exits.")?;
+    }
+    w.say("\nIncoming connections:")?;
+    let mut incoming = false;
     for (source, r) in &draft.rooms {
         for dir in DIRECTIONS {
             if r.exit(dir) == Some(id) {
+                incoming = true;
                 w.say(&format!(
                     "  {} --{dir}--> this location ({source})",
                     r.text("title")
                 ))?;
             }
         }
+    }
+    if !incoming {
+        w.say("  None - players may not be able to reach this room.")?;
+    }
+    if !detailed {
+        return Ok(());
     }
     for key in [
         "descriptions",
@@ -388,7 +425,8 @@ fn create<R: BufRead, W: Write>(
     draft: &mut Draft,
     w: &mut Wizard<'_, R, W>,
 ) -> Result<Option<String>, String> {
-    w.say("STEP 1 - NAME YOUR LOCATION\nA room is any place a player visits, indoors or outdoors.\nExamples: Forest Clearing, Mountain Pass, Spaceship Bridge. You can rename its display title later.")?;
+    w.heading("STEP 1 - NAME YOUR LOCATION")?;
+    w.say("A room is any place a player visits, indoors or outdoors.\nExamples: Forest Clearing, Mountain Pass, Spaceship Bridge. You can rename its display title later.")?;
     let mut title = "New Location".to_owned();
     let mut id = String::new();
     let mut step = 0;
@@ -415,7 +453,8 @@ fn create<R: BufRead, W: Write>(
                 })? { Some(v) => { id = v; step = 2; } None => step = 0 }
             }
             _ => {
-                w.say("STEP 2 - DESCRIBE YOUR LOCATION\nWhat does the player see? Example: A narrow trail winds into the mountains.\n{{objects}} inserts the names of currently visible objects during play.\nYou can revise this description in Room Options before saving.")?;
+                w.heading("STEP 2 - DESCRIBE YOUR LOCATION")?;
+                w.say("What does the player see? Example: A narrow trail winds into the mountains.\n{{objects}} inserts the names of currently visible objects during play.\nYou can revise this description in Room Options before saving.")?;
                 let Some(description) = w.description("Describe this location.")? else {
                     step = 1;
                     continue;
@@ -446,8 +485,9 @@ fn edit<R: BufRead, W: Write>(
     w: &mut Wizard<'_, R, W>,
 ) -> Result<bool, String> {
     loop {
-        w.say(&format!("\nROOM OPTIONS - {} ({id})\n1. Change name\n2. Edit description\n3. Manage connections\n4. Review properties\n5. Preview exact TOML changes\n6. Save room and connections\n0. Back without saving (discard draft)", draft.rooms[id].text("title")))?;
-        match menu(w, "Choice: ")?.as_str() {
+        w.heading("ROOM OPTIONS")?;
+        w.say(&format!("Room: {} ({id})\n\n  1. Change name\n  2. Edit description\n  3. Manage connections\n  4. Review properties\n  5. Preview exact TOML changes\n  6. Save room and connections\n  0. Back without saving (discard draft)", draft.rooms[id].text("title")))?;
+        match menu(w, "Selection: ")?.as_str() {
             "0" | "back" => return Ok(false),
             "1" => {
                 if let Some(v) = w.ask(
@@ -466,23 +506,31 @@ fn edit<R: BufRead, W: Write>(
                 }
             }
             "3" => connections(draft, id, w)?,
-            "4" => properties(draft, id, w)?,
+            "4" => properties(draft, id, w, true)?,
             "5" => draft.preview(id, w.output)?,
             "6" => {
-                properties(draft, id, w)?;
+                properties(draft, id, w, false)?;
                 let changes = draft.changes();
                 if changes.is_empty() {
                     w.say("No changes to save.")?;
                     return Ok(false);
                 }
-                w.say("Files to create/update (only these files will change):")?;
+                w.say("\nFiles to create/update (only these files will change):")?;
                 for path in changes.keys() {
-                    w.say(&path.display().to_string())?;
+                    w.say(&format!("  {}", path.display()))?;
                 }
                 w.say("Choose 5 from Room Options to inspect exact TOML. Saving keeps existing IDs. Changes to connections can affect a saved game's routes; no save files are changed.")?;
                 if confirm(w, "Save all these room changes?")? {
                     draft.snapshot.commit(&changes)?;
-                    w.say("Room changes saved. The complete adventure passed validation. Returning to Room Manager; select a room again to inspect its result.")?;
+                    w.heading("ROOM SAVED!")?;
+                    w.say(&format!(
+                        "Room:\n  {}\n\nFiles saved:",
+                        draft.rooms[id].text("title")
+                    ))?;
+                    for path in changes.keys() {
+                        w.say(&format!("  {}", path.display()))?;
+                    }
+                    w.say("\nValidation:\n  PASSED\n\nRoom changes saved. Returning to Room Manager; select a room again to inspect its result.\n")?;
                     return Ok(true);
                 }
             }
@@ -501,7 +549,7 @@ pub(super) fn run<R: BufRead, W: Write>(
         let mut draft = match Draft::load(root) {
             Ok(d) => d,
             Err(e) => {
-                writeln!(output, "Cannot edit rooms: {e}")?;
+                writeln!(output, "\nCannot edit rooms: {e}\n")?;
                 return Ok(());
             }
         };
@@ -509,18 +557,19 @@ pub(super) fn run<R: BufRead, W: Write>(
             .map(|a| a.game.title)
             .unwrap_or_default();
         let mut w = Wizard { input, output };
-        w.say(&format!("\nROOM MANAGER\nAdventure: {title}"))
+        w.heading("ROOM MANAGER").map_err(io::Error::other)?;
+        w.say(&format!("Adventure: {title}\n\nExisting Rooms:\n"))
             .map_err(io::Error::other)?;
         let ids = draft.rooms.keys().cloned().collect::<Vec<_>>();
         for (i, id) in ids.iter().enumerate() {
             w.say(&format!(
-                "{}. {} ({id})",
+                "  {}. {} ({id})",
                 i + 1,
                 draft.rooms[id].text("title")
             ))
             .map_err(io::Error::other)?;
         }
-        w.say("N. Create New Room\n0. Return to Creator Menu")
+        w.say("\n----------------------------------------\n\n  N. Create New Room\n  0. Return to Creator Menu")
             .map_err(io::Error::other)?;
         let choice = match menu(&mut w, "Select a room or N: ") {
             Ok(c) => c,
@@ -555,7 +604,7 @@ pub(super) fn run<R: BufRead, W: Write>(
             Ok(false) => (),
             Err(e) => writeln!(
                 w.output,
-                "Room operation stopped: {}",
+                "\nRoom operation stopped: {}\n",
                 e.replace("Setup canceled", "Draft canceled")
             )?,
         }

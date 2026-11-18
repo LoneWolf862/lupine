@@ -26,12 +26,12 @@ impl DraftFile {
     pub fn preview(&self, root: &Path, output: &mut impl Write) -> Result<(), String> {
         writeln!(
             output,
-            "\nPreview: {}\n{}\n--- exact contents ---",
+            "\nPreview: {}\n\n{}\n\n--- exact contents ---",
             root.join(&self.name).display(),
             self.explanation
         )
         .and_then(|()| output.write_all(self.contents.as_bytes()))
-        .and_then(|()| writeln!(output, "--- end contents ---"))
+        .and_then(|()| writeln!(output, "--- end contents ---\n"))
         .map_err(|e| e.to_string())
     }
 }
@@ -44,10 +44,16 @@ impl<R: BufRead, W: Write> Wizard<'_, R, W> {
     pub fn say(&mut self, message: &str) -> Result<(), String> {
         writeln!(self.output, "{message}").map_err(|e| e.to_string())
     }
+    pub fn heading(&mut self, title: &str) -> Result<(), String> {
+        super::ui::heading(self.output, title).map_err(|e| e.to_string())
+    }
     pub fn line(&mut self, prompt: &str) -> Result<String, String> {
-        write!(self.output, "{prompt}")
-            .and_then(|()| self.output.flush())
-            .map_err(|e| e.to_string())?;
+        if prompt == "... " {
+            write!(self.output, "{prompt}").and_then(|()| self.output.flush())
+        } else {
+            super::ui::prompt(self.output, prompt)
+        }
+        .map_err(|e| e.to_string())?;
         let mut line = String::new();
         if self.input.read_line(&mut line).map_err(|e| e.to_string())? == 0 {
             return Err("Setup canceled (end of input); no files created".into());

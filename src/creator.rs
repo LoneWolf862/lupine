@@ -20,6 +20,7 @@ mod room_transaction;
 pub mod session;
 mod setup;
 mod tree;
+mod ui;
 mod wizard;
 use files::{create_file, validate_destination};
 use wizard::DraftFile;

@@ -11,8 +11,7 @@ fn answer(
     output: &mut impl Write,
     prompt: &str,
 ) -> io::Result<Option<String>> {
-    write!(output, "{prompt}")?;
-    output.flush()?;
+    super::ui::prompt(output, prompt)?;
     let mut line = String::new();
     if input.read_line(&mut line)? == 0 {
         return Ok(None);
@@ -20,14 +19,15 @@ fn answer(
     Ok(Some(line.trim().to_owned()))
 }
 fn error(output: &mut impl Write, detail: &str) -> io::Result<()> {
-    writeln!(output, "\nThis adventure is not ready yet:\n{detail}\nNothing was changed. Check the named file and field/reference, correct it\nin your text editor, then choose Validate again. Guided editors arrive in\nlater phases; the creator will reload your files each time.")
+    writeln!(output, "\nThis adventure is not ready yet:\n{detail}\nNothing was changed. Check the named file and field/reference, correct it\nin your text editor, then choose Validate again. Room editing requires a valid\nadventure; the creator will reload your files each time.\n")
 }
 
 /// Create/open launcher. The same terminal streams survive setup and gameplay.
 /// The save directory is passed to the runner only; this function never writes saves.
 pub fn start<R: BufRead, W: Write>(input: &mut R, output: &mut W, saves: &Path) -> io::Result<()> {
     loop {
-        writeln!(output, "\nLUPINE ADVENTURE CREATOR\n1. Create a new adventure\n2. Open an existing adventure\n0. Exit\n? or help explains your choices.")?;
+        super::ui::heading(output, "LUPINE ADVENTURE CREATOR")?;
+        writeln!(output, "  1. Create a new adventure\n  2. Open an existing adventure\n  0. Exit\n\n? or help explains your choices.")?;
         let Some(choice) = answer(input, output, "Selection: ")? else {
             return Ok(());
         };
@@ -49,10 +49,10 @@ pub fn start<R: BufRead, W: Write>(input: &mut R, output: &mut W, saves: &Path) 
                 }
                 match tree::root(Path::new(&path)) {
                     Ok(root) => { open(&root, input, output, saves)?; break; }
-                    Err(message) => writeln!(output, "Cannot open: {message}")?,
+                    Err(message) => writeln!(output, "\nCannot open: {message}\n")?,
                 }
             },
-            "?" | "help" => writeln!(output, "Create guides you through a new adventure. Open selects a folder\nyou already made. You can inspect files, validate and play. Existing\nfiles stay unchanged; room/item/configuration editors are later phases.")?,
+            "?" | "help" => writeln!(output, "Create guides you through a new adventure. Open selects a folder\nyou already made. You can inspect files, validate and play. Choose 7\nto create or edit rooms. Item/configuration editors are later phases.")?,
             _ => writeln!(output, "Choose 1 to create, 2 to open, or 0 to exit.")?,
         }
     }
@@ -86,8 +86,9 @@ pub fn open<R: BufRead, W: Write>(
                 "Some paths need attention; choose Validate for details."
             )?;
         }
-        writeln!(output, "========================================\n          ADVENTURE CREATOR\n========================================\n0. Exit Creator\n1. Play Your Adventure\n2. Validate Your Adventure\n3. Configure Adventure Settings [Phase 2E - not available yet]\n4. Create or Edit Items [Phase 2D - not available yet]\n5. Create or Edit Spells [Phase 2D - not available yet]\n6. Create or Edit Artwork [Phase 2D - not available yet]\n7. Create or Edit Rooms\n8. Help\nChoose an option (Enter refreshes the tree):")?;
-        let Some(choice) = answer(input, output, "> ")? else {
+        super::ui::heading(output, "ADVENTURE CREATOR")?;
+        writeln!(output, "  0. Exit Creator\n  1. Play Your Adventure\n  2. Validate Your Adventure\n  3. Configure Adventure Settings [Phase 2E - not available yet]\n  4. Create or Edit Items [Phase 2D - not available yet]\n  5. Create or Edit Spells [Phase 2D - not available yet]\n  6. Create or Edit Artwork [Phase 2D - not available yet]\n  7. Create or Edit Rooms\n  8. Help\n\nEnter refreshes the tree; ? gives help.")?;
+        let Some(choice) = answer(input, output, "Selection:")? else {
             writeln!(
                 output,
                 "End of input. Leaving the creator; no automatic save."
@@ -107,9 +108,9 @@ pub fn open<R: BufRead, W: Write>(
                     Err(message) => { error(output, &message)?; continue; }
                 };
                 if choice == "2" {
-                    writeln!(output, "\nVALIDATING YOUR ADVENTURE")?;
+                    super::ui::heading(output, "VALIDATING YOUR ADVENTURE")?;
                     adventure.summary(output)?;
-                    writeln!(output, "Validation successful! Your adventure is ready to play.")?;
+                    writeln!(output, "\nValidation successful! Your adventure is ready to play.\n")?;
                 } else {
                     writeln!(output, "\nStarting a fresh play session. Type quit to return to the creator.\nUse save/load explicitly if you want to keep or restore player progress.")?;
                     // Borrow the same buffered reader so it cannot swallow menu input.
@@ -120,7 +121,7 @@ pub fn open<R: BufRead, W: Write>(
             "7" => super::room_edit::run(&root, input, output)?,
             "3" | "4" | "5" | "6" => writeln!(output, "That guided editor is planned for the phase shown in the menu.\nNo files were changed. Existing noninteractive add commands and text\nediting remain available; see docs/CREATOR_QUICKSTART.md.")?,
             "8" | "?" | "help" => writeln!(output, "You are working in the adventure folder shown above.\nThe tree shows actual files; trailing / means a directory.\nTOML holds story content; optional config/*.fig holds engine settings.\n1 plays here and quit returns here. Each play starts fresh unless you\nexplicitly load a save. 2 checks all supported content and FIG settings.\nEnter refreshes the tree after external edits. 0/back/cancel leaves this\nadventure. Room edits require explicit Save confirmation; player saves remain manual.\n7 opens the Room Manager for guided names, descriptions and connections. Items/spells/art and interactions/FIG editors are still planned.")?,
-            _ => writeln!(output, "Please choose 0-8, or type help. Your adventure is still selected.")?,
+            _ => writeln!(output, "\nPlease choose 0-8, or type help. Your adventure is still selected.\n")?,
         }
     }
 }
