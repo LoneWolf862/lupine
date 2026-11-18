@@ -106,6 +106,8 @@ The transaction and recovery contract is documented in ARCHITECTURE.md and CREAT
 The creator uses shared ASCII headings and separated label/input prompts, with unchanged navigation and defaults. The file tree renders real nested directories and basename-only children rather than flattened paths, retaining bounded inspection, skipped-link diagnostics and recognized-content filtering. Root category order stays fixed; children are sorted by name. Room connections show From/To/direction and reverse proposals, with incoming/outgoing summaries and one-way/bidirectional labels. Save review is concise; detailed properties and exact TOML previews remain available. No new editor behavior, dependencies, engine version or save behavior is introduced. See CREATOR_QUICKSTART.md for presentation limits and Windows review steps.
 
 <!-- lupine-phase-2c2-spec -->
-## Phase 2C.2 — generated project structure and configuration (approved, pending)
+## Phase 2C.2 — generated project structure and configuration (implemented candidate)
 
 New adventures should expose actual file structure and **self-documenting** supported FIGs, not require users to discover defaults in separate documentation. Create standard empty content directories, emit commented supported defaults, and keep narrative-only adventures narrative-only via an explicit RPG opt-in setting. See [`SELF_DOCUMENTING_CONFIG_SPEC.md`](SELF_DOCUMENTING_CONFIG_SPEC.md). Future `.fig` categories are not valid placeholders.
+
+The implementation emits both FIGs in the same DraftFile preview/write path as TOML. Every new project includes config, rooms, items, spells, weapons, enemies, shops and art directories. Manual changes to FIGs apply on validation/play reload; a guided FIG value editor remains Phase 2E. Blank Open Adventure paths now explain which folder to enter and retry without a technical path error.

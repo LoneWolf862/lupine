@@ -114,6 +114,8 @@ fn previews_equal_files_and_special_text_plays() {
         "rooms/start.toml",
         "interactions.toml",
         "README.txt",
+        "config/character.fig",
+        "config/terminology.fig",
     ] {
         let marker = format!("Preview: {}\n", dir.join(name).display());
         let section = output.split_once(&marker).unwrap().1;

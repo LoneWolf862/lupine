@@ -44,3 +44,10 @@ On handled failure, published bytes are compared before removal, and retained or
 This is recoverable multi-file publication, not a crash-atomic transaction. A crash/power loss can leave a partially published project. RECOVERY.txt and CHANGES.txt describe retained originals and targets; COMMITTED.txt marks a fully published/validated result awaiting cleanup. A remaining recovery folder blocks further room editing. Recovery is deliberate/manual; neither automatic rollback at startup nor automatic resume is implemented. Hard-link support is required. Filesystem checks and the cooperative edit lock do not prevent hostile concurrent path swaps, and directory-entry durability on power loss is not guaranteed. Do not play or concurrently edit while publication/recovery is in progress.
 
 Preexisting invalid projects cannot be edited through the room manager; staged-validation failures are labeled proposed errors. No item/spell/art/FIG/puzzle editor, runtime parser changes, or RORK writes are introduced. The shared runtime loader remains the source of truth.
+
+
+## Phase 2C.2 FIG activation and generated defaults
+
+GameConfig reads character.fig as a TOML table, consumes the single boolean enabled key, and passes the remaining fields through the existing strict Progression deserializer/validator. Disabled files still validate; only enabled progression becomes GameConfig.character. Missing-key enabled semantics preserve older authored FIGs without a second format loader. Runtime, CLI validation and creator operations share that resolved Option, so generation does not accidentally activate RPG. No configuration fields are added to player state or saves.
+
+The two commented FIGs under templates/starter/config are included verbatim as DraftFile content by the generator. All eight standard folders are created/tracked by the existing exclusive writer and rollback path. Both preview and write consume the same text. Root-level supported FIG names report placement guidance; supported filenames and value schemas otherwise retain strict validation.

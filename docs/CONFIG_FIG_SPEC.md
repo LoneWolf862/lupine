@@ -1,6 +1,6 @@
 # FIG configuration foundation
 
-Status: Phase 1 implementation contract. Verification results are recorded in CODEX_HANDOFF.md.
+Status: Phase 2C.2 implementation contract (candidate for review). Verification results are recorded in CODEX_HANDOFF.md.
 
 Lupine is unreleased/pre-1.0. Justified breaking changes are permitted; there is no legacy configuration loader. Bundled consumers must use this contract.
 
@@ -14,9 +14,10 @@ Lupine is unreleased/pre-1.0. Justified breaking changes are permitted; there is
 
 Only `config/character.fig` and `config/terminology.fig` are supported. No directory or files are needed for a narrative-only game using default terminology. Unsupported `.fig` filenames are errors, not silently ignored options. Configure your editor to treat `*.fig` as TOML for syntax highlighting.
 
-`config/character.fig` has the same top-level fields, defaults and progression calculations as the former development-only `character.toml`. Move that file; do not keep both. The obsolete root file is rejected with migration guidance, never loaded. Presence of character.fig enables RPG; an empty file enables default RPG stats. Absence disables RPG, rather than implicitly creating a character.
+`config/character.fig` has the same top-level fields, defaults and progression calculations as the former development-only `character.toml`. Move that file; do not keep both. The obsolete root file is rejected with migration guidance, never loaded. `enabled = true` enables RPG; `enabled = false` disables it. For existing authored FIGs, omitting `enabled` (including an empty file) retains the original enabled behavior. Absence still disables RPG. All character values are validated even when disabled. Bundled RPG samples explicitly set true; new generated adventures explicitly set false.
 
 ```toml
+enabled = false # explicit narrative-only default for new adventures
 starting_level = 1
 max_level = 0 # no authored cap
 starting_hp = 100
@@ -53,11 +54,13 @@ Changing character balancing during a campaign can affect subsequent level-ups; 
 
 ## Creator integration and future scope
 
-`new` and the starter template remain minimal narrative adventures without empty config files. Their instructions explain how to opt in to character settings or terminology. Existing add commands validate FIG through the story loader. Full preview/guided configuration editing, parser aliases and broader balancing settings are later phases.
+`new` creates all eight standard content directories and commented, explicit defaults in both supported FIGs. The starter template shares those same files. RPG remains disabled until enabled is set true. Existing games need not add any directories or FIG files. Existing add commands validate FIG through the story loader. Full preview/guided configuration editing, parser aliases and broader balancing settings are later phases.
 
 Required verification: defaults, character fields, terminology output/commands, malformed/unknown settings, missing files, independent games, unchanged progression behavior, RPG regressions, save independence and bundled sample validation.
 
 <!-- lupine-phase-2c2-spec -->
 ## Approved next contract (Phase 2C.2 — not implemented yet)
 
-The Phase 1 behavior documented above describes the **current implementation**. The approved future contract is in [`SELF_DOCUMENTING_CONFIG_SPEC.md`](SELF_DOCUMENTING_CONFIG_SPEC.md): newly generated adventures will include self-documenting, commented `config/character.fig` and `config/terminology.fig` with explicit defaults. `character.fig` will gain an `enabled` opt-in so its presence alone does not enable RPG for new narrative games. Existing RPG games and narrative-only games must retain their behavior through deliberate migration/fallback rules. Other FIG filenames remain unsupported until implemented.
+The authoritative requirements are in [`SELF_DOCUMENTING_CONFIG_SPEC.md`](SELF_DOCUMENTING_CONFIG_SPEC.md). Generated character and terminology files share the starter template text; exact previews use those same bytes. Comments beside every setting explain units, accepted values, dependencies and save compatibility. No new configuration categories exist.
+
+Changing RPG enablement for existing campaigns can invalidate saves. Deliberately increase `game.toml` `save_compatibility_version` for incompatible changes; do not change Cargo or RORK format versions. Terminology-only edits need no revision change. The loader rejects root-level character.fig/terminology.fig with placement guidance; files belong under config/.

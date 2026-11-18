@@ -786,7 +786,7 @@ pub fn run_configured_with_io<R: BufRead, W: Write>(
                         continue;
                     }
                     if progression.is_none() && restored.character.is_some() {
-                        writeln!(output, "Load failed: this save contains RPG character data but the game has no config/character.fig.\n")?;
+                        writeln!(output, "Load failed: this save contains RPG character data but RPG is disabled or config/character.fig is absent. Check enabled and the game save_compatibility_version.\n")?;
                         continue;
                     }
                     if restored

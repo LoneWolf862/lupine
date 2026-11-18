@@ -1,0 +1,11 @@
+# Display labels only: these do not add or rename player commands.
+# Both spellbook and spells remain commands regardless of these labels.
+# Changes apply on reload and do not require changing save compatibility.
+[display]
+# Name of the learned-ability collection in help and its empty-state message.
+# Quoted text: 1..80 characters, nonblank, with no control characters.
+spellbook = "spellbook"
+# Label for entries in the populated collection heading and help.
+# Quoted text: 1..80 characters, nonblank, with no control characters.
+# Does not change ability names, mana labels or authored story prose.
+spells = "abilities"

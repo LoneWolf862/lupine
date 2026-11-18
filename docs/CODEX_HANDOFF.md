@@ -129,3 +129,18 @@ Limits: existing display/inspection bounds remain; no adaptive wrapping or termi
 ## Next approved work: Phase 2C.2 — self-documenting adventure configuration
 
 After the creator UI-polish PR has been merged, take current `main` and implement [`SELF_DOCUMENTING_CONFIG_SPEC.md`](SELF_DOCUMENTING_CONFIG_SPEC.md) on a dedicated branch. Keep default FIG files human-readable and inline commented, add explicit RPG opt-in without breaking migrated RPG samples, retain current supported FIG schema until intentionally changed, and run full validations. Treat prior handoff notes above as historical; do not rewrite past verification claims as current.
+
+
+## Phase 2C.2 implementation and verification (2026-11-18)
+
+Documentation PR #6 is merged in main `38527a1`; Phase 2C.1 PR #5 was already merged. Work uses `codex/phase-2c2-self-documenting-config`, with a separate draft PR to main. Do not merge automatically.
+
+Every new adventure now creates config/, rooms/, items/, spells/, weapons/, enemies/, shops/ and art/. Only required initial content and the two supported FIGs are written. Character and terminology templates contain explicit defaults and comments for each field (purpose, accepted values, units, dependencies and save compatibility). Generated FIGs share the starter template bytes and use the normal exact preview/exclusive-write path. Existing adventures are not rewritten.
+
+`enabled = false` keeps generated games narrative-only. True activates the existing progression implementation. Missing enabled in an existing character.fig, including an empty file, retains the legacy enabled behavior; missing character.fig stays narrative-only. All progression values are validated even when disabled. Unknown keys/types remain errors; misplaced root character.fig/terminology.fig now report the correct config/ location. Bundled RPG sample FIGs explicitly use true. No arithmetic, dependencies, Cargo version, RORK format or save behavior changes. Diagnostics now mention enablement when RPG content/saves require it. Blank Open Adventure input gives guidance and retries.
+
+Windows verification passed: `cargo fmt --all --check`, `cargo test` (175 tests), `cargo clippy --all-targets -- -D warnings`, and `git diff --check`. Verification used CARGO_TARGET_DIR=target/config-docs to avoid interfering with running default executables. Added coverage verifies generated directories/empty content folders, explicit/commented defaults, narrative play, manual FIG enablement, invalid disabled settings, misplaced FIGs, legacy missing-key behavior, migrated sample leveling/save data, exact FIG previews in both wizard modes, blank path retry, manual save/load and unchanged save bytes after play. Existing sample play, progression, transactions, creator rollback and manual-only saving regressions pass.
+
+A separate scripted Windows CLI smoke created a disposable new adventure, validated/played stats with enabled false and true, and checked the actual nested FIG tree. Native Linux and human usability verification remain pending. Runtime remains offline. FIG editing is manual until Phase 2E; no unsupported categories are generated. Toggle/stat changes can invalidate saves: guidance requires deliberate game.toml save_compatibility_version management, never automatic version changes. Existing creation hard-link/recovery limits remain. Git cannot retain empty directories in copied templates; `new` creates all eight and the template README explains this distinction.
+
+See CREATOR_QUICKSTART.md for Windows manual steps. User untracked files/folders (including root README.txt, SELF_DOCUMENTING_CONFIG_SPEC.md, apply_docs.py and existing adventures) were left untouched and excluded from commits.

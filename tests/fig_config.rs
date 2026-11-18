@@ -37,6 +37,7 @@ impl Drop for Project {
 #[test]
 fn no_config_is_narrative_and_empty_character_enables_original_defaults() {
     let project = Project::new();
+    fs::remove_dir_all(project.0.join("config")).unwrap();
     assert!(!project.0.join("config").exists());
     let game = load_game(&project.0).unwrap();
     assert!(game.config.character.is_none());
@@ -128,11 +129,13 @@ fn obsolete_unknown_and_unreadable_configuration_are_not_silently_ignored() {
     unknown.write("charcter.fig", "");
     assert!(load_game(&unknown.0).unwrap_err().contains("charcter.fig"));
     let unreadable = Project::new();
+    fs::remove_file(unreadable.0.join("config/terminology.fig")).unwrap();
     fs::create_dir_all(unreadable.0.join("config/terminology.fig")).unwrap();
     assert!(load_game(&unreadable.0)
         .unwrap_err()
         .contains("terminology.fig"));
     let bad_directory = Project::new();
+    fs::remove_dir_all(bad_directory.0.join("config")).unwrap();
     fs::write(bad_directory.0.join("config"), "not a directory").unwrap();
     assert!(load_game(&bad_directory.0).unwrap_err().contains("config"));
 }
@@ -245,4 +248,124 @@ fn cli_play_validate_and_creator_commands_share_fig_loading() {
     );
     assert!(add_room(&project.0, "bad").is_err());
     assert!(!project.0.join("rooms/bad.toml").exists());
+}
+
+#[test]
+fn generated_defaults_are_explicit_documented_and_narrative_until_enabled() {
+    let p = Project::new();
+    for dir in [
+        "config", "rooms", "items", "spells", "weapons", "enemies", "shops", "art",
+    ] {
+        assert!(p.0.join(dir).is_dir(), "{dir}");
+        if !matches!(dir, "config" | "rooms") {
+            assert_eq!(fs::read_dir(p.0.join(dir)).unwrap().count(), 0);
+        }
+    }
+    let source = fs::read_to_string(p.0.join("config/character.fig")).unwrap();
+    let table: toml::Table = source.parse().unwrap();
+    assert_eq!(table.len(), 11);
+    assert_eq!(table["enabled"].as_bool(), Some(false));
+    for file in ["character.fig", "terminology.fig"] {
+        let text = fs::read_to_string(p.0.join("config").join(file)).unwrap();
+        let mut previous = "";
+        for line in text.lines() {
+            if line.contains(" = ") && !line.starts_with('#') {
+                assert!(previous.starts_with('#'), "{file}: {line}");
+            }
+            previous = line;
+        }
+    }
+    let play = |script: &str| {
+        let mut output = Vec::new();
+        lupine::adventure::Adventure::load(&p.0)
+            .unwrap()
+            .play(&p.0.join("saves"), &mut Cursor::new(script), &mut output)
+            .unwrap();
+        String::from_utf8(output).unwrap()
+    };
+    assert!(play("stats\nquit\n").contains("no character progression"));
+    assert!(!p.0.join("saves").exists());
+    p.write(
+        "character.fig",
+        &source.replace("enabled = false", "enabled = true"),
+    );
+    let progression = GameConfig::load(&p.0).unwrap().character.unwrap();
+    assert_eq!(
+        progression.create_character().unwrap(),
+        lupine::rpg::Progression::default()
+            .create_character()
+            .unwrap()
+    );
+    assert_eq!(progression.next_requirement(3), Some(144));
+    let output = play("stats\nsave test_slot\nload test_slot\nquit\n");
+    assert!(!output.contains("no character progression"));
+    assert!(
+        output.contains("Saved:") && output.contains("Loaded: test_slot"),
+        "{output}"
+    );
+    let before = fs::read(p.0.join("saves/fig_test/test_slot.fig_test.rork")).unwrap();
+    play("stats\nquit\n");
+    assert_eq!(
+        before,
+        fs::read(p.0.join("saves/fig_test/test_slot.fig_test.rork")).unwrap()
+    );
+    p.write("character.fig", &source);
+    let output = play("load test_slot\nquit\n");
+    assert!(output.contains("RPG is disabled"), "{output}");
+    assert_eq!(
+        before,
+        fs::read(p.0.join("saves/fig_test/test_slot.fig_test.rork")).unwrap()
+    );
+}
+
+#[test]
+fn disabled_configuration_still_rejects_bad_values_and_misplacement() {
+    for text in [
+        "enabled='false'",
+        "enabled=0",
+        "enabled=false\nstarting_hp=0",
+        "enabled=false\ngrowth_percent=99",
+        "enabled=false\nunknown=true",
+    ] {
+        let p = Project::new();
+        p.write("character.fig", text);
+        let error = lupine::adventure::Adventure::load(&p.0).err().unwrap();
+        assert!(error.contains("character.fig"), "{error}");
+    }
+    for name in ["character.fig", "terminology.fig"] {
+        let p = Project::new();
+        fs::write(p.0.join(name), "").unwrap();
+        let error = GameConfig::load(&p.0).unwrap_err();
+        assert!(error.contains("misplaced") && error.contains(&format!("config/{name}")));
+    }
+}
+
+#[test]
+fn migrated_samples_keep_stats_leveling_and_existing_save_data() {
+    for name in [
+        "rpg_spellbook",
+        "rpg_rewards",
+        "rpg_transactions",
+        "rpg_persistent",
+    ] {
+        let root = PathBuf::from("samples").join(name);
+        let game = load_game(&root).unwrap();
+        let original = fs::read_to_string(root.join("config/character.fig")).unwrap();
+        assert!(original.contains("enabled = true"));
+        let legacy: lupine::rpg::Progression =
+            toml::from_str(&original.replace("enabled = true", "")).unwrap();
+        let mut state = GameState::new(&game.world);
+        let mut character = legacy.create_character().unwrap();
+        let xp = legacy.next_requirement(character.level).unwrap();
+        legacy.award_xp(&mut character, xp);
+        state.character = Some(character);
+        let save = encode_save(&game.world, &state, &game.id, "Existing").unwrap();
+        let restored = lupine::save::decode_save(&game.world, &game.id, &save).unwrap();
+        assert_eq!(restored.character, state.character);
+        assert_eq!(
+            game.config.character.unwrap().create_character().unwrap(),
+            legacy.create_character().unwrap()
+        );
+        lupine::adventure::Adventure::load(&root).unwrap();
+    }
 }

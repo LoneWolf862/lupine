@@ -67,7 +67,9 @@ fn project_files(
             id: "start", title: room_title, description, exits: Default::default(),
         }, "title and description appear in play. The empty exits table means no connected rooms yet.")?,
         DraftFile::text("interactions.toml", "# Define [[interactions]] and [[exit_rules]] here when needed.\n", "Optional interaction rules; this adventure starts without any."),
-        DraftFile::text("README.txt", "Welcome to your Lupine adventure!\n\nEdit game.toml and rooms/start.toml; add TOML files to rooms/ and items/.\nFrom the Lupine source folder: cargo run -- validate <project-folder>\nThen: cargo run -- play <project-folder>\nWith a standalone executable, use its full path followed by play <project-folder>. Quote paths containing spaces.\nOptional engine settings use TOML syntax: config/character.fig enables RPG; config/terminology.fig customizes display labels. Create only the files you need; see docs/CONFIG_FIG_SPEC.md.\nPlayer .rork saves are strictly manual.\n", "Content is editable TOML. Optional FIG files configure the engine; RORK files hold manual player saves."),
+        DraftFile::text("config/character.fig", include_str!("../templates/starter/config/character.fig"), "Character settings are explicit but disabled: enabled = false keeps narrative-only play. Comments explain values and save compatibility."),
+        DraftFile::text("config/terminology.fig", include_str!("../templates/starter/config/terminology.fig"), "These labels change presentation, not commands. Comments explain each setting."),
+        DraftFile::text("README.txt", "Welcome to your Lupine adventure!\n\nEdit game.toml and rooms/start.toml; add TOML files to rooms/ and items/.\nFrom the Lupine source folder: cargo run -- validate <project-folder>\nThen: cargo run -- play <project-folder>\nWith a standalone executable, use its full path followed by play <project-folder>. Quote paths containing spaces.\nEngine settings use TOML syntax. Read the comments in config/character.fig and config/terminology.fig for every supported setting. RPG starts disabled; set enabled = true in character.fig to opt in, then validate/reload. Changing RPG availability for existing saves may require increasing game.toml save_compatibility_version. Empty content folders are ready for future content.\nPlayer .rork saves are strictly manual.\n", "Content is editable TOML. Optional FIG files configure the engine; RORK files hold manual player saves."),
     ])
 }
 
@@ -83,7 +85,9 @@ fn write_project(destination: &Path, files: &[DraftFile]) -> Result<PathBuf, Str
     let mut created_files = Vec::new();
     let mut created_dirs = vec![destination.to_path_buf()];
     let result = (|| {
-        for folder in ["rooms", "items", "art"] {
+        for folder in [
+            "config", "rooms", "items", "spells", "weapons", "enemies", "shops", "art",
+        ] {
             let path = destination.join(folder);
             fs::create_dir(&path).map_err(|e| format!("{}: {e}", path.display()))?;
             created_dirs.push(path);

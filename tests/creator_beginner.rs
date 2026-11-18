@@ -80,6 +80,8 @@ fn beginner_optional_preview_is_exact_and_educational() {
         "rooms/start.toml",
         "interactions.toml",
         "README.txt",
+        "config/character.fig",
+        "config/terminology.fig",
     ] {
         let marker = format!("Preview: {}\n", p.path().join(name).display());
         let content = output
