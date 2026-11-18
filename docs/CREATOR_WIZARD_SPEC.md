@@ -13,7 +13,7 @@ File responsibilities:
 Phase 1 relocates existing character fields/defaults/calculations without redesigning progression, adds display terminology, and updates creator guidance. No legacy `character.toml` loader. No save-format change is needed. Full wizard and parser upgrades are later phases.
 
 
-**Status: Phase 2A foundations implemented; broader authoring journey below remains proposed.** `lupine new` and `add room`, `add item`, `add art` already exist. Enhance them rather than replacing them.
+**Status: Phase 2A.1 setup and Phase 2B session navigation implemented; content editors below remain proposed.** `lupine new` and `add room`, `add item`, `add art` already exist. Enhance them rather than replacing them.
 
 ## Learning philosophy
 
@@ -81,3 +81,11 @@ Inspect `src/creator.rs`, `src/main.rs`, `src/story_loader.rs`, `templates/start
 `new` guides creators through title, location, starting room and description. Beginner mode automatically generates a stable ID; advanced mode permits customization. Shared prompts, serialized drafts and safe writes remain under `src/creator/`, with the mode/step flow in `setup.rs`. Local sibling-ID checks and folder suffix suggestions prevent common collisions; no global registry is claimed. The resolved destination appears in review. Preview and written bytes use the same `DraftFile` contents.
 
 Generated projects pass the story loader. Completion provides Cargo and exact executable commands with platform-specific shell quoting, without guessing how Lupine was launched. Creation does not automatically launch play. See CREATOR_QUICKSTART.md for navigation, quoting, local collision scope, safety limits and a Windows manual walkthrough. Full guided room/item/puzzle/config workflows remain future work. No dependency, gameplay or save-format changes.
+
+## Phase 2B - persistent session (implemented)
+
+After interactive CLI `new`, the actual project tree and creator menu appear. `creator` offers Create/Open; `creator PATH` reopens an adventure. Option 1 runs the existing runner in-process, returning after quit. Option 2 invokes the same full loader/validator as CLI validation, displaying counts or its diagnostic without changing content. Option 8/help explains navigation. Enter refreshes; 0/back/cancel leaves the project (returning to the launcher when entered through it); EOF exits cleanly.
+
+Options 3-7 retain their intended numbers but are explicitly marked unavailable. No guided room/item/spell/art/FIG editor exists in Phase 2B. The selected project persists through menu actions; tree and content are reloaded after external edits. No automatic load/save occurs. See CREATOR_QUICKSTART.md for file-tree limits and the manual walkthrough.
+
+The implementation is a separate PR stacked on the still-open foundation PR #2. Do not merge the foundation automatically; retarget Phase 2B to main after the foundation is approved and merged, and recheck the resulting diff.

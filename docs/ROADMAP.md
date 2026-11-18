@@ -51,3 +51,15 @@ See `docs/COMBAT_RPG_SPEC.md` for decisions and boundaries.
 
 ## v0.8.0-B candidate
 Optional weapon and spell TOML definitions; learned abilities tracked separately in RORK; healing and mana spells, item-based learning. Enemies and damage combat deferred to Stage C.
+
+## Current creator delivery sequence (2026-11-18)
+
+| Phase | Scope | Current status |
+|---|---|---|
+| 2A / 2A.1 | Safe setup, beginner/advanced modes, exact previews | Implemented; PR #2 open for review |
+| 2B | Persistent session, actual tree, reopen, play/validate and return | Implemented on a separate branch stacked on PR #2; verification in CODEX_HANDOFF.md |
+| 2C | Guided room creation/editing, connections/reverse exits, safe existing-file persistence | Proposed; requires a reviewed preservation/rollback design |
+| 2D | Guided items, spells and artwork | Proposed; reuse the shared editor/persistence foundation |
+| 2E | Conditional exits, doors, supported FIG editing and advanced room properties | Proposed; no unsupported FIG categories |
+
+The final no-TOML-editing author journey remains a goal, not a Phase 2B completion claim. No unrelated parser or RPG changes are included. Each later phase should have its own reviewable PR.

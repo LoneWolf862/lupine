@@ -277,3 +277,98 @@ fn junctions_or_symlinks_are_not_followed() {
     #[cfg(unix)]
     fs::remove_file(link).unwrap();
 }
+
+#[test]
+fn refreshed_tree_and_validation_read_external_changes() {
+    use std::io::{self, BufRead, Read};
+    struct ChangingInput {
+        cursor: Cursor<Vec<u8>>,
+        game: PathBuf,
+        changed: bool,
+    }
+    impl Read for ChangingInput {
+        fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+            self.cursor.read(buf)
+        }
+    }
+    impl BufRead for ChangingInput {
+        fn fill_buf(&mut self) -> io::Result<&[u8]> {
+            self.cursor.fill_buf()
+        }
+        fn consume(&mut self, n: usize) {
+            self.cursor.consume(n);
+        }
+        fn read_line(&mut self, buf: &mut String) -> io::Result<usize> {
+            if !self.changed {
+                fs::write(self.game.join("art/new.txt"), "new art\n")?;
+                fs::write(
+                    self.game.join("rooms/start.toml"),
+                    "id='start'\ntitle='Updated Room'\ndescription='Edited externally.'\n[exits]\n",
+                )?;
+                self.changed = true;
+            }
+            self.cursor.read_line(buf)
+        }
+    }
+    let f = Fixture::new();
+    let mut input = ChangingInput {
+        cursor: Cursor::new(b"\n2\n1\nquit\n0\n".to_vec()),
+        game: f.game.clone(),
+        changed: false,
+    };
+    let mut output = Vec::new();
+    session::open(&f.game, &mut input, &mut output, &f.saves).unwrap();
+    let output = String::from_utf8(output).unwrap().replace('\\', "/");
+    let sections = output
+        .split("Project files (paths relative")
+        .collect::<Vec<_>>();
+    assert!(!sections[1].contains("new.txt"));
+    assert!(sections[2].contains("art/new.txt"));
+    assert!(output.contains("Updated Room"));
+    assert!(!f.saves.exists());
+}
+
+#[test]
+fn explicit_manual_save_still_works_and_is_not_implicitly_rewritten() {
+    let f = Fixture::new();
+    let output = f.run("1\nsave creator_slot\nquit\n0\n");
+    assert!(output.contains("Returned to the creator"));
+    let before = snapshot(&f.saves);
+    assert_eq!(before.len(), 1);
+    assert!(before[0].0.to_string_lossy().ends_with(".rork"));
+    f.run("2\n1\nlook\nquit\n0\n");
+    assert_eq!(snapshot(&f.saves), before);
+}
+
+#[test]
+fn bundled_rpg_games_validate_and_play_through_session() {
+    let f = Fixture::new();
+    for name in [
+        "rpg_spellbook",
+        "rpg_rewards",
+        "rpg_transactions",
+        "rpg_persistent",
+    ] {
+        let game = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("samples")
+            .join(name);
+        let before = snapshot(&game);
+        let mut output = Vec::new();
+        session::open(
+            &game,
+            &mut Cursor::new("2\n1\nspellbook\nquit\nyes\n0\n"),
+            &mut output,
+            &f.saves,
+        )
+        .unwrap();
+        let output = String::from_utf8(output).unwrap();
+        assert!(
+            output.contains("Validation successful!"),
+            "{name}: {output}"
+        );
+        assert!(output.contains("Powered by Lupine"));
+        assert!(output.contains("Returned to the creator"));
+        assert_eq!(snapshot(&game), before);
+        assert!(!f.saves.exists());
+    }
+}

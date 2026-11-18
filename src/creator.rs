@@ -1,4 +1,4 @@
-//! Text-only project scaffolding. Nothing here runs a game or creates saves.
+//! Text-only project scaffolding and creator sessions. Player saving remains runner-owned and manual.
 use std::fs;
 use std::io::{BufRead, Write};
 use std::path::{Path, PathBuf};
