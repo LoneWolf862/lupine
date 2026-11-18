@@ -28,19 +28,15 @@ Keep the existing command-line interface for advanced users.
 - Never autosave; players control saving explicitly.
 - Implement these improvements in a future Codex development pass.
 
-## Creator follow-ups after Phase 2C
+## Creator follow-ups after Phases 2D–2F
 
-Phase 2C implements room names/descriptions, directional connections, exact previews and recoverable confirmed file edits. Still planned:
+The requested item, spell, art, puzzle, conditional-room and FIG menus are implemented candidates in PRs #8–#13. See CREATOR_COMPLETION_REVIEW.md for verified scope. Remaining work outside this delivered editor scope:
 
-- Phase 2D: full guided item, spell and artwork editors.
-- Phase 2E: conditional-exit/puzzle and supported FIG editors, advanced room settings.
-- Explicit room-ID rename with reference/save-impact review; existing IDs are fixed today.
-- A guided recovery interface for interrupted multi-file edits; current recovery is manual and documented.
-- Broader transaction durability/platform verification and beginner usability testing. Native Linux verification is still outstanding.
+- Human beginner usability testing and accessibility refinements based on observed feedback.
+- Stable-ID rename/deletion with cross-file and save-impact migrations.
+- Guided recovery for interrupted multi-file edits; current recovery is manual.
+- Enemy, weapon, shop, currency and transaction-binding definition editors. Existing definitions remain validated/preserved; room encounter settings select existing enemies.
+- Broader TOML representation editing where the safe editor currently reports a limitation.
+- Standalone packaging/export and real Windows 10/CachyOS acceptance.
 
-Do not create proposed FIG categories or change gameplay calculations to fill out editor menus.
-
-<!-- lupine-phase-2c2-spec -->
-## Approved Phase 2C.2 â€” Self-documenting configuration (pending)
-
-Generate standard content directories and commented, default-populated `config/character.fig` and `config/terminology.fig` for every new adventure. Add explicit opt-in to character FIG without enabling RPG in new narrative games. Preserve previously shipped RPG samples, optional absent-config games, validation, no-autosave, and manual RORK. Implement per [`SELF_DOCUMENTING_CONFIG_SPEC.md`](SELF_DOCUMENTING_CONFIG_SPEC.md). Also fix the empty Open Adventure path to show friendly guidance rather than a technical absolute-path error.
+Phase 2C.2 self-documenting FIGs and blank Open-path guidance are already merged. Do not create unsupported configuration categories or add unimplemented runtime knobs to fill a menu.

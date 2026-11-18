@@ -23,7 +23,7 @@ Creator foundation: `creator/wizard.rs` collects and validates input and preview
 
 Phase 2A.1: `creator/setup.rs` owns the beginner/advanced step flow, local sibling-ID checks, review navigation and platform-quoted completion instructions. `wizard.rs` returns an optional answer (`None` means back); cancellation/EOF remain explanatory errors for library callers and friendly successful exits in the CLI. Gameplay starts only when separately requested with `play`.
 
-## Phase 2B creator navigation
+## Historical Phase 2B creator navigation
 
 `creator/session.rs` holds the selected absolute project path and borrows one input/output pair through setup, menu actions and gameplay. `creator` opens Create/Open navigation; `creator PATH` opens a project directly; interactive CLI `new` enters the session after setup. The public setup-only `new_game_wizard` API and noninteractive generators retain their behavior. No-argument CLI execution still runs the engine fixture.
 
@@ -33,7 +33,7 @@ Phase 2A.1: `creator/setup.rs` owns the beginner/advanced step flow, local sibli
 
 Existing-file persistence belongs to Phase 2C and later. Its review gate must cover comment/unknown-content preservation (or a clearly offered nondestructive alternative), original-byte comparison to detect external edits, exact previews and confirmation, full staged validation before publication, and tested rollback/recovery for changes spanning several files. The exclusive-new-file writer is not an existing-file editing implementation.
 
-## Phase 2C room drafts and publication
+## Phase 2C room drafts and publication (shared foundation)
 
 `creator/room_edit.rs` owns a room draft set keyed by stable IDs, with real filenames and original documents. The editor reuses `Wizard` prompts and `DraftFile` previews. `toml_edit` 0.22 is now a direct dependency (it was already a transitive dependency of toml 0.8); it preserves tables, comments, inline exits and advanced properties while only selected values change. Value decorations are copied when replacing scalars. Unchanged documents are not published; CRLF style is retained for changed CRLF documents. Modified scalar quoting may change. Existing IDs are not renamed.
 
@@ -51,3 +51,14 @@ Preexisting invalid projects cannot be edited through the room manager; staged-v
 GameConfig reads character.fig as a TOML table, consumes the single boolean enabled key, and passes the remaining fields through the existing strict Progression deserializer/validator. Disabled files still validate; only enabled progression becomes GameConfig.character. Missing-key enabled semantics preserve older authored FIGs without a second format loader. Runtime, CLI validation and creator operations share that resolved Option, so generation does not accidentally activate RPG. No configuration fields are added to player state or saves.
 
 The two commented FIGs under templates/starter/config are included verbatim as DraftFile content by the generator. All eight standard folders are created/tracked by the existing exclusive writer and rollback path. Both preview and write consume the same text. Root-level supported FIG names report placement guidance; supported filenames and value schemas otherwise retain strict validation.
+
+
+## Current Phase 2D–2F editor architecture
+
+`content_edit.rs` shares comment-preserving Document drafts, exact previews, object selection, confirmation and item/spell manager navigation. `spell_edit.rs`, `art_edit.rs`, `interaction_edit.rs`, `room_advanced.rs` and `fig_edit.rs` expose current runtime fields through Wizard prompts. `rules_ui.rs` edits existing table/inline-array collections and condition lists without a competing schema. Priority changes refresh TOML table positions so serialized order agrees with the draft.
+
+The existing `room_transaction.rs` Snapshot is now the one publication boundary for rooms, items, spells, supported FIGs, interactions.toml and artwork. A strict target allowlist plus normal relative path components prevents arbitrary writes; nested artwork edits require an existing snapshotted file. Missing direct content directories are created only during a confirmed transaction and removed on handled rollback when still empty. Root rules and all related files share the same staged/full validation, stale checks, permissions, rollback and recovery behavior. The historical `.lupine-room-edit/` lock name remains unchanged for discoverable recovery. Unreferenced edited artwork is explicitly validated with the runtime artwork validator too.
+
+FIG defaults and field explanations come from bundled commented templates; runtime validators remain authoritative for constraints. Existing omitted fields are preserved. Sibling game-ID discovery is advisory and limited to readable regular neighboring adventures; unreadable/linked siblings produce guidance rather than blocking a safe new destination. Destination checks remain strict. No files change on open or mere navigation.
+
+Existing invalid projects must be repaired before editing. Exact IDs are not renamed, unsupported representations are refused, and crash recovery is still manual. New tests cover mixed-category rollback and real CLI authoring/play/save/reopen. The only runtime behavior fix is case normalization of authored object names/aliases during resolution, required for capitalized creator names; parser grammar/ambiguity semantics are unchanged. No save versions, player-save triggers or RPG arithmetic changed.

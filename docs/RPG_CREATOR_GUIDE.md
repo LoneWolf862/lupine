@@ -1,5 +1,8 @@
 # Lupine v0.8.4 — RPG creator guide
 
+**Creator candidate:** Menu 3 edits RPG enablement/progression, menu 4 edits items, menu 5 edits every spell field/teaching link, and Room Options > 7 edits encounter tables using existing enemy definitions. Menu 9 edits ordinary item interactions. Enemy/weapon/shop/currency and transaction-binding definitions below remain text-authored; these editors preserve and validate them. See [current creator guide](CREATOR_QUICKSTART.md) and [verification](CREATOR_COMPLETION_REVIEW.md).
+
+
 This document is a **practical entry point** for authors. The sample games contain working, validated TOML syntax; use them as the source of truth for individual fields instead of guessing field names. You do **not** need to write Rust to create a story.
 
 ## 1. Create and validate an adventure

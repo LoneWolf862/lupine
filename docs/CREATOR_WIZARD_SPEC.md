@@ -13,7 +13,7 @@ File responsibilities:
 Phase 1 relocates existing character fields/defaults/calculations without redesigning progression, adds display terminology, and updates creator guidance. No legacy `character.toml` loader. No save-format change is needed. Full wizard and parser upgrades are later phases.
 
 
-**Status: Phase 2A.1 setup and Phase 2B navigation merged; Phase 2C room editing implemented for review. Later content editors remain proposed.** `lupine new` and `add room`, `add item`, `add art` already exist. Enhance them rather than replacing them.
+**Current status: setup through Phase 2C.2 is merged; Phases 2D–2F are implemented candidates in stacked draft PRs #8–#13.** See [completion review](CREATOR_COMPLETION_REVIEW.md) for verified scope, limitations and merge order. Milestone sections below retain their historical scope. `lupine new` and `add room`, `add item`, `add art` already exist. Enhance them rather than replacing them.
 
 ## Learning philosophy
 
@@ -145,3 +145,10 @@ Self-review uncovered a real authoring blocker: mixed-case display names without
 Menu 3 edits character enablement, every current progression field and both implemented display labels. Displayed defaults and explanations come from the same commented templates used for new adventures. Existing omitted-enabled semantics remain true; absent files are only created after confirmed Save. Inline display tables, comments and omitted unrelated defaults survive. Unsupported categories are not generated. Full validation prevents disabling RPG while dependent content remains and checks overflow/cross-field constraints even while disabled.
 
 Branch codex/phase-2e-fig-editor stacks on interactions #11 (after #8-#10). Windows: 193 tests, fmt and strict Clippy pass. Tests cover all fields, exact previews, new missing config directories, legacy semantics, inline labels, cancel, invalid cross-field repair and dependent RPG content. Self-review improved failed-save handling: proposed drafts remain available for correction; stale/recovery conflicts instruct users to discard/reopen after review. No save compatibility or Cargo version is changed automatically. Native Linux/human usability and final integrated acceptance remain pending.
+
+
+## Integrated creator contract (Phase 2F candidate)
+
+The current creator exposes all nine listed menu actions, including puzzles as option 9. Item conditional prose and art variant field editing/reordering join the phase-specific capabilities above. Shared Document/Wizard helpers preserve IDs, filenames, unedited fields/comments and exact previews; all publication uses Snapshot. Selected unsupported representations fail with a limitation rather than rewriting authored content. A failed ordinary form save retains the draft, while stale/recovery errors require review/reopening. No editor-only runtime schema exists.
+
+The CLI acceptance transcript creates a neutral three-room adventure entirely through the wizard/menu, then exercises locked travel, key use, alternate prose/art, teaching a spell, explicit before/after saves and reloading. This demonstrates the requested no-manual-TOML journey; it is not human usability certification or a claim that enemy/shop/weapon definition editors exist. Current Windows/Linux verification is recorded in CREATOR_COMPLETION_REVIEW.md.

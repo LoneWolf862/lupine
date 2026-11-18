@@ -1,184 +1,102 @@
-# Lupine Creator Quickstart â€” No Rust Source Editing
+# Lupine Adventure Creator
 
-From the Lupine source folder, run `cargo run -- new`. With a standalone executable in your current folder, use `.\lupine.exe new` on Windows or `./lupine new` on Linux. No global PATH installation is required. In the command examples below, replace `lupine` with `cargo run --` when working from source.
+Status: Phases 2D–2F are implemented candidates in draft PRs #8–#13, pending human review. See [verification and merge guide](CREATOR_COMPLETION_REVIEW.md). Earlier milestone behavior is recorded in CODEX_HANDOFF.md.
 
-1. Run the wizard and press Enter to begin. Beginner mode explains four steps: name your adventure, choose a new folder, describe your starting location, and review. At review, Enter creates the adventure; choose 2 to inspect the files, 3 to revise answers, or 4 to cancel. Type `advanced` at the welcome prompt for shorter prompts, an editable ID and direct previews. Noninteractive `lupine new new_game new_game My Game` remains available.
-2. Modify `rooms/start.toml`. Add new locations with `lupine add room new_game tower`. **Connect** the location by editing `[exits]` in an existing room: `north = "tower"`. Optionally add a matching `south` exit in `tower.toml`.
-3. Add objects with `lupine add item new_game lantern`. Edit its title, aliases, portability, description, and starting room.
-4. Add optional ASCII art with `lupine add art new_game symbol` and reference `art_file = "symbol.txt"` in a room. For artwork that changes when a puzzle flag changes, run `lupine add art new_game symbol --dynamic` and copy the printed room TOML example.
-5. For puzzle logic, add `[[interactions]]` and `[[exit_rules]]` to `interactions.toml` using the examples from `story_example/`. Conditions: `flag_set`, `flag_unset`, `has_item`; effects: `set_flag`, `clear_flag`, `move_item_to_room`.
-6. Run `lupine validate new_game`; correct any reported errors. Then `lupine play new_game` to playtest. During play, `save My Slot`, `load My Slot`, and `saves` work, **only when explicitly invoked**. Lupine never autosaves.
+## Start or reopen
 
-`lupine help` shows the available commands. Story content is ordinary `.toml` and `.txt`; game-wide settings use `.fig`. Room ASCII artwork should be UTF-8 without terminal control sequences, with a maximum size of 64 KiB per artwork file. See `docs/ROOM_ART.md` for full details.
+From the source checkout:
 
-Optional engine configuration uses TOML syntax in config/character.fig (RPG opt-in) and config/terminology.fig (display labels). No config files are required for a narrative-only game. See docs/CONFIG_FIG_SPEC.md in the source repository. Root character.toml is obsolete; move it into config/character.fig. Player saves remain strictly manual .rork files.
+```text
+cargo run -- new
+cargo run -- creator
+cargo run -- creator "my_adventure"
+```
 
-## Beginner and advanced wizard controls
+With a standalone executable, replace `cargo run --` with `.\lupine.exe` on Windows or `./lupine` on Linux. Standalone distribution remains separate work. No-argument Lupine still launches the engine fixture.
 
-Enter keeps the displayed suggestion; `?` gives field help; `back` returns to the previous question; `cancel` or end of input stops before creation. At the first question, `back` explains that you are already at the beginning. Invalid answers explain the problem and repeat the prompt. Earlier answers are retained as defaults. Review option 3 returns to the adventure name, keeping your other answers. Review option 1 (also Enter) creates the project; it enters the Adventure Creator in the CLI; it does **not** automatically launch gameplay.
+New setup explains the adventure title, destination folder, opening room and description. Enter accepts defaults; `advanced` at welcome exposes custom IDs and direct previews. Review before creating. Existing folders are never overwritten. Successful creation enters the creator; opening an existing project never rewrites it.
 
-To enter literal `cancel`, `back` or `?`, prefix the whole answer with a backslash, such as `\back`. These controls do not match parts of sentences. For a multiline description, enter `/multi`; the wizard then explains how to enter lines, including blank lines, and finish with `/end`. `back` discards that unfinished edit and retains the previous completed description. Escape literal control lines with a backslash; double an initial backslash in description text to preserve it. Quotes, Unicode and line breaks are serialized safely as TOML.
+## Main menu
 
-Beginner mode generates an internal ID from ASCII words in the title, separated by underscores (`The Forgotten Forest` becomes `the_forgotten_forest`). Unsupported characters are separators; titles with no ASCII letters/digits and reserved names fall back to `my_adventure`. IDs are limited to 80 characters before any collision suffix. The wizard checks valid `game.toml` IDs in immediate sibling adventure folders and adds `_2`, `_3`, etc. in Beginner mode. Advanced mode asks for a different ID on a local collision. A custom advanced ID survives display-name edits; automatic IDs follow the title during setup. Once players begin saving, keep the ID stable.
+| Option | Purpose |
+|---|---|
+| 1 | Play from a fresh state; `quit` returns here. Load a save explicitly if needed. |
+| 2 | Validate all supported story, RPG and FIG content. |
+| 3 | Configure character/progression and display terminology. |
+| 4 | Create/edit items, aliases, portability and conditional descriptions. |
+| 5 | Create/edit spells and teaching-item links. |
+| 6 | Create/edit ASCII artwork and room references/variants. |
+| 7 | Create/edit rooms, connections, conditional descriptions and encounters. |
+| 8 | Help. |
+| 9 | Interactions, conditional exits and the guided locked-door recipe. |
+| 0 | Exit the selected project; return to the launcher if opened through it. |
 
-There is no global ID registry: games elsewhere on your computer, copied projects, malformed manifests, and concurrent creators may escape the local collision check. Choose distinct advanced IDs across your games. Noninteractive creation keeps its existing explicit-ID behavior.
+The real nested ASCII file tree refreshes after completed operations and on returning to the creator. Enter refreshes after external edits. Existing empty directories are shown; absent files are not invented. Inspection is bounded to 2048 entries/eight nested levels; display shows at most 160 entries and abbreviates long names. Links/junctions are not followed. Inspection problems block play/validation/editing.
 
-A relative folder name is resolved inside the current working folder; a full path specifies another location. The wizard shows the resolved absolute destination before creation. If the suggested folder exists, a numbered suggestion is offered. Explicit existing destinations are rejected and reprompted. Choose a new local folder inside an existing parent. Parent traversal, symlink/reparse components, device/network paths, Windows drive-relative paths and reserved names are rejected.
+## Shared controls and drafts
 
-## Review, play and continue
+`?` explains fields; Enter accepts the displayed current/default value. `back` returns from a prompt/menu; `cancel` abandons the current operation. EOF discards unfinished work. Prefix literal control words with a backslash. Lists use numbered choices; N creates in content managers. Changes stay in memory until explicit Save confirmation. Existing IDs remain stable; changing a display name does not rename references or filenames.
 
-Beginners see a summary first. Review option 2 explains TOML/FIG and displays the exact serialized contents of every generated file; advanced users see these directly. Explanations sit outside the file-content markers. The preview and disk bytes come from the same serialized drafts, rebuilt after edits. This narrative starter needs no FIG files and enables no RPG features.
+Most editors use S to save; Room Options uses 6. Every save validates the proposed adventure before publication. Declining Save retains ordinary editor drafts; the one-pass locked-door recipe returns without writing if declined. For ordinary prose, `/multi` begins multiline entry and `/end` finishes. Use the indicated escape for literal controls. Artwork entry has its own whitespace-preserving instructions below.
 
-Completion shows `cargo run -- play` with your absolute project path for use from the Lupine source folder. It also shows the full path of the running executable, so you can launch it directly without Cargo or PATH setup. Windows commands are explicitly written for **PowerShell** (single-quoted paths and `&` before the executable path); from Command Prompt, type `powershell` first. Linux commands use POSIX shell quoting. Commands handle spaces, apostrophes and shell metacharacters. Choose Play (1) in the creator to launch directly and type `quit` to return, or use the printed command separately. Try `look`, `help` and `quit` once playing; saves remain strictly manual.
+The exact-preview markers enclose the same bytes used for publication. TOML-aware edits preserve unedited properties, comments and existing CRLF style; changed values may use different quoting. Explicitly deleting a property/entry also removes its attached comments. Reordering variants can move table blocks while retaining their content/comments. Unsupported representations are refused rather than destructively rewritten.
 
-Files are staged alongside their destination, synced, and published using exclusive hard links. Filesystems without hard-link support fail safely. Handled project failures remove only files created by that operation and empty directories, reporting cleanup failures. This is a recoverable multi-file sequence, not a crash-atomic project transaction: forced termination may leave complete files or temporary files in a new project folder. Inspect that folder before removing or retrying; the wizard never overwrites it. Do not edit the project concurrently during creation.
+## Rooms and connections
 
-The minimal game is checked through the existing story loader before success. Existing `add room`, `add item`, `add art` and noninteractive `new` remain available. Guided room linking, items, puzzles, FIG editing and skip navigation remain future work.
+Choose 7, then N or an existing number. New rooms ask for a name, suggested/custom ID and description. A room is any location. `{{objects}}` inserts currently visible object names.
 
-## Windows manual walkthrough
+Connections can lead from another room into the selected room or outward from it. Choose a direction and optionally its reverse. Saying no creates a one-way connection and does not remove existing reverse routes. Conflicting routes require explicit replacement approval. Removing an outgoing exit does not automatically remove the reverse exit or its conditional rule; invalid remaining references block Save.
 
-1. In the Lupine repository, run `cargo run -- new`. Press Enter at the welcome prompt.
-2. Name the adventure, choose a new folder (try one with spaces), and name the starting location. At the description prompt, try `back` and revise the location name. Then write a sentence, or use `/multi` and finish with `/end`.
-3. At review, choose 2 to inspect the explained files. Choose 3 to revise a name; keep other answers with Enter. Choose 1 to create.
-4. Copy the printed Cargo play command into PowerShell in the repository folder. Try `look`, `help`, then `quit`. Confirm the opening name and description match your answers.
-5. Run the wizard again, type `advanced`, and try the existing destination; it should refuse to overwrite it. Use `cancel` to exit. Also try an invalid ID and an ID already used by a sibling adventure.
+Room Options: 1 name, 2 description, 3 connections, 4 properties, 5 exact previews, 6 Save, 7 advanced settings, 0 discard. Advanced settings edit conditional descriptions and encounter tables. First-match descriptions replace the default when all their conditions pass. Select an existing variant to edit just its text or requirements; remove/reorder variants explicitly.
 
-## Continue in the Adventure Creator (Phase 2B)
+Encounters require explicitly enabled RPG and existing enemy definitions. Configure chance 0–100, group size 1–12 with minimum <= maximum, persistence (`temporary`, `room`, `unique`), weighted enemy choices and flag requirements. Weights are relative, not percentages. Return to Room Options to preview/save the whole room draft. Exact enemy HP stays private during gameplay.
 
-From the repository, run `cargo run -- creator` to create/open an adventure, or `cargo run -- creator "my_adventure"` to reopen it. Interactive `cargo run -- new` also enters the creator after setup. Noninteractive `new PATH ID TITLE` still generates and exits; no-argument Lupine still runs the engine test adventure.
+## Items
 
-The project remains selected while you use the menu:
+Choose 4, then N or an existing item. New items ask for a unique ID and starting room. Options edit name, description, aliases, portability, starting room and conditional prose. Option 6 inspects the exact TOML; S saves.
 
-- **1 Play:** starts the selected adventure directly. `quit` returns to the menu; the existing unsaved-progress confirmation still applies. Each play starts fresh unless you explicitly load a save. No autosaving occurs.
-- **2 Validate:** reloads story, supported FIG, RPG and related definitions through the same validators as CLI `validate`. Counts and original file/key/reference diagnostics are displayed. Errors return to the menu without changing files.
-- **7 Rooms:** create/edit room names, descriptions and connections with exact previews and confirmed saves.
-- **3-6:** clearly labeled future editors; they do not change files yet.
-- **8 / help / ?:** explains the current interface.
-- **Enter:** refreshes the actual tree after external changes.
-- **0 / back / cancel:** leaves this project. If you used the Create/Open launcher, it returns there; use 0 again to exit. EOF also exits cleanly.
+Portable objects can be picked up and carried. Fixed objects remain in their room. Aliases are alternate player names: Brass Key might have `key` and `brass key`. Add one at a time; select a numbered alias to remove it after confirmation. Teaching items must remain portable; change/remove their spell link before making them fixed. Full validation also protects shop/loot/binding references. Starting-room changes affect fresh sessions; existing saves are not rewritten.
 
-The tree includes existing game/interactions/transaction files, README.txt, and recognized `config/`, `rooms/`, `items/`, `spells/`, `weapons/`, `enemies/`, `shops/` and `art/` folders. Empty existing folders are shown; absent optional folders are not invented. Paths are relative to the project root and directories end in `/`. Nested text/content files appear, although their presence in the tree does not imply the runtime recursively loads every content category. Unrelated root files and temporary extensions are omitted. Unsupported FIG files are visible so validation can identify them.
+## Spells and abilities
 
-The tree displays at most 160 entries and abbreviates paths over 180 characters. Inspection is limited to 2048 entries and 8 nested directory levels; reaching that limit blocks creator validation/play with an explanation rather than silently skipping safety checks. Linked files, symlinks, junctions and other Windows reparse points are not followed. Regular projects with invalid TOML can open for diagnosis; a regular game.toml and a safe existing root are required. These are read-time checks, not protection against a hostile process concurrently swapping filesystem objects. Avoid modifying the project while a load is in progress.
+Choose 5 after explicitly enabling RPG in configuration. All existing fields are available: ID (creation only), display name, description, MP cost, effect kind, positive power and optional teaching item. There is no spell damage-type setting in the current schema.
 
-Navigation, play and validation do not rewrite content. Room editing now uses the separately tested Phase 2C persistence model below. Other guided content editors remain future work. Unsupported schema fields still fail normal validation.
+Damage requires an enemy target (`cast <spell> on <enemy>`); heal and restore-mana affect the player. Defining a spell does not teach it. First create a portable scroll/item in Item Manager, then choose it as the teaching item. During play, take it and use `learn <item>`; learning consumes it. One item cannot teach multiple spells. Type `remove` at the teaching-link prompt to clear it. Preview with 7 and save with S.
 
-### Phase 2B Windows review
+## ASCII artwork
 
-1. Run `cargo run -- creator`; create a new adventure in a folder with spaces. Confirm the real tree and menu appear after setup.
-2. Choose 2 to validate; choose 1 to play, then `look` and `quit`. Confirm you return to the same selected adventure.
-3. Try an invalid menu number, help, and a future-editor option. Each should remain in the creator without changing files.
-4. Exit with 0, then 0 at the launcher. Reopen with `cargo run -- creator "your project folder"` and validate again.
-5. Optionally edit a disposable room file in a text editor while at the menu. Press Enter to refresh and validate. A bad reference should report an error and keep the menu usable; restore the file afterward.
+Choose 6, then N or an existing file. Option 1 accepts multiline text directly; `/end` finishes. Spaces, tabs, blank lines and ordinary backslashes are preserved. Escape literal `/end`, `back` or `cancel` control lines with one backslash. Preview with 2 and save with S. Artwork is UTF-8, at most 64 KiB, without terminal control sequences. Existing nested `.txt` files are editable; new files use simple names directly under `art/`.
 
-## Guided Room Manager (Phase 2C)
+R selects a room. Set/remove default artwork, add/remove/edit a conditional variant, or move a variant earlier. Replacing existing inline artwork requires confirmation. Variants may use a file or inline text and run in first-match order before the default fallback. Editing conditions retains other requirements. Removing references never deletes the artwork file. Artwork itself is not stored in RORK; saved flags/inventory determine the picture.
 
-Choose **7** in the Adventure Creator. Select **N** to add a location, or select an existing room by number. A room can be any place: a forest, cave, village or spaceship. Give it a display name, accept the suggested internal ID (or customize it), and describe what players see. IDs must be unique lowercase letters/digits/dashes/underscores; existing IDs cannot be renamed here. Display names can always be changed. `/multi` starts a multiline description; `/end` finishes. `{{objects}}` inserts the names of currently visible objects during play.
+## Interactions, flags and locked doors
 
-The connection menu explains travel direction. Choose **1** to connect another existing room **to** the selected room; choose **2** to connect the selected room **to** another. Select the other room and a direction, then decide whether to add the reverse direction. The reverse prompt shows the exact route. Answering no makes only the requested edge; it does not delete existing edges. Conflicts require a separate yes to replace an exit. Additional connections can be added before saving. Option 3 removes a selected outgoing exit after confirmation; it does not automatically remove the reverse exit or puzzle rules. Leaving a room disconnected may make it unreachable.
+Choose 9. Option 1 manages interaction and conditional-exit rules. An interaction describes `use <item> on <target>`, requirements, effects and success/failure messages. Each item/target pair has one rule. Both objects must be accessible and the used item must be carried. Conditions support `has_item`, `flag_set`, `flag_unset`; effects support `set_flag`, `clear_flag`, `move_item_to_room`. These are existing engine capabilities, not a separate scripting language.
 
-Room Options:
+A flag is a named yes/no memory, initially unset. An interaction can set `door_open`; an exit, alternate description or artwork can require that same flag. All requirements in a list must pass. Edit lists by adding/removing individual entries, then return to the rule menu to preview/save. Conditional exits must already connect rooms; each room/direction has one rule. Removing a rule makes that route unconditional.
 
-1. Change display name (stable ID remains fixed).
-2. Edit description, including multiline text.
-3. Manage connections.
-4. Review current properties, incoming/outgoing exits, items and preserved advanced settings.
-5. Preview exact proposed TOML for all changed rooms (or the selected room's saved file when unchanged).
-6. Save the room and all drafted connections, after a summary and explicit **yes**. Enter at confirmation means **no**.
-0. Return to Room Manager, discarding this unsaved draft.
+Option 2 guides a locked door: select room/direction, select or create a portable key and door object, choose the unlocked flag and write success/failure/blocked messages. Preview all related files and confirm one transaction. Only the selected direction is locked; configure a reverse rule separately if needed. Conflicting existing rules are rejected rather than replaced silently. Cancel/decline writes none of the draft files. Later revisions use the item/rule editors.
 
-`?` gives help; `back` returns from a question/menu; `cancel` abandons the entire current draft. Prefix literal control words with a backslash. EOF abandons unsaved work and exits through the existing creator behavior. At creation's name/ID/description steps, back revisits the earlier question. After creation, use Room Options to revise any supported answer. A failed save stops the operation and reloads actual files; reopen the room to retry. Successful saving validates the whole adventure, refreshes the real file tree, and returns to Room Manager. Choose a saved room again to inspect its result.
+## FIG configuration
 
-Existing conditional descriptions, art references/variants and encounter tables survive ordinary edits. Comments and formatting are preserved through TOML-aware editing; modified scalar quoting may change, while CRLF file style is retained. Item/ability/art/FIG/conditional-rule editors remain future phases. Unsupported schema fields cause normal validation errors rather than being silently removed. Preexisting invalid projects must be corrected before room editing.
+Choose 3, then Character or Terminology. Menus show current values and defaults; selecting a setting explains its purpose, range and dependencies using the bundled self-documenting FIG templates. P previews, S confirms/validates/saves, 0 discards. Opening absent config does not create files.
 
-### Room-write safety and recovery
+`enabled = true` explicitly enables RPG; new games use false. Existing character FIGs that omit enabled retain true. All progression values validate even while disabled. Existing spells/encounters and other dependent RPG content prevent disabling. Starting HP/MP/AP are bases at level 1 plus per-level gains for higher starting levels. AP 100 means 1.00x weapon damage; level cap 0 means no authored cap; XP growth 120 means +20 percent per level.
 
-All proposed room content is held in memory until explicit Save confirmation. The editor snapshots recognized content and metadata, validates a private staged project with the real validator, rechecks for external edits, and publishes complete files without truncation. Multi-file failures trigger rollback. If an external change prevents safe rollback, recovery files remain and the error identifies them. Do not edit or play the same project concurrently with publication. Player saves remain completely separate and manual.
+Terminology exposes only `display.spellbook` and `display.spells`; these change labels, not player commands. No unsupported FIG categories are generated. Existing saves are never rewritten. If a configuration change invalidates existing saves, deliberately manage `game.toml` save_compatibility_version; the editor does not change versions automatically.
 
-The private `.lupine-room-edit/` folder is an edit lock and recovery folder. It normally disappears after success or rollback. If it remains, further room edits are refused. **Do not delete it blindly.** Read RECOVERY.txt and CHANGES.txt. Retained `original/rooms/...` files are the originals; `proposed/` is the proposed project. A COMMITTED.txt marker means publication and validation finished, but cleanup may not have. Inspect the current project and preserve any external edits before deliberately restoring originals/removing only newly created files. Validate after recovery, then remove the reviewed recovery folder. There is no automatic recovery command yet.
+## Save safety and recovery
 
-Hard-link support is required. This protects against handled write failures but does not make multiple-file changes atomic across crashes or power loss. The editor refuses projects exceeding its safe snapshot limits (8 MiB per file, 64 MiB total, existing 2048-entry/eight-level traversal bounds) rather than silently skipping content.
+Authored content saves and player saves are separate. **Player progress is never autosaved**, including on quit, EOF or entering/leaving play. Only explicit `save`, `load` and `saves` commands handle RORK.
 
-### Phase 2C Windows walkthrough
+Editors require a valid project. They snapshot content, reject unsafe paths/links, stage proposed changes privately, run the complete validator, compare original bytes/metadata to catch external edits, then publish complete files without truncation. Modified files retain permissions. Failed publication rolls back when safe. Failed ordinary form saves retain drafts for correction; stale-file/recovery conflicts require discarding/reopening after review.
 
-1. Run `cargo run -- new`, create a disposable adventure, then choose **7**.
-2. Choose **N**, name a second location, accept its ID, and enter its description.
-3. Choose connection option **1**, select the starting room, choose **north**, and accept the **south** reverse connection. Choose **0** when done connecting.
-4. Choose **5** to inspect both proposed files, then **6**, **yes** to save. The new room should appear in the refreshed tree.
-5. Select each room in turn, use **2** to revise its description, and save with **6**, **yes**.
-6. Return with **0**, validate with **2**, then play with **1**. Type `north`, `south`, then `quit` to return to the creator. No TOML editing is needed for this workflow.
-7. Reopen the project with `cargo run -- creator "your project folder"`. Try canceling a draft and declining an exit conflict; the existing files should remain unchanged.
+All editors share `.lupine-room-edit/` as the historical lock/recovery directory. If it remains, stop editing and read RECOVERY.txt and CHANGES.txt. `original/` retains displaced files; `proposed/` is the staged project. COMMITTED.txt means publication/validation completed but cleanup may not have. Preserve external changes, deliberately restore originals/remove only transaction-created files when appropriate, validate, and then remove the reviewed recovery directory. **Never delete recovery data blindly.** There is no automatic recovery command.
 
+Hard-link support is required. Publication is recoverable, not crash-atomic across multiple files. Limits are 8 MiB per snapshotted file and 64 MiB total, plus traversal bounds. Avoid concurrent editing/play while publishing. Checks do not defend against hostile concurrent filesystem replacement. No unrelated files or existing player saves are deleted.
 
-## Creator presentation (Phase 2C.1)
+## Windows review and current limits
 
-The project tree now nests filenames beneath directories using ASCII `+--` branches and four-column indentation. `./` is the selected adventure root; a trailing `/` identifies a directory, including an empty directory. Root files and content categories retain their fixed order; entries within each directory are sorted by name. Only recognized content is displayed; unrelated root folders and temporary file extensions stay hidden. Links/junctions are marked and never followed. The tree refreshes after saves and on returning to the creator.
+Follow the [review procedure](CREATOR_COMPLETION_REVIEW.md). The automated `tests/fixtures/creator_acceptance.txt` transcript builds a nontrivial neutral adventure entirely through the CLI and is exercised by `cargo test --test creator_acceptance`. It is a test fixture, not HOWLBOUND story content or a human usability result.
 
-The display remains limited to 160 entries, with an omission message. Inspection still stops at 2048 entries/eight nested levels and blocks unsafe validation/play. Individual names longer than 180 characters are abbreviated in the tree; filenames on disk are unchanged. Tree branches use the same separators on Windows and Linux. Authored names retain their original characters.
-
-Creator screens share ASCII headings, aligned options, blank lines around sections, and a prompt label followed by `>`. Multiline input retains its compact `...` prompt. Menu numbers, defaults, back/cancel behavior and command meanings have not changed. Connection previews show From, Direction, To and the proposed reverse route. Properties distinguish incoming/outgoing routes and label outgoing routes as bidirectional or one-way. Choosing no reverse never removes a previously existing reverse route.
-
-Save review summarizes the room and routes without repeating long descriptions or advanced properties; option 4 still shows the detailed properties. A ROOM SAVED screen lists affected files and reports PASSED only after persistence and validation succeed. Exact preview bytes remain between the existing content markers.
-
-### Windows presentation review
-
-1. Run `cargo run -- creator "your project folder"` in PowerShell or Command Prompt. Check that rooms, FIG files and artwork appear beneath their actual folders.
-2. Choose **7**, select a room and **4**. Check headings, incoming/outgoing routes and separation between sections.
-3. In a disposable adventure, create a second room and connect it with a reverse exit. Inspect From/To and reverse prompts. Repeat with a one-way route and decline a conflicting replacement.
-4. Preview with **5**, then save with **6**, **yes**. Check the exact preview, file list, validation result and refreshed tree. Cancel a separate draft and confirm that no success screen appears.
-5. Return, validate, play, then quit back to the creator. Reopen the project to confirm navigation still works.
-
-If a running executable locks the normal debug build on Windows, leave that session open and use `cargo run --target-dir target/ui-polish -- creator "your project folder"` for a separate build.
-
-
-## Self-documenting configuration (Phase 2C.2)
-
-Every newly generated adventure includes config/, rooms/, items/, spells/, weapons/, enemies/, shops/ and art/. Empty content directories are intentional: add only the content you need. The nested tree shows both supported FIGs beneath config/.
-
-Open config/character.fig in any text editor. Each key has comments explaining its values and dependencies. `enabled = false` keeps exploration/narrative-only play; changing it to `true` activates the existing character system on reload. Invalid stats remain errors while disabled. Existing adventures without FIGs still work; older character.fig files without enabled keep RPG enabled. Existing RPG samples explicitly opt in.
-
-config/terminology.fig explains the two supported display labels. These do not rename commands. No gameplay.fig, progression.fig, combat.fig or parser.fig settings are supported. TOML holds content, FIG holds configuration, and RORK holds manually saved progress. Before incompatible enablement/stat changes, deliberately manage game.toml save_compatibility_version; configuration editing does not automatically migrate saves or change version numbers.
-
-### Windows review
-
-1. Run `cargo run -- new` and create a disposable adventure. Use Review game files to inspect commented FIG previews before creating it.
-2. Check the actual tree for both FIGs and all eight directories. Play and type `stats`: it should say there is no character progression. Quit back to the creator.
-3. Open config/character.fig in Notepad; change enabled to true. Validate and play again; `stats` should show the default character.
-4. Explicitly `save config_test`, then `load config_test`. Quit/reopen; progress should only return when explicitly loaded.
-5. Try enabled = "yes" or an invalid stat, then validate. Confirm the file/setting diagnostic and restore valid values.
-6. Run `cargo run -- creator`, choose Open, and press Enter without a path. Read the friendly guidance, then enter the adventure folder.
-
-A separate Cargo target directory (`--target-dir target/config-docs`) can avoid a locked running Windows debug executable. Linux execution has not been verified for this phase.
-
-
-## Item Manager (Phase 2D-A candidate)
-
-Choose 4, then N or an existing numbered item. New items ask for a permanent ID and starting room. In Item Options, change the display name/description, add or remove aliases, choose portability and a starting room. Portable means players can pick it up. Option 6 inspects the exact TOML including preserved conditional properties; S previews and asks for explicit yes before validating and saving. 0/back discards the draft; cancel/EOF never writes the draft. Save returns to Item Manager; return to the creator to validate/playtest. Existing item IDs and filenames remain unchanged so cross-file references survive.
-
-All content editors share the room transaction/recovery contract above, including stale-file detection and full adventure validation. A missing items directory can be created during a successful confirmed edit. Invalid projects must be repaired before editing. No player saves are modified.
-
-
-## Spell Manager (Phase 2D-B candidate)
-
-Choose 5 after explicitly enabling RPG. N creates a definition with a unique ID; select an existing number to edit. Options 1-6 edit the name, description, MP cost, effect, power and teaching item. Option 7 previews; S confirms/validates/saves. Declining save keeps your draft. Create a portable scroll in Item Manager first, then link it with option 6. During play take it and use learn <item>; defining the spell alone does not grant it. Damage requires an enemy target; heal and restore mana affect the player. No spell damage-type field is supported.
-
-
-## Artwork Manager (Phase 2D-C candidate)
-
-Choose 6, then N to create an art filename or a number to edit. Option 1 accepts multiline artwork; /end finishes. Spaces, blank lines and ordinary backslashes survive exactly. Escape a literal /end, back or cancel line with a backslash. Option 2 previews and S confirms a validated save. R in Artwork Manager chooses a room: set/remove its default picture, append a conditional variant, remove a numbered variant, preview or save. Variant order is first-match; the default is the fallback. Multiple requirements must all be true. Artwork remains UTF-8 under art/, limited to 64 KiB without terminal controls. Existing nested .txt files can be edited; new names use the direct art/ folder. Files are not deleted when references are removed.
-
-
-## Puzzles and advanced rooms (Phase 2E-A candidate)
-
-Choose main menu 9. Option 1 manages interaction and conditional-exit rules: add, select/edit, remove, preview and S to save. Interactions use an object on a target; edit requirements, effects, success and failure messages. Requirements support carried items and set/unset flags; effects set/clear flags or move an item to a room. Each item/target pair and room/direction has one rule. A flag is a named yes/no memory, initially unset. All requirements must pass.
-
-Option 2 guides a locked door on an already-connected exit. Choose its room/direction, select or create a portable key and a fixed door, name the unlocked flag and write outcome messages. Review all generated files and explicitly confirm one transaction. Only the chosen direction is locked; add a reverse-direction rule if required. Existing conflicting rules are rejected by validation, not replaced silently. After saving, play: try the blocked exit, take the key, use key on door, then travel. Use authored object names in these commands.
-
-Room Manager > select room > 7 exposes conditional descriptions and encounter settings. Description variants are first-match and support {{objects}}; selecting one edits its text or conditions without replacing other variants. Encounters require explicitly enabled RPG and existing enemy definitions. Change probability, group bounds, persistence and weighted choices/flag requirements; return to Room Options and Save. Enemy HP remains private in gameplay. Removing rules/variants is explicit. Preview and full validation still precede publication.
-
-
-## Guided FIG configuration (Phase 2E-B candidate)
-
-Choose 3, then Character or Terminology. The menu shows current/default values. Select a number for its explanation, allowed range and prompt. Enter keeps the current value; back leaves the field unchanged. P previews the exact file; S validates and requires yes to publish. 0/cancel discards the draft. Opening absent configuration does not create files. Character RPG enablement is explicit; existing FIGs without enabled retain true. Invalid proposals remain open for correction. Disablement is refused while RPG content requires it.
-
-Starting HP/MP/AP are bases at level 1, with per-level gains added for higher starting levels. AP 100 means 1.00x weapon damage. Level cap 0 means no authored cap; XP growth 120 means +20 percent per level. Comments explain dependencies and numeric limits. Terminology changes labels only; player commands remain unchanged. Existing saves are never rewritten. Manage game.toml save_compatibility_version deliberately if configuration changes invalidate existing saves.
+Current limits: stable-ID rename/deletion migrations, guided crash recovery and packaging are not implemented. Enemy/weapon/shop/currency/transaction-binding definition editors are not part of these new menus; existing definitions are preserved and validated, and encounter settings select existing enemies. Unusual condition/effect representations that cannot be safely edited receive a limitation message. Full text-file authoring and direct add/validate/play commands remain available.

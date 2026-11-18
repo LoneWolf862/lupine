@@ -192,3 +192,10 @@ Branch codex/phase-2f-creator-integration stacks on FIG #12. Adds item condition
 The real CLI acceptance fixture creates an entire three-room/four-item adventure through menus, with a one-way route, locked door, key/aliases, dynamic prose/art, spell/scroll, RPG and FIG settings, cancellation, manual before/after saves and reopening. Gameplay confirms loading restores both flag-driven prose and artwork. A separate actual executable walkthrough also passed, with disposable output under target/creator-complete; bundled story, starter and all four RPG sample CLI validations pass. No personal projects were used.
 
 Windows checkpoint: 198 tests, formatting and strict Clippy passed. Final documentation and current-head verification are in progress. Added a PR/dispatch CI workflow for Windows and Linux; no CI result is claimed yet. Human usability remains pending.
+
+
+## Creator completion handoff (2026-11-18)
+
+See [CREATOR_COMPLETION_REVIEW.md](CREATOR_COMPLETION_REVIEW.md) for the complete implementation inventory, branch/PR dependency table, actual verification, self-review findings, limitations, Windows review procedure and merge guidance. Current code is on codex/phase-2f-creator-integration. PRs #8–#13 remain open/draft; nothing was merged or pushed to main. Current local suite: 199 tests; formatting and strict Clippy pass. Windows Server 2022 and Ubuntu 22.04 CI passed at f236172 with 198 tests each, before one additional local sample-dependency regression; final PR CI is tracked separately.
+
+Linux CI exposed and verified the fix for unreadable sibling directories in advisory game-ID scanning. Current documentation now distinguishes the delivered menus from still-text-authored RPG definition categories, manual recovery and future packaging. All authored/editor writes remain explicitly confirmed; gameplay saving is still strictly manual. Existing user untracked files remain unchanged.
