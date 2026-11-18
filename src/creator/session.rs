@@ -1,4 +1,4 @@
-//! Persistent creator navigation. Existing content is read-only in Phase 2B.
+//! Persistent creator navigation. Room edits are explicit, validated transactions; other editors remain planned.
 use super::tree;
 use crate::adventure::Adventure;
 use std::{
@@ -119,7 +119,7 @@ pub fn open<R: BufRead, W: Write>(
             }
             "7" => super::room_edit::run(&root, input, output)?,
             "3" | "4" | "5" | "6" => writeln!(output, "That guided editor is planned for the phase shown in the menu.\nNo files were changed. Existing noninteractive add commands and text\nediting remain available; see docs/CREATOR_QUICKSTART.md.")?,
-            "8" | "?" | "help" => writeln!(output, "You are working in the adventure folder shown above.\nThe tree shows actual files; trailing / means a directory.\nTOML holds story content; optional config/*.fig holds engine settings.\n1 plays here and quit returns here. Each play starts fresh unless you\nexplicitly load a save. 2 checks all supported content and FIG settings.\nEnter refreshes the tree after external edits. 0/back/cancel leaves this\nadventure; no project files or player saves are automatically written.\nRoom editing is Phase 2C; items/spells/art are 2D; interactions/FIG are 2E.")?,
+            "8" | "?" | "help" => writeln!(output, "You are working in the adventure folder shown above.\nThe tree shows actual files; trailing / means a directory.\nTOML holds story content; optional config/*.fig holds engine settings.\n1 plays here and quit returns here. Each play starts fresh unless you\nexplicitly load a save. 2 checks all supported content and FIG settings.\nEnter refreshes the tree after external edits. 0/back/cancel leaves this\nadventure. Room edits require explicit Save confirmation; player saves remain manual.\n7 opens the Room Manager for guided names, descriptions and connections. Items/spells/art and interactions/FIG editors are still planned.")?,
             _ => writeln!(output, "Please choose 0-8, or type help. Your adventure is still selected.")?,
         }
     }

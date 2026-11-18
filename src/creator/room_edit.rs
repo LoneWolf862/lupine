@@ -75,8 +75,9 @@ impl Draft {
             let doc = text
                 .parse::<DocumentMut>()
                 .map_err(|e| format!("{}: {e}", path.display()))?;
-            let id = doc["id"]
-                .as_str()
+            let id = doc
+                .get("id")
+                .and_then(Item::as_str)
                 .ok_or("Room has no string ID")?
                 .to_owned();
             rooms.insert(
@@ -266,11 +267,18 @@ fn connections<R: BufRead, W: Write>(
             continue;
         };
         w.say(&format!(
-            "CONNECTION PREVIEW\n{from} --{}--> {to}",
-            DIRECTIONS[dir]
+            "CONNECTION PREVIEW\n{} ({from}) --{}--> {} ({to})",
+            draft.rooms[from].text("title"),
+            DIRECTIONS[dir],
+            draft.rooms[to].text("title")
         ))?;
         let reverse = w.ask(
-            "Add the reverse connection so players can return?",
+            &format!(
+                "Add {} --{}--> {} so players can return?",
+                draft.rooms[to].text("title"),
+                REVERSE[dir],
+                draft.rooms[from].text("title")
+            ),
             "yes",
             "no makes this a one-way connection; existing exits are not removed",
             |v| {
@@ -352,6 +360,26 @@ fn properties<R: BufRead, W: Write>(
     ] {
         if let Some(value) = room.doc.get(key) {
             w.say(&format!("Preserved {key}: {value}"))?;
+        }
+    }
+    if let Ok(game) = crate::story_loader::load_game(&draft.snapshot.root) {
+        w.say("Items starting here (authored in item files):")?;
+        for item in game
+            .world
+            .items
+            .iter()
+            .filter(|item| item.starting_room == id)
+        {
+            w.say(&format!("  {} ({})", item.name, item.id))?;
+        }
+        w.say("Conditional exits (preserved in interactions.toml):")?;
+        for rule in game.world.exit_rules.iter().filter(|rule| rule.from == id) {
+            w.say(&format!(
+                "  {}: {:?}; blocked message: {}",
+                rule.direction.label(),
+                rule.requires,
+                rule.blocked_text
+            ))?;
         }
     }
     w.say("Conditional descriptions choose text based on flags or inventory. ASCII artwork\nand art variants decorate a room. Items are placed by their own starting_room field;\nconditional exits live in interactions.toml. Encounters are optional RPG content.\nThese advanced properties are preserved; their guided editors come later.")

@@ -146,7 +146,11 @@ impl Snapshot {
                 current.collect(Path::new(name))?;
             }
         }
-        if current.files != self.files {
+        let mut old_dirs = self.dirs.clone();
+        old_dirs.sort();
+        let mut current_dirs = current.dirs.clone();
+        current_dirs.sort();
+        if current.files != self.files || old_dirs != current_dirs {
             return Err("Project files changed externally since opening this editor. Cancel and reopen; no external edits will be overwritten.".into());
         }
         for path in changes.keys() {
@@ -256,6 +260,7 @@ impl Snapshot {
             }
             Adventure::load(&self.root)
                 .map_err(|e| format!("Post-write validation failed: {e}"))?;
+            owned.write(&lock.join("COMMITTED.txt"), b"All proposed room changes were published and the adventure passed validation. If this folder remains, cleanup was interrupted. Review the current adventure before removing recovery files; do not automatically roll back a completed edit.\n")?;
             Ok(())
         })();
         if let Err(error) = result {
@@ -326,12 +331,25 @@ impl Owned {
             .map_err(|e| format!("{}: {e}", path.display()))
     }
     fn clean(&self) -> Result<(), String> {
-        // Remove only paths created by this transaction, never recurse through user content.
-        for path in self.files.iter().rev() {
+        // Keep recovery instructions/status until all data/subdirectories are cleaned.
+        // Unexpected files cause remove_dir to fail; never recursively delete them.
+        let is_note = |path: &Path| {
+            matches!(
+                path.file_name().and_then(|n| n.to_str()),
+                Some("RECOVERY.txt" | "CHANGES.txt" | "COMMITTED.txt")
+            ) && path.parent() == self.dirs.first().map(PathBuf::as_path)
+        };
+        for path in self.files.iter().rev().filter(|p| !is_note(p)) {
             fs::remove_file(path).map_err(|e| format!("{}: {e}", path.display()))?;
         }
-        for path in self.dirs.iter().rev() {
+        for path in self.dirs.iter().skip(1).rev() {
             fs::remove_dir(path).map_err(|e| format!("{}: {e}", path.display()))?;
+        }
+        for path in self.files.iter().rev().filter(|p| is_note(p)) {
+            fs::remove_file(path).map_err(|e| format!("{}: {e}", path.display()))?;
+        }
+        if let Some(root) = self.dirs.first() {
+            fs::remove_dir(root).map_err(|e| format!("{}: {e}", root.display()))?;
         }
         Ok(())
     }
@@ -500,5 +518,34 @@ mod tests {
             )]))
             .is_err());
         assert!(!f.0.join(LOCK).exists());
+    }
+    #[test]
+    fn real_publication_collision_rolls_back_and_preserves_the_collision() {
+        let f = Fixture::new();
+        let old = fs::read(f.0.join("rooms/start.toml")).unwrap();
+        let snapshot = Snapshot::capture(&f.0).unwrap();
+        let changes = BTreeMap::from([
+            (
+                PathBuf::from("rooms/start.toml"),
+                "id='start'\ntitle='Changed'\ndescription='Text'\n[exits]\nnorth='z_new'\n".into(),
+            ),
+            (
+                PathBuf::from("rooms/z_new.toml"),
+                "id='z_new'\ntitle='New'\ndescription='Text'\n[exits]\nsouth='start'\n".into(),
+            ),
+        ]);
+        let error = snapshot
+            .commit_with(&changes, |n| {
+                if n == 1 {
+                    fs::create_dir(f.0.join("rooms/z_new.toml")).unwrap();
+                }
+                Ok(())
+            })
+            .unwrap_err();
+        assert!(error.contains("Cannot publish"));
+        assert_eq!(fs::read(f.0.join("rooms/start.toml")).unwrap(), old);
+        assert!(f.0.join("rooms/z_new.toml").is_dir());
+        assert!(!f.0.join(LOCK).exists());
+        Adventure::load(&f.0).unwrap();
     }
 }

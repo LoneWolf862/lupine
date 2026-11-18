@@ -100,7 +100,7 @@ impl<R: BufRead, W: Write> Wizard<'_, R, W> {
             "Write one line below, or type /multi to write several lines. Instructions will follow.",
         )?;
         loop {
-            let first = self.line(&format!("Starting room description [{default}]: "))?;
+            let first = self.line(&format!("Location description [{default}]: "))?;
             if first.eq_ignore_ascii_case("back") {
                 return Ok(None);
             }

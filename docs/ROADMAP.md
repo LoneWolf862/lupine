@@ -56,9 +56,9 @@ Optional weapon and spell TOML definitions; learned abilities tracked separately
 
 | Phase | Scope | Current status |
 |---|---|---|
-| 2A / 2A.1 | Safe setup, beginner/advanced modes, exact previews | Implemented; PR #2 open for review |
-| 2B | Persistent session, actual tree, reopen, play/validate and return | Implemented on a separate branch stacked on PR #2; verification in CODEX_HANDOFF.md |
-| 2C | Guided room creation/editing, connections/reverse exits, safe existing-file persistence | Proposed; requires a reviewed preservation/rollback design |
+| 2A / 2A.1 | Safe setup, beginner/advanced modes, exact previews | Merged in PR #2 |
+| 2B | Persistent session, actual tree, reopen, play/validate and return | Merged in PR #3; verification in CODEX_HANDOFF.md |
+| 2C | Guided room creation/editing, connections/reverse exits, safe existing-file persistence | Implemented candidate on codex/phase-2c-room-editor; awaiting human review |
 | 2D | Guided items, spells and artwork | Proposed; reuse the shared editor/persistence foundation |
 | 2E | Conditional exits, doors, supported FIG editing and advanced room properties | Proposed; no unsupported FIG categories |
 

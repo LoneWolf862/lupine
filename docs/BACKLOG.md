@@ -27,3 +27,15 @@ Keep the existing command-line interface for advanced users.
 - Preserve gameplay. Justified pre-1.0 format/API changes are permitted; migrate bundled consumers without obsolete loaders. Avoid unrelated RORK changes.
 - Never autosave; players control saving explicitly.
 - Implement these improvements in a future Codex development pass.
+
+## Creator follow-ups after Phase 2C
+
+Phase 2C implements room names/descriptions, directional connections, exact previews and recoverable confirmed file edits. Still planned:
+
+- Phase 2D: full guided item, spell and artwork editors.
+- Phase 2E: conditional-exit/puzzle and supported FIG editors, advanced room settings.
+- Explicit room-ID rename with reference/save-impact review; existing IDs are fixed today.
+- A guided recovery interface for interrupted multi-file edits; current recovery is manual and documented.
+- Broader transaction durability/platform verification and beginner usability testing. Native Linux verification is still outstanding.
+
+Do not create proposed FIG categories or change gameplay calculations to fill out editor menus.

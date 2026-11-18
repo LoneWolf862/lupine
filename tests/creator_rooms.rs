@@ -270,3 +270,122 @@ fn existing_encounter_room_keeps_supported_advanced_properties() {
     assert_eq!(value(old)["encounters"], value(&new)["encounters"]);
     lupine::adventure::Adventure::load(&f.game).unwrap();
 }
+
+#[test]
+fn explicit_connection_replacement_and_multiple_exits_validate() {
+    let f = Fixture::new();
+    lupine::creator::add_room(&f.game, "a_room").unwrap();
+    lupine::creator::add_room(&f.game, "b_room").unwrap();
+    fs::write(
+        f.game.join("rooms/start.toml"),
+        "id='start'\ntitle='Start'\ndescription='Text'\n[exits]\nnorth='a_room'\nwest='a_room'\n",
+    )
+    .unwrap();
+    // Select b_room; connect start north -> b_room, explicitly replacing old exit; keep west.
+    let output = f.run("7\n2\n3\n1\n2\nnorth\nyes\nyes\n0\n6\nyes\n0\n0\n");
+    assert!(output.contains("Conflict:"), "{output}");
+    assert!(output.contains("Room changes saved"));
+    let start = value(&f.room("start"));
+    assert_eq!(start["exits"]["north"].as_str(), Some("b_room"));
+    assert_eq!(start["exits"]["west"].as_str(), Some("a_room"));
+    assert_eq!(
+        value(&f.room("b_room"))["exits"]["south"].as_str(),
+        Some("start")
+    );
+    lupine::adventure::Adventure::load(&f.game).unwrap();
+}
+
+#[test]
+fn edits_do_not_follow_junctions_or_symlinks() {
+    #[cfg(windows)]
+    use std::process::Command;
+    let f = Fixture::new();
+    let outside = f.root.join("outside");
+    fs::create_dir(&outside).unwrap();
+    fs::write(outside.join("sentinel.txt"), "keep").unwrap();
+    let link = f.game.join("rooms/linked");
+    #[cfg(windows)]
+    {
+        assert!(Command::new("cmd")
+            .args(["/C", "mklink", "/J"])
+            .arg(&link)
+            .arg(&outside)
+            .output()
+            .unwrap()
+            .status
+            .success());
+    }
+    #[cfg(unix)]
+    std::os::unix::fs::symlink(&outside, &link).unwrap();
+    let output = f.run("7\n0\n");
+    assert!(output.contains("Cannot edit rooms"));
+    assert_eq!(
+        fs::read_to_string(outside.join("sentinel.txt")).unwrap(),
+        "keep"
+    );
+    #[cfg(windows)]
+    fs::remove_dir(link).unwrap();
+    #[cfg(unix)]
+    fs::remove_file(link).unwrap();
+}
+
+#[test]
+fn externally_modified_room_is_refused_at_final_confirmation() {
+    use std::io::{self, BufRead, Read};
+    struct Input {
+        script: Cursor<Vec<u8>>,
+        path: PathBuf,
+    }
+    impl Read for Input {
+        fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+            self.script.read(buf)
+        }
+    }
+    impl BufRead for Input {
+        fn fill_buf(&mut self) -> io::Result<&[u8]> {
+            self.script.fill_buf()
+        }
+        fn consume(&mut self, n: usize) {
+            self.script.consume(n)
+        }
+        fn read_line(&mut self, line: &mut String) -> io::Result<usize> {
+            let n = self.script.read_line(line)?;
+            if line.trim() == "yes" {
+                fs::write(
+                    &self.path,
+                    "id='start'\ntitle='External author edit'\ndescription='Keep me'\n[exits]\n",
+                )?;
+            }
+            Ok(n)
+        }
+    }
+    let f = Fixture::new();
+    let mut input = Input {
+        script: Cursor::new(b"7\n1\n1\nDraft title\n6\nyes\n0\n0\n".to_vec()),
+        path: f.game.join("rooms/start.toml"),
+    };
+    let mut output = Vec::new();
+    session::open(&f.game, &mut input, &mut output, &f.saves).unwrap();
+    assert!(String::from_utf8(output)
+        .unwrap()
+        .contains("changed externally"));
+    assert_eq!(
+        value(&f.room("start"))["title"].as_str(),
+        Some("External author edit")
+    );
+    assert!(!f.game.join(".lupine-room-edit").exists());
+}
+
+#[test]
+fn inline_exit_tables_survive_connection_edits() {
+    let f = Fixture::new();
+    lupine::creator::add_room(&f.game, "z_room").unwrap();
+    fs::write(f.game.join("rooms/start.toml"), "# header\nid='start'\ntitle='Start'\ndescription='Text'\nexits = { north = 'z_room' } # inline comment\n").unwrap();
+    let output = f.run("7\n1\n3\n2\n1\neast\nno\n0\n6\nyes\n0\n0\n");
+    assert!(output.contains("Room changes saved"), "{output}");
+    let text = f.room("start");
+    assert!(text.contains("# inline comment"));
+    let exits = value(&text)["exits"].clone();
+    assert_eq!(exits["north"].as_str(), Some("z_room"));
+    assert_eq!(exits["east"].as_str(), Some("z_room"));
+}
