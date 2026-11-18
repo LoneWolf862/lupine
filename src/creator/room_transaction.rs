@@ -131,6 +131,12 @@ impl Snapshot {
             .filter(move |(p, _)| p.parent() == Some(Path::new(category)))
             .map(|(p, o)| (p, o.bytes.as_slice()))
     }
+    pub fn art_sources(&self) -> impl Iterator<Item = (&PathBuf, &[u8])> {
+        self.files
+            .iter()
+            .filter(|(p, _)| p.starts_with("art") && p.extension().is_some_and(|e| e == "txt"))
+            .map(|(p, o)| (p, o.bytes.as_slice()))
+    }
     pub fn source(&self, path: &Path) -> Option<&[u8]> {
         self.files.get(path).map(|o| o.bytes.as_slice())
     }
@@ -172,7 +178,12 @@ impl Snapshot {
             let category = path.parent().and_then(Path::to_str).unwrap_or("");
             let allowed = match category {
                 "rooms" | "items" | "spells" => path.extension().is_some_and(|e| e == "toml"),
-                _ => false,
+                "art" => path.extension().is_some_and(|e| e == "txt"),
+                _ => {
+                    path.starts_with("art")
+                        && self.files.contains_key(path)
+                        && path.extension().is_some_and(|e| e == "txt")
+                }
             };
             if !safe || !allowed {
                 return Err("This path is not an editable content file".into());
@@ -230,7 +241,7 @@ impl Snapshot {
             let staged = lock.join("proposed");
             owned.dir(&staged)?;
             owned.dir(&lock.join("original"))?;
-            for category in ["rooms", "items", "spells"] {
+            for category in ["rooms", "items", "spells", "art"] {
                 owned.dir(&lock.join("original").join(category))?;
             }
             for dir in &self.dirs {
@@ -255,9 +266,23 @@ impl Snapshot {
                         .map_err(|e| e.to_string())?;
                 }
             }
+            for path in changes.keys() {
+                let mut backup = lock.join("original");
+                for component in path.parent().unwrap().components() {
+                    backup.push(component);
+                    if !backup.exists() {
+                        owned.dir(&backup)?;
+                    }
+                }
+            }
             for (path, text) in changes {
                 if !self.files.contains_key(path) {
                     owned.write(&staged.join(path), text.as_bytes())?;
+                }
+            }
+            for (path, text) in changes {
+                if path.starts_with("art") {
+                    crate::story_loader::validate_art(text, &path.display().to_string())?;
                 }
             }
             Adventure::load(&staged)

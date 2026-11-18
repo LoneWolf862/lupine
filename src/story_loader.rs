@@ -242,7 +242,7 @@ fn descriptions(
 /// Never interpret ANSI control sequences embedded in story files.
 const MAX_ART_BYTES: u64 = 64 * 1024;
 
-fn validate_art(text: &str, origin: &str) -> Result<(), String> {
+pub(crate) fn validate_art(text: &str, origin: &str) -> Result<(), String> {
     if text.len() as u64 > MAX_ART_BYTES {
         return Err(format!("{origin}: artwork exceeds 64 KiB"));
     }

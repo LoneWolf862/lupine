@@ -123,3 +123,47 @@ fn spell_rejects_bad_numbers_and_preserves_existing_id_and_comments() {
     assert_eq!(v["id"].as_str(), Some("heal"));
     assert_eq!(v["power"].as_integer(), Some(8));
 }
+
+#[test]
+fn artwork_preserves_spaces_backslashes_and_supports_dynamic_references() {
+    let f = Fixture::new();
+    let out=f.run("6\nn\nview\n1\n  /\\  \n\\___/\n\n/end\n2\ns\nyes\nr\n1\n1\n1\n3\n1\n2\nopened\n0\ns\nyes\n0\n2\n1\nlook\nquit\n0\n");
+    assert!(out.contains("Artwork saved and validated"), "{out}");
+    assert!(out.contains("Changes saved"), "{out}");
+    assert_eq!(f.read("art/view.txt"), "  /\\  \n\\___/\n\n");
+    let v: toml::Value = f.read("rooms/start.toml").parse().unwrap();
+    assert_eq!(v["art_file"].as_str(), Some("view.txt"));
+    assert_eq!(
+        v["art_variants"][0]["when"][0]["flag_unset"].as_str(),
+        Some("opened")
+    );
+    assert!(out.contains("Validation successful"));
+    assert!(!f.saves.exists());
+    let out = f.run("6\nr\n1\n2\nyes\n4\n1\nyes\ns\nyes\n0\n0\n");
+    assert!(out.contains("Changes saved"), "{out}");
+    let v: toml::Value = f.read("rooms/start.toml").parse().unwrap();
+    assert!(v.get("art_file").is_none());
+    assert!(v
+        .get("art_variants")
+        .is_none_or(|v| v.as_array().unwrap().is_empty()));
+}
+#[test]
+fn artwork_nested_existing_files_and_cancel_are_safe() {
+    let f = Fixture::new();
+    fs::create_dir(f.game.join("art/nested")).unwrap();
+    fs::write(f.game.join("art/nested/view.txt"), "old\r\n").unwrap();
+    f.run("6\n1\n2\n0\n0\n0\n");
+    assert_eq!(f.read("art/nested/view.txt"), "old\r\n");
+    let out = f.run("6\n1\n1\n new \n/end\ns\nyes\n0\n0\n");
+    assert!(out.contains("Artwork saved"), "{out}");
+    assert_eq!(f.read("art/nested/view.txt"), " new \n");
+    f.run("6\nn\ncanceled\n1\ntext\ncancel\n0\n0\n");
+    assert!(!f.game.join("art/canceled.txt").exists());
+}
+#[test]
+fn unreferenced_artwork_control_codes_are_rejected() {
+    let f = Fixture::new();
+    let out = f.run("6\nn\nunsafe\n1\n\u{1b}[31m\n/end\ns\nyes\n0\n0\n");
+    assert!(out.contains("terminal control characters"), "{out}");
+    assert!(!f.game.join("art/unsafe.txt").exists());
+}
