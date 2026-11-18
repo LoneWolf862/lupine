@@ -161,3 +161,8 @@ All content editors share the room transaction/recovery contract above, includin
 ## Spell Manager (Phase 2D-B candidate)
 
 Choose 5 after explicitly enabling RPG. N creates a definition with a unique ID; select an existing number to edit. Options 1-6 edit the name, description, MP cost, effect, power and teaching item. Option 7 previews; S confirms/validates/saves. Declining save keeps your draft. Create a portable scroll in Item Manager first, then link it with option 6. During play take it and use learn <item>; defining the spell alone does not grant it. Damage requires an enemy target; heal and restore mana affect the player. No spell damage-type field is supported.
+
+
+## Artwork Manager (Phase 2D-C candidate)
+
+Choose 6, then N to create an art filename or a number to edit. Option 1 accepts multiline artwork; /end finishes. Spaces, blank lines and ordinary backslashes survive exactly. Escape a literal /end, back or cancel line with a backslash. Option 2 previews and S confirms a validated save. R in Artwork Manager chooses a room: set/remove its default picture, append a conditional variant, remove a numbered variant, preview or save. Variant order is first-match; the default is the fallback. Multiple requirements must all be true. Artwork remains UTF-8 under art/, limited to 64 KiB without terminal controls. Existing nested .txt files can be edited; new names use the direct art/ folder. Files are not deleted when references are removed.
