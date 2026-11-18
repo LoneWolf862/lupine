@@ -12,7 +12,7 @@ File responsibilities:
 
 Phase 1 relocates existing character fields/defaults/calculations without redesigning progression, adds display terminology, and updates creator guidance. No legacy `character.toml` loader. No save-format change is needed. Full wizard and parser upgrades are later phases.
 
-**Status:** Phase 1 merged. Phase 2A wizard foundations implemented and automatically verified on Windows; pending PR review. Broader wizard and parser expansion remains future work.
+**Status:** Phase 1 merged. Phase 2A.1 beginner/advanced wizard refinement implemented and automatically verified on Windows on the existing Phase 2A branch and PR #2; awaiting human review. Broader authoring and parser expansion remains future work.
 
 ## Project identity and baseline
 
@@ -76,3 +76,15 @@ Based on origin/main at 3e8a1e6. The `new` wizard now collects title, stable ID,
 Windows verification passed: `cargo fmt --all -- --check`, `cargo test` (123 tests), `cargo clippy --all-targets -- -D warnings`. Coverage includes exact preview bytes, defaults/help/retries, cancellation and EOF, preexisting destinations, failed writes/project rollback, Windows junction rejection, special characters and multiline text, CLI validation and scripted play without autosaving. Existing FIG, gameplay, sample validation and RORK regressions passed.
 
 No dependencies, player parsing, combat/progression, save behavior or format changes. No native Linux or human interactive usability verification. Filesystem hard-link support is required; interrupted project creation is recoverable but not a crash-atomic multi-file transaction. Additional modes, back/skip, guided linking/items/puzzles and FIG editing remain future phases. See CREATOR_QUICKSTART.md for operational limits.
+
+## Phase 2A.1 refinement and verification (2026-11-18)
+
+Continued on `codex/creator-wizard-foundations` and PR #2. The user's Windows test of Phase 2A successfully created/validated a game but identified jargon-heavy prompts and an unusable PATH-dependent play command. This refinement makes Beginner mode the Enter default, adds four explained steps and automatic IDs, and offers an educational file preview only when requested. Advanced mode retains manual IDs and direct previews. Both modes support help, back navigation, retained answers, review revisions, multiline descriptions, escaped literal controls, cancellation and EOF. CLI cancellation exits cleanly without treating it as a runtime failure.
+
+Folder selection explains relative/full paths and shows the resolved destination. Local sibling-ID collisions are suffixed automatically for beginners and rejected for advanced authors; existing folder suggestions get numbered alternatives. Actual existing destinations are always rejected. A custom advanced ID survives a display-name edit. There is no global registry, and simultaneous creation elsewhere is not coordinated. Generated projects remain validated with the existing loader, with exclusive staged writes and unchanged formats.
+
+Completion provides correctly quoted Cargo and absolute executable commands instead of assuming PATH installation. Windows commands explicitly target PowerShell, with instructions for entering it from Command Prompt. Linux text uses POSIX quoting. Gameplay is a separate action; no automatic launch or save occurs. Generated README guidance now includes the source/Cargo workflow.
+
+Windows verification: `cargo fmt --all -- --check`, `cargo test` (136 tests), and `cargo clippy --all-targets -- -D warnings` all passed. New coverage includes both modes, all defaults, slug/fallback/collision behavior, invalid IDs, relative/absolute folders, explanations/help, back/review revisions, cancellation/EOF, optional preview equality, multiline/literal controls, preexisting content and completion commands. A Windows integration test executed the printed absolute executable command with spaces, an apostrophe and shell metacharacters in the project path. A separate scripted `cargo run -- new` smoke check executed the exact printed Cargo play command and verified the opening room and description. Existing noninteractive creator, FIG, RPG, RORK and sample validation regressions passed.
+
+No native Linux verification or renewed human beginner acceptance yet. The user's untracked `gas/` adventure was left untouched and excluded from commits. Hard-link filesystem support and recoverable/non-crash-atomic project creation remain Phase 2A limitations. Guided room linking, objects, puzzles and FIG editing remain future work. See CREATOR_QUICKSTART.md for the Windows review walkthrough. PR #2 remains open; do not merge automatically.

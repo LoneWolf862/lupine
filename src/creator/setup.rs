@@ -109,6 +109,7 @@ pub(super) fn run<R: BufRead, W: Write>(input: &mut R, output: &mut W) -> Result
     };
     let mut title = "My Adventure".to_owned();
     let mut id = suggested_id(&title);
+    let mut custom_id = false;
     let mut location = String::new();
     let mut room = "Starting Room".to_owned();
     let mut description = DEFAULT_DESCRIPTION.to_owned();
@@ -119,7 +120,7 @@ pub(super) fn run<R: BufRead, W: Write>(input: &mut R, output: &mut W) -> Result
                 if !advanced { w.say("\nSTEP 1 OF 4 - NAME YOUR ADVENTURE\nThis is the name players see when your game begins.\nExamples: The Forgotten Forest; Journey to the Mountains.\nYou can change this display name later.")?; }
                 match w.ask("Adventure name", &title, "Choose a name for your story, up to 120 characters. Enter keeps the suggested name.", text_title)? {
                     Some(value) => {
-                        if value != title { id = suggested_id(&value); }
+                        if value != title && !custom_id { id = suggested_id(&value); }
                         title = value;
                         step = if advanced { 1 } else { 2 };
                     }
@@ -128,7 +129,7 @@ pub(super) fn run<R: BufRead, W: Write>(input: &mut R, output: &mut W) -> Result
             }
             1 => {
                 match w.ask("Game ID", &id, "Use lowercase a-z, digits, - or _. Keep this ID stable once players save progress. IDs must differ from other adventures in the selected parent folder.", validate_id)? {
-                    Some(value) => { id = value; step = 2; }
+                    Some(value) => { custom_id = value != suggested_id(&title); id = value; step = 2; }
                     None => step = 0,
                 }
             }

@@ -11,6 +11,11 @@ pub(super) fn validate_destination(path: &Path) -> Result<(), String> {
     if path.components().any(|c| matches!(c, Component::Prefix(prefix) if !matches!(prefix.kind(), std::path::Prefix::Disk(_)))) {
         return Err("Use a local folder path, not a device or network path".into());
     }
+    if path.components().any(|c| matches!(c, Component::Prefix(_))) && !path.is_absolute() {
+        return Err(
+            "Use a full path such as C:\\Games\\my_adventure, not a drive-relative path".into(),
+        );
+    }
     let mut current = std::path::PathBuf::new();
     for component in path.components() {
         if matches!(component, Component::ParentDir) {

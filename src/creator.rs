@@ -223,7 +223,7 @@ fn validate_id(id: &str) -> Result<(), String> {
             .bytes()
             .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_' || b == b'-')
     {
-        return Err("ID must be 1–100 characters, lowercase ASCII a-z, 0-9, '-' or '_'".into());
+        return Err("Use 1-100 lowercase letters, digits, dash or underscore; device names such as con, nul and com1 are reserved".into());
     }
     Ok(())
 }

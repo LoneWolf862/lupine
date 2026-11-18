@@ -157,13 +157,7 @@ fn beginner_disambiguates_local_ids_and_advanced_rejects_duplicates() {
 fn beginner_cancellation_eof_and_multiline_back_do_not_create_files() {
     let p = Project::new();
     let path = p.path();
-    let answers = [
-        "",
-        "Story",
-        path.to_str().unwrap(),
-        "Room",
-        "Description",
-    ];
+    let answers = ["", "Story", path.to_str().unwrap(), "Room", "Description"];
     for step in 0..=answers.len() {
         let prefix = answers[..step]
             .iter()
@@ -267,4 +261,26 @@ fn printed_executable_command_plays_from_powershell_with_special_path() {
         String::from_utf8_lossy(&output.stderr)
     );
     assert!(String::from_utf8_lossy(&output.stdout).contains("Starting Room"));
+}
+
+#[test]
+fn cli_cancel_and_eof_are_friendly_successful_exits() {
+    let p = Project::new();
+    for script in ["", "cancel\n", "\nStory\nadventure\n\n\n4\n"] {
+        let output = run_cli(&p, script);
+        assert!(output.contains("Setup canceled"));
+        assert!(!p.path().exists());
+    }
+}
+
+#[test]
+fn advanced_back_keeps_custom_id_and_other_answers() {
+    let p = Project::new();
+    let script = format!("advanced\nOriginal\ncustom_id\nback\n\n{}\nback\n\nRoom\nDescription\n3\nRenamed\n\n\n\n\n1\n", p.path().display());
+    let output = p.run(&script);
+    let game = load_game(p.path()).unwrap();
+    assert_eq!(game.title, "Renamed");
+    assert_eq!(game.id, "custom_id");
+    assert_eq!(game.world.rooms[0].title, "Room");
+    assert!(output.contains("Game ID [custom_id]"));
 }

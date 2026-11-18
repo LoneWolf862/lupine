@@ -19,13 +19,12 @@ Phase 1 relocates existing character fields/defaults/calculations without redesi
 
 **Teach by creating, not by lecturing.** A first-time user should make playable game content, see how Lupine represents it in TOML and `.fig`, and learn enough to edit those files afterward. All help is optional, concise and grounded in real keys that the engine understands. Experienced creators should be able to work quickly without repetitive tutorials.
 
-## Interaction modes
+## Implemented interaction modes (Phase 2A.1)
 
-- **Standard (default):** short explanations, sample inputs, file preview.
-- **Guided:** more explanatory hints and walkthroughs.
-- **Quick:** minimal prompts, still performs validation, confirmation, and safe writes.
+- **Beginner (default):** Enter begins a four-step explained flow. Internal IDs are generated; a plain-language summary offers creation, optional exact file previews, revision or cancellation.
+- **Advanced:** type `advanced` at the welcome prompt for shorter field prompts, editable IDs and direct exact previews.
 
-Suggested controls: Enter accepts defaults; `?` shows more explanation; `back` returns to the previous question when safe; `skip` omits optional steps; `cancel` aborts without clobbering previous work. Decide how to escape these controls when entering free-form story text.
+Enter accepts suggestions; `?` gives help; `back` returns to the preceding question; `cancel` stops. Review can revisit all answers without losing them. Prefix literal control words with a backslash. Multiline descriptions remain available through `/multi`, with instructions given on entry. `skip` and broader authoring modes remain proposed.
 
 ## Author journey
 
@@ -41,7 +40,7 @@ The basic path must be skippable: creators should still be able to generate a mi
 
 ## Exact preview behavior
 
-When a step has collected inputs, show the destination path and precisely the representation that **the same serializer will write**, or a clearly labeled subset of it. Do not implement a separately hand-formatted preview that can drift from the output. Explain a key only when useful, e.g. "`id` is the stable internal name; `title` is what the player sees." Do not present nonfunctional example syntax as actual output.
+When requested in Beginner mode, and directly in Advanced mode, show the destination path and precisely the representation that **the same serializer will write**, or a clearly labeled subset of it. Do not implement a separately hand-formatted preview that can drift from the output. Explain a key only when useful, e.g. "`id` is the stable internal name; `title` is what the player sees." Do not present nonfunctional example syntax as actual output.
 
 Illustrative interaction (must be adapted to the real schema):
 
@@ -77,6 +76,8 @@ A novice creates a two-room world, connects and optionally unlinks/reorients exi
 
 Inspect `src/creator.rs`, `src/main.rs`, `src/story_loader.rs`, `templates/starter/`, and wizard/creator tests. Share serialization/validation with manual authoring. Use the existing engine condition/effect vocabulary for puzzles; do not invent puzzle syntax or introduce special-case story logic in Rust.
 
-## Phase 2A implementation boundary
+## Phase 2A.1 implementation boundary
 
-`new` now collects title, stable ID, location, starting room title and multiline description. Shared prompt, serialization/preview and exclusive staged-write helpers live under `src/creator/`. Preview and disk bytes use the same `DraftFile` contents. Generated projects pass the existing story loader. No dependency or gameplay changes. See CREATOR_QUICKSTART.md for controls, safety and filesystem limitations. Full guided room/item/puzzle/config workflows and quick/guided modes are not implemented in this phase.
+`new` guides creators through title, location, starting room and description. Beginner mode automatically generates a stable ID; advanced mode permits customization. Shared prompts, serialized drafts and safe writes remain under `src/creator/`, with the mode/step flow in `setup.rs`. Local sibling-ID checks and folder suffix suggestions prevent common collisions; no global registry is claimed. The resolved destination appears in review. Preview and written bytes use the same `DraftFile` contents.
+
+Generated projects pass the story loader. Completion provides Cargo and exact executable commands with platform-specific shell quoting, without guessing how Lupine was launched. Creation does not automatically launch play. See CREATOR_QUICKSTART.md for navigation, quoting, local collision scope, safety limits and a Windows manual walkthrough. Full guided room/item/puzzle/config workflows remain future work. No dependency, gameplay or save-format changes.
