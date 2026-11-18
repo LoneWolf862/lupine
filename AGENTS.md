@@ -100,3 +100,8 @@ Build an optional TOML-configured RPG system, detailed in `docs/COMBAT_RPG_SPEC.
 ## Historical handoff — v0.8.4-C (2026-11-17 candidate)
 
 Prior sections are historical milestone instructions, not the current feature inventory. v0.8.4-A and v0.8.4-B were verified by the user on Windows. The v0.8.4-C candidate consolidates defeat text, moves the test module to end-of-file for Clippy, updates documentation and Cargo version, and adds sample-loading regression coverage. Before marking C released, verify with `cargo fmt --all && cargo test && cargo clippy --all-targets -- -D warnings` and interactive play on the user's Windows setup. **Do not change save format or game save compatibility versions just to change the Cargo crate version.** Never autosave. Target v0.9 for standalone Windows/Linux packaging, and do not claim Linux native testing before actually running it.
+
+<!-- lupine-phase-2c2-spec -->
+## Approved next phase — self-documenting FIG files (Phase 2C.2)
+
+Read `docs/SELF_DOCUMENTING_CONFIG_SPEC.md` before changing new-adventure scaffolding or FIG activation. Every **new** game should expose implemented configuration defaults in commented FIG files, while narrative-only behavior remains the default. `config/character.fig` currently enables RPG by its mere presence; change this deliberately via an explicit opt-in `enabled` field and test existing RPG games/migrations. Do not create unsupported gameplay/progression/combat/parser FIG files. Keep content TOML, configuration FIG, manual player RORK saves strictly separate. Every Codex task uses an isolated feature branch, frequent checkpoint pushes, a reviewable PR, and no self-merge or direct pushes to `main`.

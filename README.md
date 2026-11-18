@@ -74,3 +74,8 @@ For sample-level verification, `cargo run -- validate samples/rpg_persistent` an
 MIT. Consult the repository's license file for the complete terms.
 
 Optional engine configuration uses TOML syntax in config/character.fig (RPG opt-in) and config/terminology.fig (display labels). No config files are required for a narrative-only game. See docs/CONFIG_FIG_SPEC.md in the source repository. Root character.toml is obsolete; move it into config/character.fig. Player saves remain strictly manual .rork files.
+
+<!-- lupine-phase-2c2-spec -->
+## Creator configuration direction (planned)
+
+Lupine's next creator configuration phase will generate a standard directory tree and commented, explicit default settings in its **currently supported** `.fig` files, so beginners can use the wizard and experienced authors can edit files directly. This is **not implemented yet**; currently the presence of `config/character.fig` enables RPG. The planned change will add an explicit opt-in and preserve existing authored games. See [`docs/SELF_DOCUMENTING_CONFIG_SPEC.md`](docs/SELF_DOCUMENTING_CONFIG_SPEC.md).

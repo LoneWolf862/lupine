@@ -39,3 +39,8 @@ Phase 2C implements room names/descriptions, directional connections, exact prev
 - Broader transaction durability/platform verification and beginner usability testing. Native Linux verification is still outstanding.
 
 Do not create proposed FIG categories or change gameplay calculations to fill out editor menus.
+
+<!-- lupine-phase-2c2-spec -->
+## Approved Phase 2C.2 — Self-documenting configuration (pending)
+
+Generate standard content directories and commented, default-populated `config/character.fig` and `config/terminology.fig` for every new adventure. Add explicit opt-in to character FIG without enabling RPG in new narrative games. Preserve previously shipped RPG samples, optional absent-config games, validation, no-autosave, and manual RORK. Implement per [`SELF_DOCUMENTING_CONFIG_SPEC.md`](SELF_DOCUMENTING_CONFIG_SPEC.md). Also fix the empty Open Adventure path to show friendly guidance rather than a technical absolute-path error.

@@ -63,3 +63,8 @@ Optional weapon and spell TOML definitions; learned abilities tracked separately
 | 2E | Conditional exits, doors, supported FIG editing and advanced room properties | Proposed; no unsupported FIG categories |
 
 The final no-TOML-editing author journey remains a goal, not a Phase 2B completion claim. No unrelated parser or RPG changes are included. Each later phase should have its own reviewable PR.
+
+<!-- lupine-phase-2c2-spec -->
+## Current creator follow-up — Phase 2C.2 (approved / not yet implemented)
+
+After Phase 2C.1 UI polish, implement a self-documenting default directory tree and commented FIG defaults with explicit opt-in for RPG (`config/character.fig`), without generating unsupported FIG categories. See [`SELF_DOCUMENTING_CONFIG_SPEC.md`](SELF_DOCUMENTING_CONFIG_SPEC.md). This is a source/config behavior change, not just a tree-display tweak; use a separate Codex branch and PR. Historical roadmap entries above record earlier development decisions.
