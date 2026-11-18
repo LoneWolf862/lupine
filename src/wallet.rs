@@ -46,7 +46,9 @@ impl WalletContent {
             .map_err(|e| format!("{} [[currencies]]: {e}", path.display()))?
             .unwrap_or_default();
         if (!extras.is_empty() || primary.is_some()) && !rpg_enabled {
-            return Err("Currency configuration requires config/character.fig".into());
+            return Err(
+                "Currency configuration requires enabled = true in config/character.fig".into(),
+            );
         }
         let mut result = Self::default();
         if let Some(currency) = primary {

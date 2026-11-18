@@ -143,7 +143,10 @@ impl RpgContent {
             }
         }
         if !has_character && (!result.weapons.is_empty() || !result.abilities.is_empty()) {
-            return Err("Weapons and spells require config/character.fig for HP/MP/AP".into());
+            return Err(
+                "Weapons and spells require enabled = true in config/character.fig for HP/MP/AP"
+                    .into(),
+            );
         }
         Ok(result)
     }

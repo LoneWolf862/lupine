@@ -129,3 +129,23 @@ Save review summarizes the room and routes without repeating long descriptions o
 5. Return, validate, play, then quit back to the creator. Reopen the project to confirm navigation still works.
 
 If a running executable locks the normal debug build on Windows, leave that session open and use `cargo run --target-dir target/ui-polish -- creator "your project folder"` for a separate build.
+
+
+## Self-documenting configuration (Phase 2C.2)
+
+Every newly generated adventure includes config/, rooms/, items/, spells/, weapons/, enemies/, shops/ and art/. Empty content directories are intentional: add only the content you need. The nested tree shows both supported FIGs beneath config/.
+
+Open config/character.fig in any text editor. Each key has comments explaining its values and dependencies. `enabled = false` keeps exploration/narrative-only play; changing it to `true` activates the existing character system on reload. Invalid stats remain errors while disabled. Existing adventures without FIGs still work; older character.fig files without enabled keep RPG enabled. Existing RPG samples explicitly opt in.
+
+config/terminology.fig explains the two supported display labels. These do not rename commands. No gameplay.fig, progression.fig, combat.fig or parser.fig settings are supported. TOML holds content, FIG holds configuration, and RORK holds manually saved progress. Before incompatible enablement/stat changes, deliberately manage game.toml save_compatibility_version; configuration editing does not automatically migrate saves or change version numbers.
+
+### Windows review
+
+1. Run `cargo run -- new` and create a disposable adventure. Use Review game files to inspect commented FIG previews before creating it.
+2. Check the actual tree for both FIGs and all eight directories. Play and type `stats`: it should say there is no character progression. Quit back to the creator.
+3. Open config/character.fig in Notepad; change enabled to true. Validate and play again; `stats` should show the default character.
+4. Explicitly `save config_test`, then `load config_test`. Quit/reopen; progress should only return when explicitly loaded.
+5. Try enabled = "yes" or an invalid stat, then validate. Confirm the file/setting diagnostic and restore valid values.
+6. Run `cargo run -- creator`, choose Open, and press Enter without a path. Read the friendly guidance, then enter the adventure folder.
+
+A separate Cargo target directory (`--target-dir target/config-docs`) can avoid a locked running Windows debug executable. Linux execution has not been verified for this phase.

@@ -1,6 +1,6 @@
 # Lupine — Self-Documenting Adventure Configuration
 
-**Status:** Approved product requirement; implementation planned for Phase 2C.2. This document describes desired behavior, not a claim that it already works.
+**Status:** Phase 2C.2 implemented candidate for review. The requirements below remain authoritative; verification and remaining platform limits are recorded in CODEX_HANDOFF.md.
 
 ## Intent
 
@@ -44,7 +44,7 @@ The displayed creator tree must reflect disk contents, not an invented fixed tre
 
 ## Preserve narrative-only adventures when character.fig is always present
 
-**Current Phase 1 behavior:** merely having `config/character.fig` enables RPG mechanics. Generating that file everywhere would inadvertently change ordinary narrative games. Phase 2C.2 must change this contract deliberately.
+**Historical Phase 1 behavior:** merely having `config/character.fig` enables RPG mechanics. Generating that file everywhere would inadvertently change ordinary narrative games. Phase 2C.2 must change this contract deliberately.
 
 **Approved target behavior:** add an explicit `enabled = false` boolean in `config/character.fig` for newly generated adventures. The file is present for learning and easy manual editing, while narrative-only behavior remains the default. Setting it to `true` enables the existing RPG character/progression behavior. The generated file must contain valid default stats even while disabled.
 
@@ -106,3 +106,7 @@ spells = "abilities"
 - Error paths are descriptive for invalid boolean, unknown options, bad values, or incorrectly placed FIG files.
 - No autosaving, automatic checkpoints or unintended RORK format/version changes.
 - All Rust checks (`cargo fmt --all --check`, `cargo test`, `cargo clippy --all-targets -- -D warnings`) pass. Verify platforms separately; no invented verification claims.
+
+## Implemented migration rule
+
+New adventures explicitly set `enabled = false`; bundled RPG samples explicitly set `enabled = true`. An existing character.fig that omits enabled (including an empty file) remains enabled for compatibility with previously authored games. No character.fig means narrative-only. Settings are validated regardless of enablement. Unsupported fields, bad boolean values and misplaced root-level FIG files are errors. Existing adventures are never rewritten automatically. Generated FIG text is shared with templates/starter/config and used verbatim in previews and publication.

@@ -251,7 +251,7 @@ impl EncounterContent {
             }
             if !rpg_enabled {
                 return Err(format!(
-                    "{}: encounter tables require config/character.fig",
+                    "{}: encounter tables require enabled = true in config/character.fig",
                     path.display()
                 ));
             }

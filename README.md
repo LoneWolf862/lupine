@@ -78,4 +78,4 @@ Optional engine configuration uses TOML syntax in config/character.fig (RPG opt-
 <!-- lupine-phase-2c2-spec -->
 ## Creator configuration direction (planned)
 
-Lupine's next creator configuration phase will generate a standard directory tree and commented, explicit default settings in its **currently supported** `.fig` files, so beginners can use the wizard and experienced authors can edit files directly. This is **not implemented yet**; currently the presence of `config/character.fig` enables RPG. The planned change will add an explicit opt-in and preserve existing authored games. See [`docs/SELF_DOCUMENTING_CONFIG_SPEC.md`](docs/SELF_DOCUMENTING_CONFIG_SPEC.md).
+New adventures include all standard content folders and self-documenting `config/character.fig` and `config/terminology.fig`. RPG is disabled by default (`enabled = false`); set it to true and validate/reload to opt in. Existing FIGs without the key retain their prior enabled behavior. See [self-documenting configuration](docs/SELF_DOCUMENTING_CONFIG_SPEC.md) and [FIG settings](docs/CONFIG_FIG_SPEC.md).
