@@ -221,7 +221,7 @@ fn item_form<R: BufRead, W: Write>(
             },
             "5" => { w.say("Starting room affects new play sessions; existing player saves are not rewritten.")?; if let Some(id) = choose(w,"Starting room:",&entries(snapshot,"rooms")?)? { d.set("starting_room",value(id)); } },
             "6" => d.preview(&snapshot.root,w.output)?,
-            "s" => return save(snapshot, d, w),
+            "s" => if save(snapshot, d, w)? { return Ok(true); },
             "?" | "help" => w.say("Select a field to revise it, 6 to inspect all properties, S to review/save, or 0 to discard. IDs remain stable so weapons, scrolls, shops and puzzles keep their references.")?,
             _ => w.say("Choose 1-6, S, or 0.")?,
         }
@@ -244,30 +244,34 @@ pub(super) fn save<R: BufRead, W: Write>(
     w.say("Changes saved. Validation PASSED. Select the content again to review, or return to the creator to playtest.")?;
     Ok(true)
 }
-fn items<R: BufRead, W: Write>(root: &Path, w: &mut Wizard<'_, R, W>) -> Result<(), String> {
+fn manage<R: BufRead, W: Write>(
+    root: &Path,
+    category: &str,
+    w: &mut Wizard<'_, R, W>,
+) -> Result<(), String> {
     loop {
         let snapshot = Snapshot::capture(root)?;
         Adventure::load(root)
             .map_err(|e| format!("Correct this existing project error before editing: {e}"))?;
         let paths = snapshot
-            .sources("items")
+            .sources(category)
             .filter(|(p, _)| p.extension().is_some_and(|e| e == "toml"))
             .map(|(p, _)| p.clone())
             .collect::<Vec<_>>();
-        let list = entries(&snapshot, "items")?;
-        w.heading("ITEM MANAGER")?;
+        let list = entries(&snapshot, category)?;
+        w.heading(&format!("{} MANAGER", category.to_ascii_uppercase()))?;
         for (i, (id, name)) in list.iter().enumerate() {
             w.say(&format!("{}. {name} ({id})", i + 1))?;
         }
-        w.say("N. Create item\n0. Return to creator")?;
+        w.say("N. Create new definition\n0. Return to creator")?;
         let choice = w.line("Selection:")?.trim().to_ascii_lowercase();
         if matches!(choice.as_str(), "0" | "back") {
             return Ok(());
         }
         let mut d = if choice == "n" {
-            w.say("An item is an object players can examine, carry or use. Give it a stable internal ID; player-facing names can change later.")?;
+            w.say("Give this definition a stable internal ID; player-facing names can change later. The ID connects authored references and player saves.")?;
             let Some(id) = w.ask(
-                "Item ID",
+                "Stable ID",
                 "",
                 "Lowercase letters, digits, underscores or dashes. For example brass_key",
                 |s| {
@@ -282,7 +286,7 @@ fn items<R: BufRead, W: Write>(root: &Path, w: &mut Wizard<'_, R, W>) -> Result<
             else {
                 continue;
             };
-            let path = PathBuf::from(format!("items/{id}.toml"));
+            let path = PathBuf::from(format!("{category}/{id}.toml"));
             if snapshot.source(&path).is_some() {
                 w.say("That filename already exists. Choose another ID.")?;
                 continue;
@@ -290,18 +294,25 @@ fn items<R: BufRead, W: Write>(root: &Path, w: &mut Wizard<'_, R, W>) -> Result<
             let mut d = Document::load(&snapshot, path, "")?;
             d.set("id", value(id.clone()));
             d.set("name", value(id.replace('_', " ")));
-            d.set("description", value("An object."));
-            d.set("aliases", value(Array::new()));
-            d.set("portable", value(true));
-            let Some(room) = choose(
-                w,
-                "Choose its starting room:",
-                &entries(&snapshot, "rooms")?,
-            )?
-            else {
-                continue;
-            };
-            d.set("starting_room", value(room));
+            if category == "spells" {
+                d.set("description", value("An ability."));
+                d.set("mana_cost", value(0));
+                d.set("kind", value("heal"));
+                d.set("power", value(1));
+            } else {
+                d.set("description", value("An object."));
+                d.set("aliases", value(Array::new()));
+                d.set("portable", value(true));
+                let Some(room) = choose(
+                    w,
+                    "Choose its starting room:",
+                    &entries(&snapshot, "rooms")?,
+                )?
+                else {
+                    continue;
+                };
+                d.set("starting_room", value(room));
+            }
             d
         } else if let Some(path) = choice
             .parse::<usize>()
@@ -314,7 +325,12 @@ fn items<R: BufRead, W: Write>(root: &Path, w: &mut Wizard<'_, R, W>) -> Result<
             w.say("Choose a listed item, N, or 0. Changes are held until confirmed Save.")?;
             continue;
         };
-        match item_form(&mut d, &snapshot, w) {
+        let result = if category == "spells" {
+            super::spell_edit::form(&mut d, &snapshot, w)
+        } else {
+            item_form(&mut d, &snapshot, w)
+        };
+        match result {
             Ok(true) => w.say(&tree::inspect(root).tree)?,
             Ok(false) => (),
             Err(e) if e.starts_with("Setup canceled") => {
@@ -330,10 +346,34 @@ pub(super) fn run_items<R: BufRead, W: Write>(
     output: &mut W,
 ) -> io::Result<()> {
     let mut w = Wizard { input, output };
-    if let Err(e) = items(root, &mut w) {
+    if let Err(e) = manage(root, "items", &mut w) {
         writeln!(
             w.output,
             "Item manager stopped: {}",
+            e.replace("Setup canceled", "Draft canceled")
+        )?;
+    }
+    Ok(())
+}
+
+pub(super) fn run_spells<R: BufRead, W: Write>(
+    root: &Path,
+    input: &mut R,
+    output: &mut W,
+) -> io::Result<()> {
+    let mut w = Wizard { input, output };
+    match Adventure::load(root) {
+        Ok(a) if a.game.config.character.is_none() => {
+            w.say("Spells require RPG. Choose Configure Adventure Settings and explicitly enable character RPG first; no setting has been changed.").map_err(io::Error::other)?;
+            return Ok(());
+        }
+        _ => (),
+    }
+    w.say("Defining a spell does not teach it. Link a portable teaching item, then take it and use learn <item> during play. The item is consumed. Damage targets an enemy; healing and mana restoration target the player. This schema has no spell damage-type setting.").map_err(io::Error::other)?;
+    if let Err(e) = manage(root, "spells", &mut w) {
+        writeln!(
+            w.output,
+            "Spell manager stopped: {}",
             e.replace("Setup canceled", "Draft canceled")
         )?;
     }

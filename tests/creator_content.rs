@@ -81,3 +81,45 @@ fn item_creation_cancel_and_eof_write_nothing() {
         assert!(!f.game.join("items/key.toml").exists());
     }
 }
+
+#[test]
+fn spell_enablement_is_explicit_and_all_fields_are_editable() {
+    let f = Fixture::new();
+    let original = f.read("config/character.fig");
+    let output = f.run("5\n0\n");
+    assert!(output.contains("Spells require RPG"));
+    assert_eq!(original, f.read("config/character.fig"));
+    fs::write(
+        f.game.join("config/character.fig"),
+        original.replace("enabled = false", "enabled = true"),
+    )
+    .unwrap();
+    f.run("4\nn\nscroll\n1\ns\nyes\n0\n0\n");
+    let out = f.run("5\nn\nrenew\n1\nRenew\n2\nRestores energy.\n3\n0\n4\n3\n5\n15\n6\n\n1\n7\ns\nno\n7\ns\nyes\n0\n2\n1\ntake scroll\nlearn scroll\nspellbook\nsave trial\nload trial\nquit\n0\n");
+    assert!(out.contains("Changes saved"), "{out}");
+    assert!(out.contains("You learn Renew"), "{out}");
+    let text = f.read("spells/renew.toml");
+    assert!(out.contains(&text));
+    let v: toml::Value = text.parse().unwrap();
+    assert_eq!(v["kind"].as_str(), Some("restore_mana"));
+    assert_eq!(v["power"].as_integer(), Some(15));
+    assert_eq!(v["learn_from_item"].as_str(), Some("scroll"));
+}
+#[test]
+fn spell_rejects_bad_numbers_and_preserves_existing_id_and_comments() {
+    let f = Fixture::new();
+    fs::write(f.game.join("config/character.fig"), "enabled=true\n").unwrap();
+    fs::write(
+        f.game.join("spells/heal.toml"),
+        "# ability\nid='heal' # stable\nname='Heal'\nkind='heal'\npower=4 # amount\nmana_cost=1\n",
+    )
+    .unwrap();
+    let out = f.run("5\n1\n5\n0\n4294967296\n8\n3\n-1\n2\ns\nyes\n0\n0\n");
+    assert!(out.contains("Changes saved"), "{out}");
+    let text = f.read("spells/heal.toml");
+    assert!(text.contains("# amount"));
+    assert!(text.contains("# stable"));
+    let v: toml::Value = text.parse().unwrap();
+    assert_eq!(v["id"].as_str(), Some("heal"));
+    assert_eq!(v["power"].as_integer(), Some(8));
+}

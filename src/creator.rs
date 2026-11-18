@@ -20,6 +20,7 @@ mod room_edit;
 mod room_transaction;
 pub mod session;
 mod setup;
+mod spell_edit;
 mod tree;
 mod ui;
 mod wizard;
