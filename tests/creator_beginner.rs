@@ -286,3 +286,21 @@ fn advanced_back_keeps_custom_id_and_other_answers() {
     assert_eq!(game.world.rooms[0].title, "Room");
     assert!(output.contains("Game ID [custom_id]"));
 }
+
+#[cfg(unix)]
+#[test]
+fn unreadable_sibling_does_not_block_safe_project_creation() {
+    use std::os::unix::fs::PermissionsExt;
+    let p = Project::new();
+    let blocked = p.0.join("private");
+    fs::create_dir(&blocked).unwrap();
+    fs::set_permissions(&blocked, fs::Permissions::from_mode(0o000)).unwrap();
+    let mut output = Vec::new();
+    let result = new_game_wizard(
+        &mut Cursor::new(format!("\nSafe Adventure\n{}\n\n\n1\n", p.path().display())),
+        &mut output,
+    );
+    fs::set_permissions(&blocked, fs::Permissions::from_mode(0o700)).unwrap();
+    assert_eq!(result.unwrap(), p.path());
+    assert!(load_game(p.path()).is_ok());
+}
