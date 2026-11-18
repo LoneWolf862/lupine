@@ -12,7 +12,7 @@ File responsibilities:
 
 Phase 1 relocates existing character fields/defaults/calculations without redesigning progression, adds display terminology, and updates creator guidance. No legacy `character.toml` loader. No save-format change is needed. Full wizard and parser upgrades are later phases.
 
-**Status:** Phase 1 implemented and automatically verified on Windows; pending user review. Wizard/parser expansion remains future work.
+**Status:** Phase 1 merged. Phase 2A wizard foundations implemented and automatically verified on Windows; pending PR review. Broader wizard and parser expansion remains future work.
 
 ## Project identity and baseline
 
@@ -68,3 +68,11 @@ CSE 310 professor allows this semester's preexisting Lupine work to count as a s
 ## Validation for later implementation
 
 `cargo fmt --all -- --check` · `cargo test` · `cargo clippy --all-targets -- -D warnings`, plus sample play/validation and manual platform checks. Never state these passed without running them.
+
+## Phase 2A implementation and verification (2026-11-18)
+
+Based on origin/main at 3e8a1e6. The `new` wizard now collects title, stable ID, location, room title and description with defaults, optional help, validation retries, cancellation/EOF, multiline input, exact file previews and explicit confirmation. Shared serialized drafts feed both previews and writes. Noninteractive creation remains available. Creator writes stage and sync bytes before exclusive publication; rollback removes tracked files and empty directories without recursive deletion. New projects are validated through the story loader.
+
+Windows verification passed: `cargo fmt --all -- --check`, `cargo test` (123 tests), `cargo clippy --all-targets -- -D warnings`. Coverage includes exact preview bytes, defaults/help/retries, cancellation and EOF, preexisting destinations, failed writes/project rollback, Windows junction rejection, special characters and multiline text, CLI validation and scripted play without autosaving. Existing FIG, gameplay, sample validation and RORK regressions passed.
+
+No dependencies, player parsing, combat/progression, save behavior or format changes. No native Linux or human interactive usability verification. Filesystem hard-link support is required; interrupted project creation is recoverable but not a crash-atomic multi-file transaction. Additional modes, back/skip, guided linking/items/puzzles and FIG editing remain future phases. See CREATOR_QUICKSTART.md for operational limits.

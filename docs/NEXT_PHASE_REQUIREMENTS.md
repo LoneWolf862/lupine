@@ -12,7 +12,7 @@ File responsibilities:
 
 Phase 1 relocates existing character fields/defaults/calculations without redesigning progression, adds display terminology, and updates creator guidance. No legacy `character.toml` loader. No save-format change is needed. Full wizard and parser upgrades are later phases.
 
-**Status:** Phase 1 implemented; Windows checks passed; pending user review.
+**Status:** Phase 1 merged. Phase 2A wizard foundations implemented; Windows checks passed; pending PR review. The full Workstream B journey remains future work.
 **Baseline:** Existing Lupine v0.8.4 Rust engine; v0.8.4-C described as a Windows verification candidate in the reviewed repository (November 17, 2026).  
 **Scope:** Enhance the existing repository, not rebuild the engine or write the story for HOWLBOUND.
 

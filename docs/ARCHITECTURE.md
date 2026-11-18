@@ -15,6 +15,8 @@ Lupine is an unreleased, offline terminal engine. Justified pre-1.0 API/format c
 
 ## Creator and distribution
 
-`new` (including the basic wizard), `add room`, `add item`, `add art`, `validate` and `play` exist. The generator uses editable content files; it does not generate unnecessary configuration or enable RPG implicitly. The full guided authoring journey is future work.
+`new` (including the Phase 2A guided setup and exact previews), `add room`, `add item`, `add art`, `validate` and `play` exist. The generator uses editable content files; it does not generate unnecessary configuration or enable RPG implicitly. The full guided authoring journey is future work.
 
 A manually triggered Windows/Linux packaging workflow exists; successful source checks do not establish native Linux verification or a published release. Run formatting, tests, strict Clippy and platform-specific smoke checks and report actual results. Preserve CSE 310 evidence and README-template obligations.
+
+Creator foundation: `creator/wizard.rs` collects and validates input and previews serialized `DraftFile` values; `creator/files.rs` stages, syncs and exclusively publishes files. `creator.rs` assembles a minimal project and validates it with the story loader. TOML serialization also supports future FIG drafts without adding configuration editing today. Project rollback tracks created paths and never recursively removes a project directory.

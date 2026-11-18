@@ -13,7 +13,7 @@ File responsibilities:
 Phase 1 relocates existing character fields/defaults/calculations without redesigning progression, adds display terminology, and updates creator guidance. No legacy `character.toml` loader. No save-format change is needed. Full wizard and parser upgrades are later phases.
 
 
-**Status: Proposed improvements to an existing wizard.** `lupine new` and `add room`, `add item`, `add art` already exist. Enhance them rather than replacing them.
+**Status: Phase 2A foundations implemented; broader authoring journey below remains proposed.** `lupine new` and `add room`, `add item`, `add art` already exist. Enhance them rather than replacing them.
 
 ## Learning philosophy
 
@@ -76,3 +76,7 @@ A novice creates a two-room world, connects and optionally unlinks/reorients exi
 ## Implementation starting points
 
 Inspect `src/creator.rs`, `src/main.rs`, `src/story_loader.rs`, `templates/starter/`, and wizard/creator tests. Share serialization/validation with manual authoring. Use the existing engine condition/effect vocabulary for puzzles; do not invent puzzle syntax or introduce special-case story logic in Rust.
+
+## Phase 2A implementation boundary
+
+`new` now collects title, stable ID, location, starting room title and multiline description. Shared prompt, serialization/preview and exclusive staged-write helpers live under `src/creator/`. Preview and disk bytes use the same `DraftFile` contents. Generated projects pass the existing story loader. No dependency or gameplay changes. See CREATOR_QUICKSTART.md for controls, safety and filesystem limitations. Full guided room/item/puzzle/config workflows and quick/guided modes are not implemented in this phase.
