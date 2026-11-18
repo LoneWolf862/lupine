@@ -73,7 +73,7 @@ fn navigation_play_validation_and_reopen_preserve_content_and_saves() {
     )
     .unwrap();
     let before = snapshot(&f.root);
-    let output = f.run("bad\nhelp\n3\n4\n5\n6\n7\n2\n1\nlook\nquit\n2\n1\nquit\n0\n");
+    let output = f.run("bad\nhelp\n3\n4\n5\n6\n7\n0\n2\n1\nlook\nquit\n2\n1\nquit\n0\n");
     assert!(output.contains("Please choose 0-8"));
     assert!(output.contains("not available yet"));
     assert_eq!(output.matches("Validation successful!").count(), 2);

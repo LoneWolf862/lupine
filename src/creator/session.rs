@@ -86,7 +86,7 @@ pub fn open<R: BufRead, W: Write>(
                 "Some paths need attention; choose Validate for details."
             )?;
         }
-        writeln!(output, "========================================\n          ADVENTURE CREATOR\n========================================\n0. Exit Creator\n1. Play Your Adventure\n2. Validate Your Adventure\n3. Configure Adventure Settings [Phase 2E - not available yet]\n4. Create or Edit Items [Phase 2D - not available yet]\n5. Create or Edit Spells [Phase 2D - not available yet]\n6. Create or Edit Artwork [Phase 2D - not available yet]\n7. Create or Edit Rooms [Phase 2C - not available yet]\n8. Help\nChoose an option (Enter refreshes the tree):")?;
+        writeln!(output, "========================================\n          ADVENTURE CREATOR\n========================================\n0. Exit Creator\n1. Play Your Adventure\n2. Validate Your Adventure\n3. Configure Adventure Settings [Phase 2E - not available yet]\n4. Create or Edit Items [Phase 2D - not available yet]\n5. Create or Edit Spells [Phase 2D - not available yet]\n6. Create or Edit Artwork [Phase 2D - not available yet]\n7. Create or Edit Rooms\n8. Help\nChoose an option (Enter refreshes the tree):")?;
         let Some(choice) = answer(input, output, "> ")? else {
             writeln!(
                 output,
@@ -117,7 +117,8 @@ pub fn open<R: BufRead, W: Write>(
                     writeln!(output, "Returned to the creator. Player progress was not automatically saved.")?;
                 }
             }
-            "3" | "4" | "5" | "6" | "7" => writeln!(output, "That guided editor is planned for the phase shown in the menu.\nNo files were changed. Existing noninteractive add commands and text\nediting remain available; see docs/CREATOR_QUICKSTART.md.")?,
+            "7" => super::room_edit::run(&root, input, output)?,
+            "3" | "4" | "5" | "6" => writeln!(output, "That guided editor is planned for the phase shown in the menu.\nNo files were changed. Existing noninteractive add commands and text\nediting remain available; see docs/CREATOR_QUICKSTART.md.")?,
             "8" | "?" | "help" => writeln!(output, "You are working in the adventure folder shown above.\nThe tree shows actual files; trailing / means a directory.\nTOML holds story content; optional config/*.fig holds engine settings.\n1 plays here and quit returns here. Each play starts fresh unless you\nexplicitly load a save. 2 checks all supported content and FIG settings.\nEnter refreshes the tree after external edits. 0/back/cancel leaves this\nadventure; no project files or player saves are automatically written.\nRoom editing is Phase 2C; items/spells/art are 2D; interactions/FIG are 2E.")?,
             _ => writeln!(output, "Please choose 0-8, or type help. Your adventure is still selected.")?,
         }

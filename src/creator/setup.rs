@@ -11,7 +11,7 @@ use std::path::{Path, PathBuf};
 
 const CANCEL: &str = "Setup canceled; no files created";
 
-fn suggested_id(title: &str) -> String {
+pub(super) fn suggested_id(title: &str) -> String {
     let mut id = title
         .to_ascii_lowercase()
         .split(|c: char| !c.is_ascii_alphanumeric())
