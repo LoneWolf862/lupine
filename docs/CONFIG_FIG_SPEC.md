@@ -56,3 +56,8 @@ Changing character balancing during a campaign can affect subsequent level-ups; 
 `new` and the starter template remain minimal narrative adventures without empty config files. Their instructions explain how to opt in to character settings or terminology. Existing add commands validate FIG through the story loader. Full preview/guided configuration editing, parser aliases and broader balancing settings are later phases.
 
 Required verification: defaults, character fields, terminology output/commands, malformed/unknown settings, missing files, independent games, unchanged progression behavior, RPG regressions, save independence and bundled sample validation.
+
+<!-- lupine-phase-2c2-spec -->
+## Approved next contract (Phase 2C.2 — not implemented yet)
+
+The Phase 1 behavior documented above describes the **current implementation**. The approved future contract is in [`SELF_DOCUMENTING_CONFIG_SPEC.md`](SELF_DOCUMENTING_CONFIG_SPEC.md): newly generated adventures will include self-documenting, commented `config/character.fig` and `config/terminology.fig` with explicit defaults. `character.fig` will gain an `enabled` opt-in so its presence alone does not enable RPG for new narrative games. Existing RPG games and narrative-only games must retain their behavior through deliberate migration/fallback rules. Other FIG filenames remain unsupported until implemented.
