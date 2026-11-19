@@ -136,3 +136,45 @@ fn authored_shop_failed_transactions_stock_and_manual_roundtrip() {
     f.run("r\n3\n1\n4\n1\n6\n1\n0\n0\n0\n0\n0\n");
     assert_eq!(f.read("shops/clinic.toml"), original);
 }
+#[test]
+fn currencies_preserve_manifest_and_feed_rewards() {
+    let f = Fixture::new();
+    let original = f.read("game.toml");
+    fs::write(
+        f.game.join("game.toml"),
+        format!("# identity stays\n{original}"),
+    )
+    .unwrap();
+    let out=f.run("r\n4\n1\ngold\n1\nGold\n2\nG\n3\n25\n0\n2\ngold\ntokens\n1\nTokens\n2\nT\n3\n2\n0\np\ns\nyes\n1\nn\nguard\nc\na\n2\n100\n3\n3\nyes\n0\ns\nyes\n0\n0\n0\n");
+    assert!(out.contains("Changes saved"), "{out}");
+    let a = Adventure::load(&f.game).unwrap();
+    assert_eq!(a.wallet.primary.as_deref(), Some("gold"));
+    assert_eq!(a.wallet.initial_balances()["gold"], 25);
+    assert_eq!(a.wallet.initial_balances()["tokens"], 2);
+    assert_eq!(
+        a.encounters.enemies["guard"].currency_rewards[0].currency,
+        "tokens"
+    );
+    assert!(f.read("game.toml").contains("# identity stays"));
+    assert!(out.contains(&f.read("game.toml")));
+    assert!(!f.saves.exists());
+    let source = f.read("game.toml");
+    f.run("r\n4\n1\n1\nDiscarded\ncancel\n0\n0\n");
+    assert_eq!(f.read("game.toml"), source);
+}
+#[test]
+fn inline_currency_and_default_id_are_preserved() {
+    let f = Fixture::new();
+    let manifest = f.read("game.toml")
+        + "\ncurrency={ name='Gold', symbol='g', starting_amount=9 } # keep inline\n";
+    fs::write(f.game.join("game.toml"), manifest).unwrap();
+    let out = f.run("r\n4\n1\n1\nCoins\n0\ns\nyes\n0\n0\n");
+    assert!(out.contains("Changes saved"), "{out}");
+    let s = f.read("game.toml");
+    assert!(s.contains("# keep inline"));
+    let v: toml::Value = s.parse().unwrap();
+    assert!(v["currency"].get("id").is_none());
+    let a = Adventure::load(&f.game).unwrap();
+    assert_eq!(a.wallet.primary.as_deref(), Some("gold"));
+    assert_eq!(a.wallet.currencies["gold"].name, "Coins");
+}

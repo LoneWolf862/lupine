@@ -16,6 +16,7 @@ struct GameManifest<'a> {
 
 mod art_edit;
 mod content_edit;
+mod currency_edit;
 mod enemy_edit;
 mod fig_edit;
 mod files;

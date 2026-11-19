@@ -176,7 +176,8 @@ impl Snapshot {
                 .components()
                 .all(|c| matches!(c, std::path::Component::Normal(_)));
             let category = path.parent().and_then(Path::to_str).unwrap_or("");
-            let allowed = path == Path::new("interactions.toml")
+            let allowed = path == Path::new("game.toml")
+                || path == Path::new("interactions.toml")
                 || match category {
                     "rooms" | "items" | "spells" | "enemies" | "weapons" | "shops" => {
                         path.extension().is_some_and(|e| e == "toml")
