@@ -1,3 +1,5 @@
+Phase 4A: Creator T (or R > 8) now manages transaction bindings with exact previews and explicit validated Save. See [Phase 4 review](PHASE_4_REVIEW.md). Historical limitations below are superseded for bindings.
+
 # Lupine v0.8.4 — RPG creator guide
 
 ## Phase 2I creator usability candidate (2026-11-18)

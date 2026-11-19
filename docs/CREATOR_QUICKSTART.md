@@ -1,3 +1,5 @@
+Phase 4A: Creator T (or R > 8) now manages transaction bindings with exact previews and explicit validated Save. See [Phase 4 review](PHASE_4_REVIEW.md). Historical limitations below are superseded for bindings.
+
 # Lupine Adventure Creator
 
 Current source: 0.10.0-dev.1 development candidate. Creator work through Phase 2I is merged.
