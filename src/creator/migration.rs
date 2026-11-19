@@ -29,6 +29,7 @@ fn category(file: &Path, path: &[String], scope: &str) -> Option<String> {
             "exit_rules.*.requires.*",
             "interactions.*.outcomes.*.when.*",
         ],
+        ("", "actions.toml") => vec!["actions.*.requires.*", "actions.*.outcomes.*.when.*"],
         _ => vec![],
     };
     for prefix in condition_roots {
@@ -37,10 +38,12 @@ fn category(file: &Path, path: &[String], scope: &str) -> Option<String> {
             return condition_reference(&path[len..]).map(str::to_owned);
         }
     }
-    if parent.is_empty() && root == "interactions.toml" {
+    if parent.is_empty() && matches!(root, "interactions.toml" | "actions.toml") {
         for prefix in [
             "interactions.*.effects.*",
             "interactions.*.outcomes.*.effects.*",
+            "actions.*.effects.*",
+            "actions.*.outcomes.*.effects.*",
         ] {
             let len = prefix.split('.').count();
             if path.len() > len && matches(&path[..len], prefix) {
@@ -86,6 +89,12 @@ fn category(file: &Path, path: &[String], scope: &str) -> Option<String> {
             ]);
         }
         "" => match root {
+            "actions.toml" => fields.extend([
+                ("actions.*.id", "actions"),
+                ("actions.*.room", "rooms"),
+                ("actions.*.target", "items"),
+                ("actions.*.item", "items"),
+            ]),
             "game.toml" => fields.extend([
                 ("starting_room", "rooms"),
                 ("currency.id", "currencies"),
@@ -223,6 +232,7 @@ fn documents(s: &Snapshot) -> Result<Vec<Document>, String> {
         );
     }
     for name in [
+        "actions.toml",
         "rules.toml",
         "game.toml",
         "interactions.toml",
@@ -263,6 +273,10 @@ fn inventory(s: &Snapshot) -> Result<BTreeMap<String, BTreeSet<String>>, String>
     all.insert(
         "counters".into(),
         a.game.world.rules.counters.keys().cloned().collect(),
+    );
+    all.insert(
+        "actions".into(),
+        a.game.world.actions.iter().map(|a| a.id.clone()).collect(),
     );
     all.insert(
         "rooms".into(),

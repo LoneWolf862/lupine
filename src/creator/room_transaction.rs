@@ -14,6 +14,7 @@ const DIRS: &[&str] = &[
     "rooms", "items", "config", "art", "spells", "weapons", "enemies", "shops",
 ];
 const FILES: &[&str] = &[
+    "actions.toml",
     "rules.toml",
     "game.toml",
     "interactions.toml",
@@ -28,7 +29,13 @@ fn editable_path(path: &Path, existing: bool) -> bool {
     let category = path.parent().and_then(Path::to_str).unwrap_or("");
     safe && (matches!(
         path.to_str(),
-        Some("game.toml" | "rules.toml" | "interactions.toml" | "transaction_interactions.toml")
+        Some(
+            "game.toml"
+                | "actions.toml"
+                | "rules.toml"
+                | "interactions.toml"
+                | "transaction_interactions.toml"
+        )
     ) || match category {
         "rooms" | "items" | "spells" | "enemies" | "weapons" | "shops" => {
             path.extension().is_some_and(|e| e == "toml")

@@ -32,7 +32,7 @@ pub(crate) fn prepared_command(line: &str) -> Result<Command, crate::parser::Par
     parse_command(line)
 }
 
-fn choose(
+pub(crate) fn choose(
     query: &str,
     candidates: &[Candidate],
     input: &mut impl BufRead,
@@ -326,7 +326,11 @@ pub fn prepare(
                     .cloned()
                     .collect()
             } else {
-                visible.clone()
+                visible
+                    .iter()
+                    .cloned()
+                    .chain(enemy_choices.iter().cloned())
+                    .collect()
             };
             // If there is no role-relevant match, preserve useful already-carried / fixed diagnostics.
             let choices = if resolution::matches(&target, &eligible).is_empty() {

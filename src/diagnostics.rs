@@ -29,6 +29,17 @@ pub fn warnings(a: &Adventure) -> Vec<String> {
                 }
             }
         }
+        for action in &w.actions {
+            for effect in action
+                .effects
+                .iter()
+                .chain(action.outcomes.iter().flat_map(|o| &o.effects))
+            {
+                if let Effect::MovePlayer(to) = effect {
+                    reachable.insert(to.clone());
+                }
+            }
+        }
         if reachable.len() == before {
             break;
         }
@@ -90,12 +101,6 @@ pub fn warnings(a: &Adventure) -> Vec<String> {
         }
     }
     for rule in &w.interactions {
-        if w.item(&rule.item).is_some_and(|i| !i.portable) {
-            out.push(format!(
-                "Interaction '{} -> {}' uses a fixed item, which cannot be carried",
-                rule.item, rule.target
-            ));
-        }
         if contradictory(&rule.requires) {
             out.push(format!(
                 "Interaction '{} -> {}' has contradictory flag requirements",
@@ -125,6 +130,32 @@ pub fn warnings(a: &Adventure) -> Vec<String> {
             .any(|o| o.when.is_empty())
         {
             out.push(format!("Interaction '{} -> {}' has an unconditional outcome before later outcomes; those later outcomes are shadowed",rule.item,rule.target));
+        }
+    }
+    for action in &w.actions {
+        for c in action
+            .requires
+            .iter()
+            .chain(action.outcomes.iter().flat_map(|o| &o.when))
+        {
+            condition(c, &mut read);
+        }
+        for e in action
+            .effects
+            .iter()
+            .chain(action.outcomes.iter().flat_map(|o| &o.effects))
+        {
+            if let Effect::SetFlag(id) = e {
+                written.insert(id.clone());
+            }
+        }
+        if action
+            .outcomes
+            .iter()
+            .take(action.outcomes.len().saturating_sub(1))
+            .any(|o| o.when.is_empty())
+        {
+            out.push(format!("Action '{}' has shadowed outcomes", action.id));
         }
     }
     for table in a.encounters.tables.values() {

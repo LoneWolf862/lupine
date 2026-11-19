@@ -422,6 +422,7 @@ pub fn load_game(directory: impl AsRef<Path>) -> Result<LoadedGame, String> {
         });
     }
     let world = World {
+        actions: crate::actions::load(directory)?,
         rules: crate::rules::StoryRules::load(directory)?,
         rooms,
         items,

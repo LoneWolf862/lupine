@@ -5,6 +5,7 @@ use lupine::world::{Condition, DescriptionVariant, Effect, ExitRule, Interaction
 
 fn world() -> World {
     World {
+        actions: Vec::new(),
         rules: Default::default(),
         starting_room: "porch".into(),
         rooms: vec![

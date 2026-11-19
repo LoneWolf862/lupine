@@ -1,4 +1,5 @@
 //! Lupine: reusable, offline terminal interactive fiction engine.
+pub mod actions;
 pub mod adventure;
 pub mod combat;
 pub mod commands;

@@ -16,7 +16,7 @@ fn shipped_rules_scenarios_pass_through_the_player_runner() {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("samples/rules_demo");
     let mut output = Vec::new();
     lupine::scenario::run(&root, &root.join("scenarios.toml"), &mut output).unwrap();
-    assert_eq!(String::from_utf8_lossy(&output).matches("PASS:").count(), 3);
+    assert_eq!(String::from_utf8_lossy(&output).matches("PASS:").count(), 4);
 }
 impl Fixture {
     fn new() -> Self {

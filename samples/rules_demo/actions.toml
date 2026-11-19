@@ -1,0 +1,10 @@
+[[actions]]
+id="unlock_door"
+commands=["unlock {target} with {item}", "turn {item} in {target}"]
+room="foyer"
+target="workshop_door"
+item="brass_key"
+requires=[{not={flag_set="door_open"}}]
+effects=[{set_flag="door_open"},{add_counter={id="unlocks",amount=1}}]
+success_text="The key turns; the door unlocks."
+failure_text="The door cannot be unlocked again."

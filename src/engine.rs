@@ -111,7 +111,7 @@ pub fn execute_command(world: &World, state: &mut GameState, command: Command) -
                 Ok(target) => target,
                 Err(error) => return message(error),
             };
-            if state.location(&item.id) != Some(ItemLocation::Inventory) {
+            if item.portable && state.location(&item.id) != Some(ItemLocation::Inventory) {
                 return message(format!("You must be carrying the {} to use it.", item.name));
             }
             match world
