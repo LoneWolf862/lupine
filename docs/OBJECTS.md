@@ -23,8 +23,8 @@ failure_text = "You cannot eat that now."
 Declare `meals` in `rules.toml [counters]`. Consumption removes **one** accessible
 carried unit and applies its effects atomically. A failed requirement or effect
 does not consume the item or publish success text. Teaching scrolls also consume
-one unit. Story effects are currently available; RPG reward/effect integration is
-expansion phase 7.
+one unit. Shared effects include currency, quest and RPG effects where their
+required content/configuration exists; see [systems](SYSTEMS.md).
 
 Placement is either `starting_room = "room_id"` or `initial`, never both:
 
@@ -34,6 +34,7 @@ Placement is either `starting_room = "room_id"` or `initial`, never both:
 | `{ kind = "inventory" }` | Carried at the start |
 | `{ kind = "container", id = "chest" }` | Inside a defined container |
 | `{ kind = "consumed" }` | Offstage/unavailable; no active quantity |
+| `{ kind = "npc", id = "guide" }` | Held by a defined NPC; ordinary player object commands cannot access it |
 
 `hidden = true` excludes an item from object lists, resolution, suggestions and
 bulk collection until a `reveal_item` effect. It does not rewrite static prose;
@@ -121,7 +122,7 @@ the container both open and locked. `give_item`, `remove_item` and
 `move_item_to_room` retain whole-object semantics, affecting all active units of an
 ID; relocating an unavailable ID restores one unit. Use quantity effects for stacks.
 
-RORK format **6** retains the phase-4 object schema and adds [event progress](EVENTS.md).
+RORK format **6** retains object, event, NPC and equipment/status progress.
 The object schema persists the canonical placement/quantity ledger, hidden items
 and container state. Every save validates the full ledger; unsupported older
 formats require their matching engine/game build. No save files are automatically
@@ -129,7 +130,8 @@ rewritten. Game compatibility revisions remain independent of engine versions.
 
 Snapshot publication, export and ID migration preserve these authored fields.
 The basic item form retains unedited properties; choosing a starting room explicitly
-replaces `initial`. Full guided controls are expansion phase 8. Use
+replaces `initial`. F and direct TOML expose the full object schema; the basic item
+form does not provide a dedicated control for every advanced field. Use
 `lupine test samples/objects_demo samples/objects_demo/scenarios.toml` for executable
 examples. Scenario `quantities` assertions accept `{item, location, quantity}` entries;
 optional `hidden` asserts the complete hidden-ID set.

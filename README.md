@@ -22,6 +22,9 @@ including its choices, transfers and movement.
 This development build writes RORK format 6 for objects, story/events, NPC dialogue and equipment/status progress;
 older saves need their matching engine/game build and are never rewritten automatically.
 
+[Documentation by audience and file type](docs/README.md) provides current player,
+creator and developer entry points.
+
 ## Players: start here
 
 Extract a package built for your OS. No Rust, Cargo, account or network is needed to play.
@@ -55,9 +58,11 @@ In supported interactive terminals, Up/Down recall recent input; Left/Right and 
 edit it. History is memory-only, capped at 100 entries across this invocation's prompts,
 with empty lines and consecutive duplicates omitted. Redirected input remains scriptable.
 
+NPC/story commands include `people`, `talk <name>`, `journal`/`quests` and `wait`.
+Economy commands (`wallet`, `shop`, `buy <offer>`, `sell <offer>`) can work without RPG.
 Optional RPG adventures add `stats`, `weapons`, `spellbook`/`spells`, `learn <scroll>`,
-`attack <enemy> with <weapon>`, `cast <spell> on <enemy>`, `enemies`, `wallet`, `shop`,
-and `buy <offer>`. Unambiguous `use <weapon/spell> on <enemy>` reaches the same action;
+`attack <enemy> with <weapon>`, `cast <spell> on <enemy>`, `enemies`, `equipment`,
+`equip <item>`, `unequip <slot>` and `status`. Unambiguous `use <weapon/spell> on <enemy>` reaches the same action;
 ordinary visible item targets retain priority. Use an enemy's `#instance` when needed.
 Exact enemy HP stays private. `help` explains commands in the game.
 
