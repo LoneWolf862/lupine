@@ -54,6 +54,24 @@ pub fn warnings(a: &Adventure) -> Vec<String> {
                 }
             }
         }
+        for e in a
+            .rpg
+            .abilities
+            .values()
+            .flat_map(|a| &a.effects)
+            .chain(a.encounters.enemies.values().flat_map(|e| &e.rewards))
+            .chain(
+                a.shops
+                    .shops
+                    .values()
+                    .flat_map(|s| &s.offers)
+                    .flat_map(|o| &o.effects),
+            )
+        {
+            if let Effect::MovePlayer(to) = e {
+                reachable.insert(to.clone());
+            }
+        }
         if reachable.len() == before {
             break;
         }
@@ -214,6 +232,33 @@ pub fn warnings(a: &Adventure) -> Vec<String> {
             if let Effect::SetFlag(id) = effect {
                 written.insert(id.clone());
             }
+        }
+    }
+    for c in a.rpg.abilities.values().flat_map(|a| &a.requires).chain(
+        a.shops
+            .shops
+            .values()
+            .flat_map(|s| &s.offers)
+            .flat_map(|o| &o.requires),
+    ) {
+        condition(c, &mut read);
+    }
+    for e in a
+        .rpg
+        .abilities
+        .values()
+        .flat_map(|a| &a.effects)
+        .chain(a.encounters.enemies.values().flat_map(|e| &e.rewards))
+        .chain(
+            a.shops
+                .shops
+                .values()
+                .flat_map(|s| &s.offers)
+                .flat_map(|o| &o.effects),
+        )
+    {
+        if let Effect::SetFlag(id) = e {
+            written.insert(id.clone());
         }
     }
     for table in a.encounters.tables.values() {

@@ -251,10 +251,24 @@ pub fn prepare(
             };
             s
         };
+        let world_ability = content
+            .abilities
+            .get(&spell)
+            .is_some_and(|a| matches!(a.kind, crate::rpg_content::AbilityKind::World));
         let target = match target.map(clean_target) {
             Some(t) if t == "self" || t == "me" => format!(" on {t}"),
             Some(t) => {
-                let Some(t) = select(&t, &enemy_choices, input, output)? else {
+                let Some(t) = select(
+                    &t,
+                    if world_ability {
+                        &visible
+                    } else {
+                        &enemy_choices
+                    },
+                    input,
+                    output,
+                )?
+                else {
                     return Ok(None);
                 };
                 format!(" on {t}")

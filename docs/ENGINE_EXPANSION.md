@@ -15,7 +15,7 @@ The baseline is main 451f409, including merged Phase 4 PRs #26â€“#30.
 | 4 | Hidden/starting inventory, containers, quantities, consumables | Verified locally and in CI; draft PR #34 |
 | 5 | Events, timers, quests, journals, endings | Verified locally; draft PR #35 |
 | 6 | NPCs, conditional dialogue, choices, transfers and movement | Verified locally; draft PR #36 |
-| 7 | Independent economy, shared rewards, world abilities, equipment/status/combat configuration | Approved, not implemented |
+| 7 | Independent economy, shared rewards, world abilities, equipment/status/combat configuration | Verified locally; draft PR #37 |
 | 8 | Wizard coverage, project properties, repair, duplicate/delete/reference migration | Approved, not implemented |
 | 9 | Consistent controls, draft visibility, search and room-centered navigation | Approved, not implemented |
 
@@ -109,3 +109,15 @@ bytes or compatibility revisions are rewritten. The shared decoder now accepts t
 documented 256 effects while retaining bounded condition/choice arrays.
 [Draft PR #36](https://github.com/LoneWolf862/lupine/pull/36) targets phase 5.
 CI, native CachyOS and human beginner acceptance are not yet claimed.
+
+Phase 6 Windows/Ubuntu CI passed at 81e5b76, Actions run 44605273082.
+
+Phase 7 local Windows: all 338 tests passed, including 18 system integration tests;
+formatting, strict all-target Clippy, release build and independent Rust consumer
+passed. Native creator/manual save/load/independent ZIP launcher acceptance passed
+(target/phase4-acceptance-89345567/). Tests cover independent economy/world abilities,
+quantity-aware shops/loot, atomic rewards, resistance/armor/statuses, configurable
+retaliation, status defeat hooks, shared-effect movement, migrations and export.
+RORK 6 deliberately persists equipment/status progress; no existing saves or game
+compatibility revisions are rewritten. [Draft PR #37](https://github.com/LoneWolf862/lupine/pull/37)
+targets phase 6. CI, native CachyOS and human beginner acceptance are not yet claimed.

@@ -49,6 +49,8 @@ fn defeat_blocks_gameplay_but_allows_manual_load_and_quit() {
     let mut encounters = EncounterContent::load(root, &ids, true).unwrap();
     let goblin = encounters.enemies.get_mut("goblin").unwrap();
     goblin.attacks = vec![EnemyAttack {
+        damage_type: "physical".into(),
+        status: None,
         name: "Fatal Blow".into(),
         damage: 1000,
         weight: 1,

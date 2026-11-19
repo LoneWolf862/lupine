@@ -52,3 +52,7 @@ turns), `quests={delivery="active"}` (exact stage map), `journal=["instructions"
 Dialogue scenarios can assert the complete `npcs` state map, for example
 `npcs={guide={room="hall",node="done"}}`; omit room for an offstage NPC.
 Quantity locations accept `{kind="npc",id="guide"}`.
+
+System scenarios support complete `wallet={coins=10}`, `learned_abilities=["light"]`,
+`equipped={body="coat"}` and player `statuses={poison=2}` assertions, plus `hp=90`
+and `mp=20` (these fail when there is no character). See samples/economy_demo.

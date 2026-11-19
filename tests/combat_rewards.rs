@@ -33,7 +33,7 @@ fn fixture() -> (
             .create_character()
             .unwrap(),
     );
-    encounter.prepare_loot(&mut state);
+    encounter.prepare_loot(&game.world, &mut state);
     (game, encounter, content, state)
 }
 #[test]
@@ -45,6 +45,7 @@ fn hidden_loot_drops_and_is_persistent_state() {
     );
     state.current_room = "woods".into();
     let enemy = EnemyInstance {
+        statuses: Default::default(),
         instance_id: 1,
         enemy_id: "goblin".into(),
         current_hp: 0,
@@ -86,6 +87,7 @@ fn defeat_removes_enemy_once_before_rewards() {
     let (game, encounter, content, mut state) = fixture();
     state.set_location("rusty_dagger".into(), ItemLocation::Inventory);
     let mut active = vec![EnemyInstance {
+        statuses: Default::default(),
         instance_id: 1,
         enemy_id: "goblin".into(),
         current_hp: 1,
@@ -118,6 +120,7 @@ fn chance_zero_means_no_loot_and_levels_are_capped() {
     state.current_room = "woods".into();
     encounter.enemies.get_mut("goblin").unwrap().loot[0].chance = 0;
     let enemy = EnemyInstance {
+        statuses: Default::default(),
         instance_id: 1,
         enemy_id: "goblin".into(),
         current_hp: 0,

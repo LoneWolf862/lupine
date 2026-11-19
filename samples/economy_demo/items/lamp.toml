@@ -1,0 +1,5 @@
+id='lamp'
+name='lamp'
+description='An unlit test lamp.'
+portable=false
+starting_room='start'

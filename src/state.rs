@@ -19,6 +19,7 @@ pub enum ItemLocation {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct GameState {
+    pub systems: crate::systems::Progress,
     pub dialogue: crate::dialogue::Progress,
     pub events: crate::events::Progress,
     pub story: crate::rules::StoryState,
@@ -43,6 +44,7 @@ pub struct GameState {
 impl GameState {
     pub fn new(world: &World) -> Self {
         Self {
+            systems: Default::default(),
             dialogue: crate::dialogue::Progress::new(&world.dialogue),
             events: crate::events::Progress::new(&world.events),
             story: crate::rules::StoryState {

@@ -73,6 +73,7 @@ pub struct Interaction {
 
 #[derive(Debug)]
 pub struct World {
+    pub systems: crate::systems::Content,
     pub dialogue: crate::dialogue::Content,
     pub events: crate::events::Content,
     pub object_defs: std::collections::BTreeMap<String, crate::objects::Definition>,
@@ -97,6 +98,9 @@ impl World {
     /// Validate an authored world before play; reports all detected problems.
     pub fn validate(&self) -> Result<(), Vec<String>> {
         let mut errors = crate::actions::validate(self);
+        if let Err(e) = self.systems.validate(self) {
+            errors.push(format!("systems: {e}"));
+        }
         if let Err(e) = self.dialogue.validate(self) {
             errors.push(format!("dialogue.toml: {e}"));
         }

@@ -198,11 +198,13 @@ fn combat_and_spell_aliases_resolve_instances_and_conserve_failed_state() {
     s.current_room = "woods".into();
     s.active_enemies = vec![
         EnemyInstance {
+            statuses: Default::default(),
             instance_id: 1,
             enemy_id: "goblin".into(),
             current_hp: 20,
         },
         EnemyInstance {
+            statuses: Default::default(),
             instance_id: 2,
             enemy_id: "goblin".into(),
             current_hp: 20,
@@ -341,6 +343,7 @@ fn omitted_weapon_requires_explicit_selection_and_can_cancel() {
     let mut s = GameState::new(&a.game.world);
     s.set_location("rusty_dagger".into(), ItemLocation::Inventory);
     s.active_enemies.push(EnemyInstance {
+        statuses: Default::default(),
         instance_id: 1,
         enemy_id: "goblin".into(),
         current_hp: 20,
@@ -412,6 +415,7 @@ fn visible_items_keep_priority_over_spell_names() {
     let mut s = GameState::new(&a.game.world);
     s.learned_abilities.insert("fireball".into());
     s.active_enemies.push(EnemyInstance {
+        statuses: Default::default(),
         instance_id: 1,
         enemy_id: "goblin".into(),
         current_hp: 20,

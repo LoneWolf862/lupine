@@ -75,8 +75,11 @@ fn wallet_rork_roundtrip_and_legacy() {
 #[test]
 fn unknown_currency_in_rork_is_rejected_by_story_wallet() {
     let (game, wallet, _, mut state) = setup();
+    let valid = lupine::save::encode_save(&game.world, &state, &game.id, "Wallet Test").unwrap();
+    let corrupt = valid.replace("gold =", "unconfigured =");
+    assert_ne!(valid, corrupt);
+    assert!(lupine::save::decode_save(&game.world, &game.id, &corrupt).is_err());
     state.wallet.insert("unconfigured".into(), 99);
-    let data = lupine::save::encode_save(&game.world, &state, &game.id, "Wallet Test").unwrap();
-    let decoded = lupine::save::decode_save(&game.world, &game.id, &data).unwrap();
-    assert!(wallet.validate_balances(&decoded).is_err());
+    assert!(wallet.validate_balances(&state).is_err());
+    assert!(lupine::save::encode_save(&game.world, &state, &game.id, "Wallet Test").is_err());
 }

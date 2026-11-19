@@ -311,6 +311,7 @@ pub fn start_timer(w: &World, s: &mut GameState, id: &str) -> Result<(), String>
 pub struct Step {
     pub before: GameState,
     pub performed: bool,
+    pub combat_turn: bool,
     pub triggers: Vec<Trigger>,
     pub eligible: bool,
 }
@@ -319,6 +320,7 @@ impl Step {
         Self {
             before: state.clone(),
             performed: false,
+            combat_turn: false,
             triggers: vec![],
             eligible,
         }

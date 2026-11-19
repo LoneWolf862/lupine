@@ -28,18 +28,22 @@ fn fixture() -> (
             .create_character()
             .unwrap(),
     );
-    shops.prepare_inventory(&mut state);
+    shops.prepare_inventory(&game.world, &mut state);
     (game, wallet, shops, rpg, state)
 }
 
 #[test]
 fn healing_full_hp_does_not_charge() {
-    let (_game, wallet, shops, _rpg, mut state) = fixture();
+    let (game, wallet, shops, _rpg, mut state) = fixture();
     let before = state.clone();
-    assert!(shops.transact(&mut state, &wallet, "healing", "").is_err());
+    assert!(shops
+        .transact(&game.world, &mut state, &wallet, "healing", "")
+        .is_err());
     assert_eq!(state, before);
     state.character.as_mut().unwrap().hp = 50;
-    shops.transact(&mut state, &wallet, "healing", "").unwrap();
+    shops
+        .transact(&game.world, &mut state, &wallet, "healing", "")
+        .unwrap();
     assert_eq!(state.character.as_ref().unwrap().hp, 100);
     assert_eq!(state.wallet["gold"], 15);
 }
@@ -47,12 +51,12 @@ fn healing_full_hp_does_not_charge() {
 fn stock_one_and_rork_roundtrip() {
     let (game, wallet, shops, _rpg, mut state) = fixture();
     shops
-        .transact(&mut state, &wallet, "camp_permit", "")
+        .transact(&game.world, &mut state, &wallet, "camp_permit", "")
         .unwrap();
     assert!(state.flags.contains("camp_permit"));
     let prior = state.clone();
     assert!(shops
-        .transact(&mut state, &wallet, "camp_permit", "")
+        .transact(&game.world, &mut state, &wallet, "camp_permit", "")
         .is_err());
     assert_eq!(state, prior);
     let serialized = encode_save(&game.world, &state, &game.id, "Shop Test").unwrap();
@@ -62,14 +66,16 @@ fn stock_one_and_rork_roundtrip() {
 }
 #[test]
 fn invalid_shop_or_room_cannot_spend() {
-    let (_game, wallet, shops, _rpg, mut state) = fixture();
+    let (game, wallet, shops, _rpg, mut state) = fixture();
     let before = state.clone();
     assert!(shops
-        .transact(&mut state, &wallet, "healing", "missing")
+        .transact(&game.world, &mut state, &wallet, "healing", "missing")
         .is_err());
     assert_eq!(state, before);
     state.current_room = "woods".into();
     let before = state.clone();
-    assert!(shops.transact(&mut state, &wallet, "healing", "").is_err());
+    assert!(shops
+        .transact(&game.world, &mut state, &wallet, "healing", "")
+        .is_err());
     assert_eq!(state, before);
 }

@@ -1,5 +1,5 @@
 //! Optional, data-driven combat equipment and learned abilities.
-//! Stage B does not spawn enemies or inflict combat damage: that is Stage C.
+//! World abilities share typed rules and may be used without RPG character stats.
 use crate::state::GameState;
 use crate::world::World;
 use serde::Deserialize;
@@ -25,6 +25,7 @@ pub enum AbilityKind {
     Damage,
     Heal,
     RestoreMana,
+    World,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -34,9 +35,21 @@ pub struct Ability {
     pub name: String,
     #[serde(default)]
     pub description: String,
+    #[serde(default)]
     pub mana_cost: u32,
     pub kind: AbilityKind,
+    #[serde(default)]
     pub power: u32,
+    #[serde(default = "crate::systems::physical")]
+    pub damage_type: String,
+    #[serde(default)]
+    pub on_hit_status: Option<String>,
+    #[serde(default)]
+    pub target: Option<String>,
+    #[serde(default)]
+    pub requires: Vec<crate::rules::Condition>,
+    #[serde(default)]
+    pub effects: Vec<crate::rules::Effect>,
     /// Optional physical scroll/item that teaches this ability on `learn <item>`.
     pub learn_from_item: Option<String>,
 }
@@ -107,7 +120,7 @@ impl RpgContent {
                     path.display()
                 ));
             }
-            if weapon.damage_type.trim().is_empty() {
+            if crate::rules::valid_id(&weapon.damage_type).is_err() {
                 return Err(format!("{}: damage_type is empty", path.display()));
             }
             if result.weapons.insert(weapon.item.clone(), weapon).is_some() {
@@ -117,24 +130,45 @@ impl RpgContent {
         for path in definition_files(&directory.join("spells"))? {
             let input =
                 fs::read_to_string(&path).map_err(|e| format!("{}: {e}", path.display()))?;
-            let ability: Ability =
+            let value: toml::Value =
                 toml::from_str(&input).map_err(|e| format!("{}: {e}", path.display()))?;
+            let ability: Ability =
+                crate::rules::decode(&value).map_err(|e| format!("{}: {e}", path.display()))?;
             if !valid_id(&ability.id) {
                 return Err(format!(
                     "{}: ability id must be lowercase ASCII",
                     path.display()
                 ));
             }
-            if ability.name.trim().is_empty() || ability.power == 0 {
+            if ability.name.trim().is_empty()
+                || (!matches!(ability.kind, AbilityKind::World) && ability.power == 0)
+            {
                 return Err(format!(
                     "{}: ability must have a name and positive power",
                     path.display()
                 ));
             }
+            crate::rules::valid_id(&ability.damage_type)?;
+            if !matches!(ability.kind, AbilityKind::World)
+                && (ability.target.is_some()
+                    || !ability.requires.is_empty()
+                    || !ability.effects.is_empty())
+            {
+                return Err(format!(
+                    "{}: target/requires/effects are for kind=world",
+                    path.display()
+                ));
+            }
+            if !matches!(ability.kind, AbilityKind::Damage) && ability.on_hit_status.is_some() {
+                return Err(format!(
+                    "{}: on_hit_status requires kind=damage",
+                    path.display()
+                ));
+            }
             if let Some(scroll) = &ability.learn_from_item {
-                if world.item(scroll).is_none() {
+                if !world.item(scroll).is_some_and(|i| i.portable) {
                     return Err(format!(
-                        "{}: learn_from_item '{}' is not an item",
+                        "{}: learn_from_item '{}' is not a portable item",
                         path.display(),
                         scroll
                     ));
@@ -154,7 +188,13 @@ impl RpgContent {
                 return Err(format!("{}: duplicate ability id", path.display()));
             }
         }
-        if !has_character && (!result.weapons.is_empty() || !result.abilities.is_empty()) {
+        if !has_character
+            && (!result.weapons.is_empty()
+                || result
+                    .abilities
+                    .values()
+                    .any(|a| !matches!(a.kind, AbilityKind::World) || a.mana_cost > 0))
+        {
             return Err(
                 "Weapons and spells require enabled = true in config/character.fig for HP/MP/AP"
                     .into(),
@@ -249,6 +289,48 @@ impl RpgContent {
         output.trim_end().to_owned()
     }
 
+    pub fn cast_world(
+        &self,
+        world: &World,
+        state: &mut GameState,
+        text: &str,
+    ) -> Option<Result<String, String>> {
+        let (id, target) = text
+            .split_once(" on ")
+            .map_or((text, None), |(a, b)| (a, Some(b)));
+        let ability = self.abilities.get(id)?;
+        if !matches!(ability.kind, AbilityKind::World) {
+            return None;
+        }
+        Some((|| {
+            if !state.learned_abilities.contains(id) {
+                return Err(format!("You haven't learned {}.", ability.name));
+            }
+            if ability.target.as_deref() != target
+                || target.is_some_and(|t| !state.is_accessible(t))
+            {
+                return Err("This ability requires its authored accessible target.".into());
+            }
+            if !ability.requires.iter().all(|c| c.met(state)) {
+                return Err("The ability's requirements are not met.".into());
+            }
+            let mut effects = Vec::new();
+            if ability.mana_cost > 0 {
+                effects.push(crate::rules::Effect::SpendMp(ability.mana_cost));
+            }
+            effects.extend(ability.effects.clone());
+            let lines = crate::rules::apply(world, state, &effects)?;
+            Ok(format!(
+                "You use {}.{}",
+                ability.name,
+                if lines.is_empty() {
+                    String::new()
+                } else {
+                    format!("\n{}", lines.join("\n"))
+                }
+            ))
+        })())
+    }
     pub fn cast(&self, state: &mut GameState, text: &str) -> String {
         let (name, target) = text
             .split_once(" on ")
@@ -266,6 +348,7 @@ impl RpgContent {
             return "This adventure has no RPG character.".into();
         };
         match ability.kind {
+            AbilityKind::World => return "World abilities use the shared world cast path.".into(),
             AbilityKind::Damage => return "Damage spells require an enemy target. Try 'cast <spell> on <enemy>'; no MP spent.".into(),
             AbilityKind::Heal => if target.is_some_and(|t| !t.eq_ignore_ascii_case("self") && !t.eq_ignore_ascii_case("me")) {
                 return "Healing currently targets yourself only.".into();
@@ -299,7 +382,7 @@ impl RpgContent {
                     ability.name, character.mp, character.max_mp
                 )
             }
-            AbilityKind::Damage => unreachable!(),
+            AbilityKind::Damage | AbilityKind::World => unreachable!(),
         }
     }
 }

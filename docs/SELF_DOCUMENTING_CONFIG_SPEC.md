@@ -2,6 +2,10 @@
 
 **Status:** Phase 2C.2 implemented candidate for review. The requirements below remain authoritative; verification and remaining platform limits are recorded in CODEX_HANDOFF.md.
 
+Current expansion phase 7 also generates config/combat.fig, whose damage/retaliation
+settings are implemented. See [SYSTEMS.md](SYSTEMS.md); older example trees below
+record the original two-file milestone.
+
 ## Intent
 
 Every new adventure should be understandable by inspecting its generated files. The beginner-friendly terminal wizard and direct hand editing are equal, supported workflows. Configuration defaults should be explicit and explained in the files themselves, not hidden in Rust or revealed only after enabling a feature.

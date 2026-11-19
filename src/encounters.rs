@@ -19,7 +19,11 @@ pub struct Enemy {
     #[serde(default)]
     pub defense: u32,
     #[serde(default)]
+    pub resistances: std::collections::BTreeMap<String, i16>,
+    #[serde(default)]
     pub experience: u64,
+    #[serde(default)]
+    pub rewards: Vec<crate::rules::Effect>,
     #[serde(default)]
     pub loot: Vec<EnemyLoot>,
     #[serde(default)]
@@ -33,6 +37,8 @@ pub struct Enemy {
 pub struct EnemyLoot {
     pub item: String,
     pub chance: u32,
+    #[serde(default = "default_one")]
+    pub quantity: u32,
 }
 /// Independent roll for one configured currency. Awards are stored as balances.
 #[derive(Debug, Clone, Deserialize)]
@@ -49,6 +55,10 @@ fn default_ap() -> u32 {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct EnemyAttack {
+    #[serde(default = "crate::systems::physical")]
+    pub damage_type: String,
+    #[serde(default)]
+    pub status: Option<String>,
     pub name: String,
     pub damage: u32,
     pub weight: u32,
@@ -117,6 +127,7 @@ impl EncounterCondition {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct EnemyInstance {
+    pub statuses: std::collections::BTreeMap<String, u32>,
     pub instance_id: u64,
     pub enemy_id: String,
     pub current_hp: u32,
@@ -137,6 +148,22 @@ impl EncounterContent {
     /// Loot is authored as ordinary portable game items; reject unknown or fixed items.
     pub fn validate_loot(&self, world: &World) -> Result<(), String> {
         for enemy in self.enemies.values() {
+            if enemy.rewards.len() + enemy.loot.len() + enemy.currency_rewards.len() + 1 > 256 {
+                return Err(format!(
+                    "Enemy '{}' reward batch exceeds 256 effects",
+                    enemy.id
+                ));
+            }
+            crate::systems::validate_resistances(&enemy.resistances)?;
+            for e in &enemy.rewards {
+                e.validate(world)?;
+            }
+            for attack in &enemy.attacks {
+                crate::rules::valid_id(&attack.damage_type)?;
+                if let Some(id) = &attack.status {
+                    world.systems.status(id)?;
+                }
+            }
             for drop in &enemy.loot {
                 let Some(item) = world.item(&drop.item) else {
                     return Err(format!(
@@ -144,6 +171,13 @@ impl EncounterContent {
                         enemy.id, drop.item
                     ));
                 };
+                if drop.quantity == 0
+                    || drop.quantity > 1_000_000
+                    || (!crate::objects::definition(world, &drop.item).stackable
+                        && drop.quantity != 1)
+                {
+                    return Err(format!("Enemy '{}' invalid loot quantity", enemy.id));
+                }
                 if !item.portable {
                     return Err(format!(
                         "Enemy '{}' loot item '{}' must be portable",
@@ -157,10 +191,16 @@ impl EncounterContent {
 
     /// Hide loot-only items at the start of a new session. They become ordinary
     /// room items when dropped; subsequent saves use standard RORK item locations.
-    pub fn prepare_loot(&self, state: &mut GameState) {
+    pub fn prepare_loot(&self, world: &World, state: &mut GameState) {
         for enemy in self.enemies.values() {
             for drop in &enemy.loot {
-                state.set_location(drop.item.clone(), ItemLocation::Consumed);
+                if !crate::objects::definition(world, &drop.item).stackable
+                    && crate::objects::definition(world, &drop.item)
+                        .initial
+                        .is_none()
+                {
+                    state.set_location(drop.item.clone(), ItemLocation::Consumed);
+                }
             }
         }
     }
@@ -448,6 +488,7 @@ impl EncounterContent {
             }
             if let Some(enemy) = self.enemies.get(&chosen.enemy) {
                 spawned.push(EnemyInstance {
+                    statuses: Default::default(),
                     instance_id: *next_id,
                     enemy_id: enemy.id.clone(),
                     current_hp: enemy.max_hp,
@@ -514,6 +555,7 @@ mod health_bar_regressions {
     #[test]
     fn living_enemy_always_has_visible_health() {
         let enemy = Enemy {
+            resistances: Default::default(),
             id: "test".to_string(),
             name: "Test Enemy".to_string(),
             description: "A test creature".to_string(),
@@ -522,6 +564,7 @@ mod health_bar_regressions {
             attack_power: 100,
             defense: 0,
             experience: 0,
+            rewards: vec![],
             loot: vec![],
             currency_rewards: vec![],
             attacks: vec![],
@@ -529,6 +572,7 @@ mod health_bar_regressions {
         let mut content = EncounterContent::default();
         content.enemies.insert(enemy.id.clone(), enemy);
         let out = content.describe(&[EnemyInstance {
+            statuses: Default::default(),
             instance_id: 1,
             enemy_id: "test".to_string(),
             current_hp: 1,

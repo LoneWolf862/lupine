@@ -459,7 +459,8 @@ pub fn load_game(directory: impl AsRef<Path>) -> Result<LoadedGame, String> {
             blocked_text: data.blocked_text,
         });
     }
-    let world = World {
+    let mut world = World {
+        systems: Default::default(),
         dialogue: crate::dialogue::Content::load(directory)?,
         events: crate::events::Content::load(directory)?,
         object_defs,
@@ -471,6 +472,7 @@ pub fn load_game(directory: impl AsRef<Path>) -> Result<LoadedGame, String> {
         exit_rules,
         starting_room: manifest.starting_room,
     };
+    world.systems = crate::systems::Content::load(directory, &world, &config)?;
     let errors = validate_story_references(&world, &room_paths, &item_paths, directory);
     if !errors.is_empty() {
         return Err(format!("Story validation failed:\n{}", errors.join("\n")));

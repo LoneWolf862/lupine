@@ -26,6 +26,7 @@ fn terminal_runner_executes_a_full_script() {
 #[test]
 fn terminal_runner_rejects_invalid_world_before_any_output() {
     let world = World {
+        systems: Default::default(),
         dialogue: Default::default(),
         events: Default::default(),
         object_defs: Default::default(),

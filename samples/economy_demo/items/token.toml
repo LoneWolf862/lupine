@@ -1,0 +1,7 @@
+id='token'
+name='token'
+description='A counting token.'
+portable=true
+stackable=true
+quantity=2
+initial={kind='inventory'}

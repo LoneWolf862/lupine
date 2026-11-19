@@ -1,0 +1,6 @@
+id='light'
+name='Light'
+kind='world'
+target='lamp'
+requires=[{flag_unset='lit'}]
+effects=[{debit={currency='coins',amount=1}},{set_flag='lit'},{show_text='The lamp lights.'}]

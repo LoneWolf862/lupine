@@ -1,0 +1,4 @@
+[[events]]
+id='teach'
+on={enter='start'}
+effects=[{teach_ability='light'}]

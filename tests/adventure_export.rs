@@ -92,6 +92,14 @@ fn native_package_is_valid_launchable_and_excludes_saves_and_development_files()
     fs::create_dir(f.game.join("target")).unwrap();
     fs::write(f.game.join("target/dev.txt"), "dev").unwrap();
     fs::write(f.game.join("dialogue.toml"),"[npcs.guide]\nname='Guide'\ndescription='Packaged NPC.'\nroom='start'\nstart='hello'\n[npcs.guide.nodes.hello]\ntext='Packaged dialogue executed.'\n").unwrap();
+    fs::write(f.game.join("config/character.fig"), "enabled=true\n").unwrap();
+    fs::write(
+        f.game.join("config/combat.fig"),
+        "minimum_damage=0\nretaliation='none'\n",
+    )
+    .unwrap();
+    fs::write(f.game.join("items/coat.toml"),"id='coat'\nname='coat'\ndescription='Exported equipment'\nportable=true\ninitial={kind='inventory'}\n").unwrap();
+    fs::write(f.game.join("systems.toml"),"[equipment.coat]\nslot='body'\ndefense=3\n[statuses.poison]\nname='Poison'\nturns=3\ndamage=1\n").unwrap();
     let before = snapshot(&f.game);
     let path = f.plan("Export with spaces").unwrap().publish().unwrap();
     assert_eq!(snapshot(&f.game), before);
@@ -100,6 +108,8 @@ fn native_package_is_valid_launchable_and_excludes_saves_and_development_files()
     let packaged = Adventure::load(&package.join("adventure")).unwrap();
     assert_eq!(packaged.game.world.rules.counters["visits"], 3);
     assert_eq!(packaged.game.world.actions[0].id, "wait_test");
+    assert_eq!(packaged.game.world.systems.equipment["coat"].defense, 3);
+    assert_eq!(packaged.game.config.combat.minimum_damage, 0);
     assert_eq!(
         lupine::state::GameState::new(&packaged.game.world).carried_quantity("tokens"),
         3

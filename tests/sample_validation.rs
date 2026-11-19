@@ -9,6 +9,7 @@ fn bundled_story_samples_pass_all_content_validators() {
         "objects_demo",
         "events_demo",
         "dialogue_demo",
+        "economy_demo",
         "rpg_rewards",
         "rpg_transactions",
         "rpg_persistent",

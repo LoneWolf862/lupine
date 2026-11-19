@@ -195,6 +195,7 @@ pub fn run_with_game_id_compat_progression_content_encounters_wallet(
         game_id,
         compatibility_version,
         crate::config::GameConfig {
+            combat: Default::default(),
             character: progression,
             ..Default::default()
         },
@@ -313,6 +314,7 @@ pub fn run_with_io_and_saves_progression_content_encounters_wallet<R: BufRead, W
         root,
         compatibility_version,
         crate::config::GameConfig {
+            combat: Default::default(),
             character: progression,
             ..Default::default()
         },
@@ -363,7 +365,7 @@ pub fn run_configured_with_io<R: BufRead, W: Write>(
 /// final in-memory state for author scenario assertions. This never saves implicitly.
 #[allow(clippy::too_many_arguments)]
 pub fn run_session_with_io<R: BufRead, W: Write>(
-    world: World,
+    mut world: World,
     title: &str,
     game_id: &str,
     root: &Path,
@@ -377,6 +379,10 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
     mut output: W,
     seed: Option<u64>,
 ) -> io::Result<GameState> {
+    world.systems.wallet = wallet.clone();
+    world.systems.rpg = content.clone();
+    world.systems.progression = config.character.clone();
+    world.systems.combat = config.combat.clone();
     let progression = &config.character;
     if compatibility_version == 0 {
         return Err(io::Error::new(
@@ -396,16 +402,10 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
     wallet
         .validate_encounters(&encounters)
         .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
-    if progression.is_none() && !wallet.currencies.is_empty() {
-        return Err(io::Error::new(
-            io::ErrorKind::InvalidData,
-            "Wallet requires RPG progression",
-        ));
-    }
     let mut state = GameState::new(&world);
     state.wallet = wallet.initial_balances();
-    encounters.prepare_loot(&mut state);
-    shops.prepare_inventory(&mut state);
+    encounters.prepare_loot(&world, &mut state);
+    shops.prepare_inventory(&world, &mut state);
     if let Some(config) = &progression {
         state.character = Some(config.create_character().map_err(io::Error::other)?);
     }
@@ -429,7 +429,71 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
     }
     let mut pending = None::<crate::events::Step>;
     loop {
-        if let Some(step) = pending.take() {
+        if let Some(mut step) = pending.take() {
+            let spent = step.eligible
+                && (step.performed || state != step.before)
+                && step.before.events.ending.is_none();
+            crate::systems::prune_equipment(&mut state);
+            if spent && state.events.ending.is_none() {
+                let modifiers = state.active_enemies.clone();
+                let (lines, defeated) = crate::systems::tick(&world, &mut state, &encounters);
+                for line in lines {
+                    writeln!(output, "{line}\n")?;
+                }
+                if !defeated.is_empty() {
+                    encounters.record_defeat(&mut state);
+                }
+                for enemy in defeated {
+                    step.triggers
+                        .push(crate::events::Trigger::Defeat(enemy.enemy_id.clone()));
+                    let reward_room = state.current_room.clone();
+                    writeln!(
+                        output,
+                        "{}\n",
+                        combat::award_defeat(
+                            &encounters,
+                            &world,
+                            progression.as_ref(),
+                            &mut state,
+                            &enemy,
+                            &mut rng
+                        )
+                    )?;
+                    sync_object_room(
+                        &reward_room,
+                        &world,
+                        &mut state,
+                        &encounters,
+                        &mut rng,
+                        &mut output,
+                    )?;
+                }
+                if config.combat.retaliation == crate::systems::Retaliation::EveryAction
+                    || (config.combat.retaliation == crate::systems::Retaliation::Combat
+                        && step.combat_turn)
+                {
+                    let mut active = state.active_enemies.clone();
+                    for enemy in &mut active {
+                        if let Some(old) = modifiers
+                            .iter()
+                            .find(|e| e.instance_id == enemy.instance_id)
+                        {
+                            enemy.statuses = old.statuses.clone();
+                        }
+                    }
+                    let text =
+                        combat::retaliate(&world, &encounters, &mut state, &active, &mut rng);
+                    if !text.is_empty() {
+                        writeln!(output, "{text}\n")?;
+                    }
+                }
+                if is_defeated(&state) && !is_defeated(&step.before) {
+                    writeln!(
+                        output,
+                        "YOU HAVE BEEN DEFEATED\nAvailable commands: saves, load <name>, quit.\n"
+                    )?;
+                }
+            }
             let old_room = state.current_room.clone();
             match crate::events::finish(&world,&mut state,step){
                 Ok(lines)=>for text in lines{writeln!(output,"{text}\n")?;},
@@ -510,6 +574,39 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
                 .iter()
                 .any(|v| verb.eq_ignore_ascii_case(v)),
         ));
+        if matches!(verb.to_ascii_lowercase().as_str(), "equipment" | "status")
+            && command.split_whitespace().count() == 1
+        {
+            writeln!(output, "{}\n", crate::systems::describe(&world, &state))?;
+            continue;
+        }
+        if matches!(verb.to_ascii_lowercase().as_str(), "equip" | "unequip") {
+            let query = command[verb.len()..].trim();
+            let result = if verb.eq_ignore_ascii_case("equip") {
+                let choices = crate::resolution::items(&world, &state)
+                    .into_iter()
+                    .filter(|i| world.systems.equipment.contains_key(&i.id))
+                    .collect::<Vec<_>>();
+                let Some(id) =
+                    crate::player_input::choose(query, &choices, &mut input, &mut output)?
+                else {
+                    continue;
+                };
+                crate::systems::equip(&world, &mut state, &id)
+                    .map(|_| format!("Equipped {}.", world.item(&id).unwrap().name))
+            } else if state.systems.equipped.remove(query).is_some() {
+                Ok(format!("Unequipped {query}."))
+            } else {
+                Err("No equipment in that slot. Use equipment to list slots.".into())
+            };
+            if result.is_ok() {
+                if let Some(step) = pending.as_mut() {
+                    step.performed = true;
+                }
+            }
+            writeln!(output, "{}\n", result.unwrap_or_else(|e| e))?;
+            continue;
+        }
         if verb.eq_ignore_ascii_case("people") && command.split_whitespace().count() == 1 {
             writeln!(output, "{}\n", crate::dialogue::people(&world, &state))?;
             continue;
@@ -630,6 +727,26 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
         let (verb, argument) = command
             .split_once(char::is_whitespace)
             .map_or((command, ""), |(verb, rest)| (verb, rest.trim()));
+        if verb.eq_ignore_ascii_case("cast") {
+            let before = state.current_room.clone();
+            if let Some(result) = content.cast_world(&world, &mut state, argument) {
+                if result.is_ok() {
+                    if let Some(step) = pending.as_mut() {
+                        step.performed = true;
+                    }
+                }
+                writeln!(output, "{}\n", result.unwrap_or_else(|e| e))?;
+                sync_object_room(
+                    &before,
+                    &world,
+                    &mut state,
+                    &encounters,
+                    &mut rng,
+                    &mut output,
+                )?;
+                continue;
+            }
+        }
         if verb.eq_ignore_ascii_case("enemies") && argument.is_empty() {
             writeln!(output, "{}\n", encounters.describe(&state.active_enemies))?;
             continue;
@@ -659,6 +776,7 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
                         .push(crate::events::Trigger::Defeat(defeated.enemy_id.clone()));
                 }
                 encounters.record_defeat(&mut state);
+                let reward_room = state.current_room.clone();
                 let reward = combat::award_defeat(
                     &encounters,
                     &world,
@@ -670,25 +788,21 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
                 if !reward.is_empty() {
                     writeln!(output, "{reward}\n")?;
                 }
-                let coins = wallet.award(&encounters, &defeated.enemy_id, &mut state, &mut rng);
-                if !coins.is_empty() {
-                    writeln!(output, "{coins}\n")?;
-                }
+                sync_object_room(
+                    &reward_room,
+                    &world,
+                    &mut state,
+                    &encounters,
+                    &mut rng,
+                    &mut output,
+                )?;
             }
             if action.turn_spent {
                 if let Some(step) = pending.as_mut() {
                     step.performed = true;
                 }
-                let surviving = state.active_enemies.clone();
-                let retaliation = combat::retaliate(&encounters, &mut state, &surviving, &mut rng);
-                if !retaliation.is_empty() {
-                    writeln!(output, "{retaliation}\n")?;
-                }
-                if is_defeated(&state) {
-                    writeln!(
-                        output,
-                        "\nYOU HAVE BEEN DEFEATED\nAvailable commands: saves, load <name>, quit.\n"
-                    )?;
+                if let Some(step) = pending.as_mut() {
+                    step.combat_turn = true;
                 }
                 if !is_defeated(&state) && !state.active_enemies.is_empty() {
                     writeln!(output, "{}\n", encounters.describe(&state.active_enemies))?;
@@ -702,8 +816,14 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
             && !argument.to_ascii_lowercase().ends_with(" on me")
         {
             let mut current = std::mem::take(&mut state.active_enemies);
-            let action =
-                combat::offensive_spell(&content, &encounters, &mut state, &mut current, argument);
+            let action = combat::offensive_spell(
+                &world,
+                &content,
+                &encounters,
+                &mut state,
+                &mut current,
+                argument,
+            );
             state.active_enemies = current;
             writeln!(output, "{}\n", action.message)?;
             if let Some(defeated) = &action.defeated {
@@ -712,6 +832,7 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
                         .push(crate::events::Trigger::Defeat(defeated.enemy_id.clone()));
                 }
                 encounters.record_defeat(&mut state);
+                let reward_room = state.current_room.clone();
                 let reward = combat::award_defeat(
                     &encounters,
                     &world,
@@ -723,25 +844,21 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
                 if !reward.is_empty() {
                     writeln!(output, "{reward}\n")?;
                 }
-                let coins = wallet.award(&encounters, &defeated.enemy_id, &mut state, &mut rng);
-                if !coins.is_empty() {
-                    writeln!(output, "{coins}\n")?;
-                }
+                sync_object_room(
+                    &reward_room,
+                    &world,
+                    &mut state,
+                    &encounters,
+                    &mut rng,
+                    &mut output,
+                )?;
             }
             if action.turn_spent {
                 if let Some(step) = pending.as_mut() {
                     step.performed = true;
                 }
-                let surviving = state.active_enemies.clone();
-                let retaliation = combat::retaliate(&encounters, &mut state, &surviving, &mut rng);
-                if !retaliation.is_empty() {
-                    writeln!(output, "{retaliation}\n")?;
-                }
-                if is_defeated(&state) {
-                    writeln!(
-                        output,
-                        "\nYOU HAVE BEEN DEFEATED\nAvailable commands: saves, load <name>, quit.\n"
-                    )?;
+                if let Some(step) = pending.as_mut() {
+                    step.combat_turn = true;
                 }
                 if !is_defeated(&state) && !state.active_enemies.is_empty() {
                     writeln!(output, "{}\n", encounters.describe(&state.active_enemies))?;
@@ -763,6 +880,7 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
             && !argument.is_empty()
             && !argument.to_ascii_lowercase().contains(" on ")
         {
+            let transaction_room = state.current_room.clone();
             if let Some(result) =
                 shops.use_transaction_item_result(&world, &mut state, &wallet, argument)
             {
@@ -773,6 +891,14 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
                 }
                 let message = result.unwrap_or_else(|e| e);
                 writeln!(output, "{message}\n")?;
+                sync_object_room(
+                    &transaction_room,
+                    &world,
+                    &mut state,
+                    &encounters,
+                    &mut rng,
+                    &mut output,
+                )?;
                 continue;
             }
             if let Some(index) = world.actions.iter().position(|a| {
@@ -836,7 +962,8 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
                 writeln!(output, "Specify an offer, e.g. 'buy healing service'.\n")?;
             } else {
                 // Sell offers are creator-defined; the verb is convenience syntax.
-                let result = shops.transact(&mut state, &wallet, offer, shop);
+                let transaction_room = state.current_room.clone();
+                let result = shops.transact(&world, &mut state, &wallet, offer, shop);
                 if result.is_ok() {
                     if let Some(step) = pending.as_mut() {
                         step.performed = true;
@@ -849,6 +976,14 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
                         Ok(s) => s,
                         Err(e) => e,
                     }
+                )?;
+                sync_object_room(
+                    &transaction_room,
+                    &world,
+                    &mut state,
+                    &encounters,
+                    &mut rng,
+                    &mut output,
                 )?;
             }
             continue;

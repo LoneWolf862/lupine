@@ -16,7 +16,7 @@ Lupine is unreleased/pre-1.0. Justified breaking changes are permitted; there is
 
 ## Supported configuration
 
-Only `config/character.fig` and `config/terminology.fig` are supported. No directory or files are needed for a narrative-only game using default terminology. Unsupported `.fig` filenames are errors, not silently ignored options. Configure your editor to treat `*.fig` as TOML for syntax highlighting.
+`config/character.fig`, `config/terminology.fig`, and `config/combat.fig` are supported. No directory or files are needed for a narrative-only game using default terminology. Unsupported `.fig` filenames are errors, not silently ignored options. Configure your editor to treat `*.fig` as TOML for syntax highlighting.
 
 `config/character.fig` has the same top-level fields, defaults and progression calculations as the former development-only `character.toml`. Move that file; do not keep both. The obsolete root file is rejected with migration guidance, never loaded. `enabled = true` enables RPG; `enabled = false` disables it. For existing authored FIGs, omitting `enabled` (including an empty file) retains the original enabled behavior. Absence still disables RPG. All character values are validated even when disabled. Bundled RPG samples explicitly set true; new generated adventures explicitly set false.
 
@@ -67,7 +67,7 @@ Required verification: defaults, character fields, terminology output/commands, 
 
 The authoritative requirements are in [`SELF_DOCUMENTING_CONFIG_SPEC.md`](SELF_DOCUMENTING_CONFIG_SPEC.md). Generated character and terminology files share the starter template text; exact previews use those same bytes. Comments beside every setting explain units, accepted values, dependencies and save compatibility. No new configuration categories exist.
 
-Changing RPG enablement for existing campaigns can invalidate saves. Deliberately increase `game.toml` `save_compatibility_version` for incompatible changes; do not change Cargo or RORK format versions. Terminology-only edits need no revision change. The loader rejects root-level character.fig/terminology.fig with placement guidance; files belong under config/.
+Changing RPG enablement for existing campaigns can invalidate saves. Deliberately increase `game.toml` `save_compatibility_version` for incompatible changes; do not change Cargo or RORK format versions. Terminology-only edits need no revision change. The loader rejects root-level character.fig/terminology.fig/combat.fig with placement guidance; files belong under config/.
 
 
 ## Phase 2E-B FIG editor candidate (2026-11-18)
@@ -75,3 +75,12 @@ Changing RPG enablement for existing campaigns can invalidate saves. Deliberatel
 Menu 3 edits character enablement, every current progression field and both implemented display labels. Displayed defaults and explanations come from the same commented templates used for new adventures. Existing omitted-enabled semantics remain true; absent files are only created after confirmed Save. Inline display tables, comments and omitted unrelated defaults survive. Unsupported categories are not generated. Full validation prevents disabling RPG while dependent content remains and checks overflow/cross-field constraints even while disabled.
 
 Branch codex/phase-2e-fig-editor stacks on interactions #11 (after #8-#10). Windows: 193 tests, fmt and strict Clippy pass. Tests cover all fields, exact previews, new missing config directories, legacy semantics, inline labels, cancel, invalid cross-field repair and dependent RPG content. Self-review improved failed-save handling: proposed drafts remain available for correction; stale/recovery conflicts instruct users to discard/reopen after review. No save compatibility or Cargo version is changed automatically. Native Linux/human usability and final integrated acceptance remain pending.
+
+## Engine expansion phase 7: implemented combat settings
+
+New adventures include commented config/combat.fig with minimum_damage=1 and
+retaliation="combat". Valid minimum damage is 0..1000000; full immunity still
+deals zero. Retaliation supports combat, every_action or none. See [exact behavior,
+status ordering and equipment](SYSTEMS.md). This FIG never enables RPG by itself.
+Guided editing follows in expansion phase 8. Currency remains game.toml content
+and no longer requires RPG.

@@ -39,6 +39,12 @@ struct Scenario {
     hidden: Option<Vec<String>>,
     #[serde(default)]
     quantities: Vec<QuantityAssertion>,
+    wallet: Option<std::collections::BTreeMap<String, u64>>,
+    learned_abilities: Option<Vec<String>>,
+    equipped: Option<std::collections::BTreeMap<String, String>>,
+    statuses: Option<std::collections::BTreeMap<String, u32>>,
+    hp: Option<u32>,
+    mp: Option<u32>,
     turn: Option<u64>,
     timers: Option<std::collections::BTreeMap<String, u32>>,
     quests: Option<std::collections::BTreeMap<String, String>>,
@@ -204,6 +210,54 @@ pub fn run(root: &Path, path: &Path, output: &mut impl Write) -> Result<(), Stri
                     state.dialogue.npcs
                 ));
             }
+        }
+        if case.wallet.as_ref().is_some_and(|v| v != &state.wallet) {
+            errors.push(format!(
+                "Wallet: expected {:?}, got {:?}",
+                case.wallet, state.wallet
+            ));
+        }
+        if case
+            .learned_abilities
+            .as_ref()
+            .is_some_and(|v| v.iter().cloned().collect::<HashSet<_>>() != state.learned_abilities)
+        {
+            errors.push(format!(
+                "Abilities: expected {:?}, got {:?}",
+                case.learned_abilities, state.learned_abilities
+            ));
+        }
+        if case
+            .equipped
+            .as_ref()
+            .is_some_and(|v| v != &state.systems.equipped)
+        {
+            errors.push(format!(
+                "Equipment: expected {:?}, got {:?}",
+                case.equipped, state.systems.equipped
+            ));
+        }
+        if case
+            .statuses
+            .as_ref()
+            .is_some_and(|v| v != &state.systems.statuses)
+        {
+            errors.push(format!(
+                "Statuses: expected {:?}, got {:?}",
+                case.statuses, state.systems.statuses
+            ));
+        }
+        if case
+            .hp
+            .is_some_and(|v| state.character.as_ref().is_none_or(|c| c.hp != v))
+        {
+            errors.push(format!("Expected player HP {:?}", case.hp));
+        }
+        if case
+            .mp
+            .is_some_and(|v| state.character.as_ref().is_none_or(|c| c.mp != v))
+        {
+            errors.push(format!("Expected player MP {:?}", case.mp));
         }
         if case.turn.is_some_and(|n| n != state.events.turn) {
             errors.push(format!(

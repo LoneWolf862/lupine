@@ -1,0 +1,8 @@
+# Implemented combat settings; does not enable RPG by itself.
+# Minimum damage after armor/resistance: 0..1000000. Full immunity always deals zero.
+# Default 1 preserves existing combat balance. Changes affect future actions, not save bytes.
+minimum_damage = 1
+# combat: retaliate after successful offensive combat actions (default).
+# every_action: retaliate after any successful action, including wait/equip/dialogue.
+# none: disable enemy retaliation. Reading, failed actions and cancellation stay free.
+retaliation = "combat"
