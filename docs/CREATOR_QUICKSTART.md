@@ -1,14 +1,18 @@
 # Lupine Adventure Creator
 
-## Phase 2I creator usability candidate (2026-11-18)
+Current source: 0.10.0-dev.1 development candidate. Creator work through Phase 2I is merged.
+Phase 3 adds startup, player input and export in draft PRs #20â€“#24; published v0.9.0 binaries
+do not include these changes. [Verification](PHASE_3_REVIEW.md).
 
-Draft [PR #19](https://github.com/LoneWolf862/lupine/pull/19) targets `codex/phase-2h-rpg-integration`. Existing-definition selectors accept numbers, exact IDs and unambiguous names. Blank selections stay open; 0/back explicitly returns. Locked doors and teaching items use one selection screen. Door review retains answers after declined Save; description ordering and multiline recovery are improved. See the [audit, navigation rules, verification, remaining limits and Windows procedure](CREATOR_USABILITY_AUDIT.md). Nested 0/back follows its displayed finish/discard label; cancel abandons unsaved edits while earlier confirmed saves remain. Exact previews, Snapshot safety and manual-only RORK saves remain required.
+## Export and share
 
-## RPG content menus (Phases 2G/2H candidate)
-
-Choose **R** after explicitly enabling RPG in menu 3. Submenu: 1 enemies, 2 weapons, 3 shops, 4 currencies, 5 room encounters, 6 items, 7 spells. N creates; P previews; S saves with explicit confirmation. Room Options still uses 5 for preview and 6 for Save. Encounter settings N creates a pending enemy in the room transaction; E revises it. Shops expose all six current offer types and prerequisite managers. Weapon I opens Item Manager; prerequisite saves are separate and explicit. Currency IDs stay fixed in game.toml; starting balances affect fresh games. See [complete workflow, limits and testing](RPG_AUTHORING_DEVELOPMENT.md).
-
-Status: Core creator PRs #8-#13 are merged. RPG authoring PRs #14-#18 are draft candidates; see [current verification and merge guide](RPG_AUTHORING_DEVELOPMENT.md). Earlier milestone behavior is recorded in CODEX_HANDOFF.md.
+Choose E, select Windows x64 / Linux x64 / Both, choose compatible local runtimes and a
+new destination outside the source adventure, review the files and explicitly confirm.
+Enter uses the running engine for its native OS. Other runtimes need matching
+lupine.runtime.toml metadata from the same trusted build. No runtime is downloaded.
+Share the complete platform folder, optionally zipped. Source files stay untouched;
+personal RORK saves and development files are excluded. Missing binaries/invalid content
+produce actionable errors. [Full installation/export instructions](INSTALLATION.md).
 
 ## Start or reopen
 
@@ -20,7 +24,7 @@ cargo run -- creator
 cargo run -- creator "my_adventure"
 ```
 
-With a standalone executable, replace `cargo run --` with `.\lupine.exe` on Windows or `./lupine` on Linux. Standalone distribution remains separate work. No-argument Lupine still launches the engine fixture.
+With a standalone executable, replace `cargo run --` with `.\lupine.exe` on Windows or `./lupine` on Linux. No-argument Lupine opens the startup menu; choose Create or Edit. The explicit fixture command opens the test adventure.
 
 New setup explains the adventure title, destination folder, opening room and description. Enter accepts defaults; `advanced` at welcome exposes custom IDs and direct previews. Review before creating. Existing folders are never overwritten. Successful creation enters the creator; opening an existing project never rewrites it.
 
@@ -37,6 +41,8 @@ New setup explains the adventure title, destination folder, opening room and des
 | 7 | Create/edit rooms, connections, conditional descriptions and encounters. |
 | 8 | Help. |
 | 9 | Interactions, conditional exits and the guided locked-door recipe. |
+| R | Enemies, weapons, shops, currencies and encounter settings. |
+| E | Validate, preview and export a Windows/Linux adventure package. |
 | 0 | Exit the selected project; return to the launcher if opened through it. |
 
 The real nested ASCII file tree refreshes after completed operations and on returning to the creator. Enter refreshes after external edits. Existing empty directories are shown; absent files are not invented. Inspection is bounded to 2048 entries/eight nested levels; display shows at most 160 entries and abbreviates long names. Links/junctions are not followed. Inspection problems block play/validation/editing.
@@ -45,7 +51,7 @@ The real nested ASCII file tree refreshes after completed operations and on retu
 
 `?` explains fields; Enter accepts the displayed current/default value. `back` returns from a prompt/menu; `cancel` abandons the current operation. EOF discards unfinished work. Prefix literal control words with a backslash. Lists use numbered choices; N creates in content managers. Changes stay in memory until explicit Save confirmation. Existing IDs remain stable; changing a display name does not rename references or filenames.
 
-Most editors use S to save; Room Options uses 6. Every save validates the proposed adventure before publication. Declining Save retains ordinary editor drafts; the one-pass locked-door recipe returns without writing if declined. For ordinary prose, `/multi` begins multiline entry and `/end` finishes. Use the indicated escape for literal controls. Artwork entry has its own whitespace-preserving instructions below.
+Most editors use S to save; Room Options uses 6. Every save validates the proposed adventure before publication. Declining Save retains ordinary editor drafts; the locked-door recipe retains its review and offers revision if declined. For ordinary prose, `/multi` begins multiline entry and `/end` finishes. Use the indicated escape for literal controls. Artwork entry has its own whitespace-preserving instructions below.
 
 The exact-preview markers enclose the same bytes used for publication. TOML-aware edits preserve unedited properties, comments and existing CRLF style; changed values may use different quoting. Explicitly deleting a property/entry also removes its attached comments. Reordering variants can move table blocks while retaining their content/comments. Unsupported representations are refused rather than destructively rewritten.
 
@@ -57,7 +63,7 @@ Connections can lead from another room into the selected room or outward from it
 
 Room Options: 1 name, 2 description, 3 connections, 4 properties, 5 exact previews, 6 Save, 7 advanced settings, 0 discard. Advanced settings edit conditional descriptions and encounter tables. First-match descriptions replace the default when all their conditions pass. Select an existing variant to edit just its text or requirements; remove/reorder variants explicitly.
 
-Encounters require explicitly enabled RPG; select an existing enemy or use N to create one in the room draft. Configure chance 0–100, group size 1–12 with minimum <= maximum, persistence (`temporary`, `room`, `unique`), weighted enemy choices and flag requirements. Weights are relative, not percentages. Return to Room Options to preview/save the whole room draft. Exact enemy HP stays private during gameplay.
+Encounters require explicitly enabled RPG; select an existing enemy or use N to create one in the room draft. Configure chance 0â€“100, group size 1â€“12 with minimum <= maximum, persistence (`temporary`, `room`, `unique`), weighted enemy choices and flag requirements. Weights are relative, not percentages. Return to Room Options to preview/save the whole room draft. Exact enemy HP stays private during gameplay.
 
 ## Items
 
@@ -107,4 +113,4 @@ Hard-link support is required. Publication is recoverable, not crash-atomic acro
 
 Follow the [review procedure](CREATOR_COMPLETION_REVIEW.md). The automated `tests/fixtures/creator_acceptance.txt` transcript builds a nontrivial neutral adventure entirely through the CLI and is exercised by `cargo test --test creator_acceptance`. It is a test fixture, not HOWLBOUND story content or a human usability result.
 
-Current limits: stable-ID rename/deletion migrations, guided crash recovery and packaging are not implemented. Transaction-binding definition editing remains separate; enemy, weapon, shop and currency managers are now available under R. Unusual condition/effect representations that cannot be safely edited receive a limitation message. Full text-file authoring and direct add/validate/play commands remain available.
+Current limits: stable-ID rename/deletion migrations and guided crash recovery are not implemented; export creates directories, with archives left to the user's normal ZIP tool. Transaction-binding definition editing remains separate; enemy, weapon, shop and currency managers are now available under R. Unusual condition/effect representations that cannot be safely edited receive a limitation message. Full text-file authoring and direct add/validate/play commands remain available.

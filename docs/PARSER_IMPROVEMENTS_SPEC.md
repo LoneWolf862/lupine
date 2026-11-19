@@ -1,6 +1,6 @@
 # Lupine Player Parser — Forgiving, Deterministic Input
 
-## Current pre-release policy (2026-11-18)
+## Policy recorded before Phase 3 (historical)
 
 Lupine is unreleased and pre-1.0, with no external users, published games or production deployments requiring development-version compatibility. Justified breaking API and format changes are allowed. Do not add obsolete-format loaders or unnecessary compatibility layers. Update bundled samples, templates, tests and current documentation together; preserve gameplay unless a change is intentional.
 
@@ -13,7 +13,7 @@ File responsibilities:
 Phase 1 relocates existing character fields/defaults/calculations without redesigning progression, adds display terminology, and updates creator guidance. No legacy `character.toml` loader. No save-format change is needed. Full wizard and parser upgrades are later phases.
 
 
-**Status: Planned improvements; do not replace existing parser.**
+**Status: Phase 3C is an implemented development candidate.** See [actual behavior and verification](PHASE_3_REVIEW.md). The design below is retained; pronouns and chaining remain future work.
 
 ## Player-facing objective
 
@@ -77,4 +77,4 @@ Test case/whitespace/articles, aliases, multiword names, exact-before-partial ma
 
 ## Implementation entry points
 
-Read `src/parser.rs`, `src/commands.rs`, `src/engine.rs`, `src/runner.rs`, and existing parser/gameplay/RPG tests. The Phase 0 audit is complete. Parser implementation remains a separate phase; Phase 1 changes display terminology only, not vocabulary.
+Read `src/parser.rs`, `src/commands.rs`, `src/engine.rs`, `src/runner.rs`, and existing parser/gameplay/RPG tests. The Phase 0 audit is complete. Phase 3C adds resolution.rs and player_input.rs before existing action validation.

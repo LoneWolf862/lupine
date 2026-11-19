@@ -102,8 +102,10 @@ fn native_package_is_valid_launchable_and_excludes_saves_and_development_files()
         .all(|(p, _)| p.extension().is_none_or(|e| e != "rork")
             && !p.to_string_lossy().contains("notes.rs")
             && !p.starts_with("adventure/target")));
+    let unrelated = f.root.join("Empty working directory");
+    fs::create_dir(&unrelated).unwrap();
     let mut child = Command::new(package.join(Target::host().unwrap().executable()))
-        .current_dir(&f.root)
+        .current_dir(&unrelated)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())

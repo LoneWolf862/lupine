@@ -6,6 +6,10 @@ fn main() -> std::io::Result<()> {
     let args: Vec<String> = std::env::args().collect();
     let mut input = lupine::terminal::stdin()?;
     match args.as_slice() {
+        [_, command] if matches!(command.as_str(), "--version" | "version" | "-V") => {
+            println!("Lupine {}", env!("CARGO_PKG_VERSION"));
+            Ok(())
+        }
         [_, command] if command == "runtime-manifest" => {
             print!(
                 "{}",
@@ -21,7 +25,10 @@ fn main() -> std::io::Result<()> {
         ),
         [_, command] if command == "fixture" => lupine::runner::run_with_io_and_saves(
             fixture_world::fixture_world(),
-            "LUPINE v0.8.4 — Engine Test Adventure",
+            &format!(
+                "LUPINE {} — Engine Test Adventure",
+                env!("CARGO_PKG_VERSION")
+            ),
             "lupine_fixture",
             &lupine::save_files::default_save_root()?,
             &mut input,
@@ -118,7 +125,7 @@ fn main() -> std::io::Result<()> {
             Ok(())
         }
         [_, command] if command == "help" => {
-            println!("Lupine authoring commands:");
+            println!("Lupine {} authoring commands:", env!("CARGO_PKG_VERSION"));
             println!("  lupine creator [directory]       (create/open, edit content/config, validate and play)");
             println!("  lupine new                       (guided wizard)");
             println!("  lupine new <directory> <game-id> <title words...>");
@@ -127,6 +134,9 @@ fn main() -> std::io::Result<()> {
             println!("  lupine add art <directory> <art-id> [--dynamic]");
             println!("  lupine validate <directory>");
             println!("  lupine play <directory>");
+            println!("  lupine --version");
+            println!("  lupine runtime-manifest          (build metadata for offline export)");
+            println!("Creator menu E exports a validated adventure for Windows/Linux x64.");
             println!("  lupine fixture                   (development test adventure)");
             println!("Running `lupine` without arguments opens the startup menu.");
             Ok(())

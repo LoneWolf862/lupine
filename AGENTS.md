@@ -1,9 +1,5 @@
 # Lupine — contributor / coding-agent instructions
 
-## Phase 2I creator usability candidate (2026-11-18)
-
-Draft [PR #19](https://github.com/LoneWolf862/lupine/pull/19) targets `codex/phase-2h-rpg-integration`. Existing-definition selectors now accept numbers, exact IDs and unambiguous names; blank input keeps selections open and 0/back explicitly returns. Locked doors and teaching items use one selection screen. Door preview/declined-save revision, description ordering and multiline recovery are improved. Read the [audit, navigation rules, verification, remaining limits and Windows test procedure](docs/CREATOR_USABILITY_AUDIT.md) before review. Nested 0/back behavior follows its displayed finish/discard label; cancel abandons unsaved edits, while previous confirmed saves remain. Exact previews, Snapshot safety and manual-only RORK saves remain required.
-
 ## Identity and product boundaries
 
 - **Lupine** is a reusable, open-source, offline Rust **interactive fiction engine**, not a particular narrative.
@@ -13,7 +9,7 @@ Draft [PR #19](https://github.com/LoneWolf862/lupine/pull/19) targets `codex/pha
 
 ## Current pre-release policy (2026-11-18)
 
-Lupine is unreleased and pre-1.0, with no external users, published games or production deployments requiring development-version compatibility. Justified breaking API and format changes are allowed. Do not add obsolete-format loaders or unnecessary compatibility layers. Update bundled samples, templates, tests and current documentation together; preserve gameplay unless a change is intentional.
+Lupine is pre-1.0. The published v0.9.0 standalone release remains unchanged; current development uses 0.10.0-dev.1. No known external games require development-version compatibility. Justified breaking API and format changes are allowed. Do not add obsolete-format loaders or unnecessary compatibility layers. Update bundled samples, templates, tests and current documentation together; preserve gameplay unless a change is intentional.
 
 File responsibilities:
 
@@ -21,7 +17,7 @@ File responsibilities:
 - `.fig`: game-wide engine configuration and presets, using standard TOML syntax. Character settings belong exclusively in `config/character.fig`; terminology belongs in `config/terminology.fig`. Starting stats, progression and XP scaling are configuration. Future gameplay/balancing options require implemented behavior.
 - `.rork`: mutable player progress, saved strictly manually. No autosaving, save-on-quit or automatic checkpoints.
 
-Phase 1 relocates existing character fields/defaults/calculations without redesigning progression, adds display terminology, and updates creator guidance. No legacy `character.toml` loader. No save-format change is needed. Full wizard and parser upgrades are later phases.
+Character/progression and terminology FIGs, the guided creator and Phase 3 parser are implemented. No legacy character.toml loader. Do not alter RORK format or game save compatibility versions for engine metadata changes.
 
 ## Architecture rules
 
@@ -39,12 +35,30 @@ Phase 1 relocates existing character fields/defaults/calculations without redesi
 - Work in small, reviewable increments. Add tests for parser ambiguity, missing objects, invalid worlds, and state transitions as features arrive.
 - Before a milestone is marked verified, run `cargo test`, `cargo fmt --all -- --check`, and `cargo clippy --all-targets -- -D warnings` on an available Rust toolchain.
 - Update documentation and record what is **implemented**, **proposed**, or **not verified**; do not claim features exist until tested.
-- The user prefers collaborative file/patch/ZIP updates and reviews changes before implementation; don't assume Codex automation is the default.
+- This Phase 3 task explicitly authorizes autonomous implementation/test/refinement. Use isolated worktrees under the user's Codex worktrees directory, one feature branch per major phase, frequent checkpoint pushes and draft PRs targeting their immediate dependency. Never modify the owner's primary checkout, push to main, force-push published history, self-merge, or publish a release without human approval.
 - Protect CSE 310 requirements and the instructor README-template obligation; do not invent time logs or submission evidence.
 
-## Current RPG creator candidate (2026-11-18)
+## Current creator and player boundaries
 
-Core creator PRs #8-#13 are merged. RPG authoring PRs #14-#18 are stacked drafts, not merged. Read docs/RPG_AUTHORING_DEVELOPMENT.md for actual scope and verification. Preserve Snapshot publication, exact previews, stable IDs and explicit confirmation. Enemies, weapons, shops and currencies have guided editors; currencies remain in game.toml. Pending encounter enemies publish with room drafts. Related-manager prerequisite saves remain separate and explicit. Do not rename IDs or weapon item associations, rewrite saves, change gameplay/versions, or introduce autosaving. Transaction-object bindings, ID migrations and automated recovery remain separate work. Every task requires isolated branches/worktrees, checkpoint pushes, reviewable PRs and no self-merge. The published v0.9.0 release is separate from this development source; do not bump Cargo just for creator work.
+Creator work through Phase 2I (PRs #8–#19) is merged. Preserve Snapshot publication,
+exact authored previews, stable IDs and explicit confirmation. Related-manager prerequisite
+saves remain separate. Enemies, weapons, shops and currencies have guided editors;
+currencies remain in game.toml. Pending enemies publish with room drafts. Do not rename
+IDs or weapon associations, rewrite saves or introduce autosaving. Transaction bindings,
+ID migration and guided editor recovery remain separate work.
+
+Phase 3 startup, history, deterministic resolution and offline export are development
+candidates in draft PRs #20–#24. Read docs/PHASE_3_REVIEW.md for actual verification.
+No-argument startup is a menu; fixture explicitly runs the Rust test adventure. Preserve
+redirected input and scriptable BufRead APIs. Suggestions/clarification never mutate state;
+ordinary item use has priority over spell aliases. Exact enemy HP stays private.
+
+Export requires a new destination outside the adventure and explicit confirmation. Never
+include RORK saves, silently download runtimes or relabel a binary for another OS. Preserve
+target/version/digest checks and the incomplete-export marker. Keep dependency notices with
+exported engines; regenerate them from Cargo.lock after dependency changes. Version metadata
+comes from Cargo; keep the published v0.9.0 tag immutable. Official release publication is
+separate from development CI artifacts.
 
 ## Historical milestones -- not current instructions
 
@@ -110,6 +124,6 @@ Build an optional TOML-configured RPG system, detailed in `docs/COMBAT_RPG_SPEC.
 Prior sections are historical milestone instructions, not the current feature inventory. v0.8.4-A and v0.8.4-B were verified by the user on Windows. The v0.8.4-C candidate consolidates defeat text, moves the test module to end-of-file for Clippy, updates documentation and Cargo version, and adds sample-loading regression coverage. Before marking C released, verify with `cargo fmt --all && cargo test && cargo clippy --all-targets -- -D warnings` and interactive play on the user's Windows setup. **Do not change save format or game save compatibility versions just to change the Cargo crate version.** Never autosave. Target v0.9 for standalone Windows/Linux packaging, and do not claim Linux native testing before actually running it.
 
 <!-- lupine-phase-2c2-spec -->
-## Approved next phase — self-documenting FIG files (Phase 2C.2)
+## Historical approved phase — self-documenting FIG files (Phase 2C.2)
 
 Read `docs/SELF_DOCUMENTING_CONFIG_SPEC.md` before changing new-adventure scaffolding or FIG activation. Every **new** game should expose implemented configuration defaults in commented FIG files, while narrative-only behavior remains the default. `config/character.fig` currently enables RPG by its mere presence; change this deliberately via an explicit opt-in `enabled` field and test existing RPG games/migrations. Do not create unsupported gameplay/progression/combat/parser FIG files. Keep content TOML, configuration FIG, manual player RORK saves strictly separate. Every Codex task uses an isolated feature branch, frequent checkpoint pushes, a reviewable PR, and no self-merge or direct pushes to `main`.

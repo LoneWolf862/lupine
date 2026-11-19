@@ -1,5 +1,18 @@
 # Lupine development roadmap
 
+## Current development: Phase 3
+
+Creator work through Phase 2I is merged. Draft merge order: #20 startup → #21 history →
+#22 parser → #23 export → #24 release readiness. Version 0.10.0-dev.1 identifies current
+development; v0.9.0 remains unchanged. [Actual verification](PHASE_3_REVIEW.md).
+
+Next: human beginner feedback, native CachyOS acceptance, transaction-binding authoring,
+stable-ID migration, guided editor recovery and optional pronouns/chained commands.
+
+## Historical roadmap/backlog entries
+
+Earlier planning record, not the current feature inventory:
+
 ## Current RPG authoring delivery (2026-11-18)
 
 Creator PRs #8-#13 are merged. Draft #14 enemies, #15 weapons, #16 shops, #17 currencies and #18 integration form the next review stack. Their combined creator supports wizard-authored combat/economy adventures; see [verification and merge order](RPG_AUTHORING_DEVELOPMENT.md). The published v0.9.0 release remains separate from these development changes. Historical milestones below are not the current feature inventory.
@@ -60,7 +73,7 @@ Optional weapon and spell TOML definitions; learned abilities tracked separately
 
 | Phase | Scope | Status |
 |---|---|---|
-| 2A�2C.2 | Setup, persistent navigation, rooms, presentation and self-documenting FIGs | Merged through PR #7 |
+| 2A–2C.2 | Setup, persistent navigation, rooms, presentation and self-documenting FIGs | Merged through PR #7 |
 | 2D-A | Items and shared content transactions | Implemented candidate, PR #8 |
 | 2D-B | Spell/ability fields and teaching links | Implemented candidate, PR #9; depends on #8 |
 | 2D-C | Multiline artwork and room variants | Implemented candidate, PR #10; depends on #9 |

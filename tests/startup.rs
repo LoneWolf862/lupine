@@ -2,6 +2,19 @@ use lupine::startup::{discover, run};
 use std::{io::Cursor, path::PathBuf};
 
 #[test]
+fn version_matches_cargo_metadata() {
+    let output = std::process::Command::new(env!("CARGO_BIN_EXE_lupine"))
+        .arg("--version")
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    assert_eq!(
+        String::from_utf8(output.stdout).unwrap().trim(),
+        format!("Lupine {}", env!("CARGO_PKG_VERSION"))
+    );
+}
+
+#[test]
 fn actual_cli_without_arguments_and_explicit_fixture() {
     use std::process::{Command, Stdio};
     let output = Command::new(env!("CARGO_BIN_EXE_lupine"))
