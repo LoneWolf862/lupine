@@ -1,0 +1,4 @@
+format_version=1
+id='dialogue_demo'
+title='Dialogue mechanics demonstration'
+starting_room='start'

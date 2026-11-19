@@ -31,25 +31,36 @@ fn category(file: &Path, path: &[String], scope: &str) -> Option<String> {
         ],
         ("", "actions.toml") => vec!["actions.*.requires.*", "actions.*.outcomes.*.when.*"],
         ("", "events.toml") => vec!["events.*.requires.*"],
+        ("", "dialogue.toml") => vec![
+            "npcs.*.requires.*",
+            "npcs.*.nodes.*.variants.*.when.*",
+            "npcs.*.nodes.*.choices.*.requires.*",
+        ],
         _ => vec![],
     };
     for prefix in condition_roots {
         let len = prefix.split('.').count();
         if path.len() > len && matches(&path[..len], prefix) {
-            return condition_reference(&path[len..], scope).map(str::to_owned);
+            return condition_reference(&path[len..], scope);
         }
     }
-    if parent.is_empty() && matches!(root, "interactions.toml" | "actions.toml" | "events.toml") {
+    if parent.is_empty()
+        && matches!(
+            root,
+            "interactions.toml" | "actions.toml" | "events.toml" | "dialogue.toml"
+        )
+    {
         for prefix in [
             "interactions.*.effects.*",
             "interactions.*.outcomes.*.effects.*",
             "events.*.effects.*",
+            "npcs.*.nodes.*.choices.*.effects.*",
             "actions.*.effects.*",
             "actions.*.outcomes.*.effects.*",
         ] {
             let len = prefix.split('.').count();
             if path.len() > len && matches(&path[..len], prefix) {
-                return effect_reference(&path[len..], scope).map(str::to_owned);
+                return effect_reference(&path[len..], scope);
             }
         }
     }
@@ -59,7 +70,7 @@ fn category(file: &Path, path: &[String], scope: &str) -> Option<String> {
         }
         let prefix = "consumable.effects.*";
         if path.len() > 3 && matches(&path[..3], prefix) {
-            return effect_reference(&path[3..], scope).map(str::to_owned);
+            return effect_reference(&path[3..], scope);
         }
     }
     if is("id") {
@@ -67,6 +78,12 @@ fn category(file: &Path, path: &[String], scope: &str) -> Option<String> {
             "rooms" | "items" | "spells" | "enemies" | "shops" => Some(parent.into()),
             _ => None,
         };
+    }
+    if parent.is_empty()
+        && root == "dialogue.toml"
+        && (is("npcs.*.start") || is("npcs.*.nodes.*.choices.*.next"))
+    {
+        return Some(format!("nodes:{}", path[1]));
     }
     let mut fields: Vec<(&str, &str)> = Vec::new();
     match parent {
@@ -100,6 +117,7 @@ fn category(file: &Path, path: &[String], scope: &str) -> Option<String> {
             ]);
         }
         "" => match root {
+            "dialogue.toml" => fields.push(("npcs.*.room", "rooms")),
             "events.toml" => fields.extend([
                 ("events.*.id", "events"),
                 ("events.*.on.enter", "rooms"),
@@ -156,38 +174,44 @@ fn category(file: &Path, path: &[String], scope: &str) -> Option<String> {
         .find(|(p, _)| is(p))
         .map(|(_, c)| c.into())
 }
-fn condition_reference(path: &[String], scope: &str) -> Option<&'static str> {
+fn condition_reference(path: &[String], scope: &str) -> Option<String> {
     let words = path.iter().map(String::as_str).collect::<Vec<_>>();
     match words.as_slice() {
         ["all" | "any", _, ..] => condition_reference(&path[2..], scope),
         ["not", ..] => condition_reference(&path[1..], scope),
         ["has_item" | "item_visible" | "container_open" | "container_locked"]
         | ["item_count", "item"]
-        | ["item_in_room", "item"] => Some("items"),
-        ["flag_set" | "flag_unset"] => Some("flags"),
-        ["in_room" | "visited"] | ["item_in_room", "room"] => Some("rooms"),
-        ["quest_stage", "quest"] => Some("quests"),
-        ["journal_has"] => Some("journal"),
-        ["timer_running"] => Some("timers"),
-        ["counter", "id"] => Some("counters"),
-        ["item_count", "location", "id"] => location_category(scope),
+        | ["item_in_room", "item"] => Some("items".into()),
+        ["flag_set" | "flag_unset"] => Some("flags".into()),
+        ["in_room" | "visited"] | ["item_in_room", "room"] => Some("rooms".into()),
+        ["npc_in_room" | "dialogue_node", "npc"] => Some("npcs".into()),
+        ["npc_in_room", "room"] => Some("rooms".into()),
+        ["dialogue_node", "node"] => Some(format!("nodes:{scope}")),
+        ["quest_stage", "quest"] => Some("quests".into()),
+        ["journal_has"] => Some("journal".into()),
+        ["timer_running"] => Some("timers".into()),
+        ["counter", "id"] => Some("counters".into()),
+        ["item_count", "location", "id"] => location_category(scope).map(str::to_owned),
         _ => None,
     }
 }
-fn effect_reference(path: &[String], scope: &str) -> Option<&'static str> {
+fn effect_reference(path: &[String], scope: &str) -> Option<String> {
     let words = path.iter().map(String::as_str).collect::<Vec<_>>();
     match words.as_slice() {
-        ["start_timer" | "cancel_timer"] => Some("timers"),
-        ["set_quest_stage", "quest"] => Some("quests"),
-        ["add_journal"] => Some("journal"),
-        ["end_game"] => Some("endings"),
-        ["set_flag" | "clear_flag"] => Some("flags"),
+        ["move_npc" | "set_dialogue", "npc"] => Some("npcs".into()),
+        ["move_npc", "room"] => Some("rooms".into()),
+        ["set_dialogue", "node"] => Some(format!("nodes:{scope}")),
+        ["start_timer" | "cancel_timer"] => Some("timers".into()),
+        ["set_quest_stage", "quest"] => Some("quests".into()),
+        ["add_journal"] => Some("journal".into()),
+        ["end_game"] => Some("endings".into()),
+        ["set_flag" | "clear_flag"] => Some("flags".into()),
         ["give_item" | "remove_item" | "reveal_item" | "hide_item"]
         | ["move_item_to_room" | "add_item" | "remove_quantity" | "transfer_item"
-        | "set_container", "item"] => Some("items"),
-        ["move_player"] | ["move_item_to_room", "room"] => Some("rooms"),
-        ["set_counter" | "add_counter", "id"] => Some("counters"),
-        ["transfer_item", "from" | "to", "id"] => location_category(scope),
+        | "set_container", "item"] => Some("items".into()),
+        ["move_player"] | ["move_item_to_room", "room"] => Some("rooms".into()),
+        ["set_counter" | "add_counter", "id"] => Some("counters".into()),
+        ["transfer_item", "from" | "to", "id"] => location_category(scope).map(str::to_owned),
         _ => None,
     }
 }
@@ -195,6 +219,7 @@ fn location_category(scope: &str) -> Option<&'static str> {
     match scope {
         "location:room" => Some("rooms"),
         "location:container" => Some("items"),
+        "location:npc" => Some("npcs"),
         _ => None,
     }
 }
@@ -206,7 +231,8 @@ fn walk(
 ) {
     if let Some(t) = item.as_table_like_mut() {
         let scope = t
-            .get("shop")
+            .get("npc")
+            .or_else(|| t.get("shop"))
             .and_then(Item::as_str)
             .unwrap_or(scope)
             .to_owned();
@@ -224,7 +250,8 @@ fn walk(
         for (i, t) in a.iter_mut().enumerate() {
             path.push(i.to_string());
             let scope = t
-                .get("shop")
+                .get("npc")
+                .or_else(|| t.get("shop"))
                 .and_then(Item::as_str)
                 .unwrap_or(scope)
                 .to_owned();
@@ -247,7 +274,8 @@ fn walk_value(
 ) {
     if let Some(t) = v.as_inline_table_mut() {
         let scope = t
-            .get("shop")
+            .get("npc")
+            .or_else(|| t.get("shop"))
             .and_then(Value::as_str)
             .unwrap_or(scope)
             .to_owned();
@@ -282,6 +310,7 @@ fn documents(s: &Snapshot) -> Result<Vec<Document>, String> {
     }
     for name in [
         "events.toml",
+        "dialogue.toml",
         "actions.toml",
         "rules.toml",
         "game.toml",
@@ -320,6 +349,13 @@ fn inventory(s: &Snapshot) -> Result<BTreeMap<String, BTreeSet<String>>, String>
     all.entry("flags".into())
         .or_default()
         .extend(a.game.world.rules.flags.keys().cloned());
+    all.insert(
+        "npcs".into(),
+        a.game.world.dialogue.npcs.keys().cloned().collect(),
+    );
+    for (id, npc) in &a.game.world.dialogue.npcs {
+        all.insert(format!("nodes:{id}"), npc.nodes.keys().cloned().collect());
+    }
     all.insert(
         "counters".into(),
         a.game.world.rules.counters.keys().cloned().collect(),
@@ -404,8 +440,18 @@ pub(super) fn plan(
         if (d.path == Path::new("rules.toml") && matches!(kind, "flags" | "counters"))
             || (d.path == Path::new("events.toml")
                 && matches!(kind, "timers" | "quests" | "journal" | "endings"))
+            || (d.path == Path::new("dialogue.toml")
+                && (kind == "npcs" || kind.starts_with("nodes:")))
         {
-            if let Some(entry) = d.doc.get_mut(kind) {
+            let declaration = if let Some(npc) = kind.strip_prefix("nodes:") {
+                d.doc
+                    .get_mut("npcs")
+                    .and_then(|v| v.get_mut(npc))
+                    .and_then(|v| v.get_mut("nodes"))
+            } else {
+                d.doc.get_mut(kind)
+            };
+            if let Some(entry) = declaration {
                 let changed = if let Some(table) = entry.as_table_mut() {
                     if let Some((key, value)) = table.remove_entry(old) {
                         table.insert_formatted(

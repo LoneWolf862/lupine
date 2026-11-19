@@ -20,6 +20,7 @@ baseline fields below with nested conditions, effects and ordered interaction ou
 | items/*.toml | id, name, description, portable; starting_room or initial | aliases=[]; descriptions=[]; hidden=false; stackable=false; quantity=1; container; consumable. See [object reference](OBJECTS.md) |
 | interactions.toml | none | interactions=[]; exit_rules=[] |
 | actions.toml | actions array; see [actions grammar](ACTIONS.md) | room, target/item bindings, shared rules/outcomes |
+| dialogue.toml | none | npcs map, conditional nodes/choices and transfers; see [dialogue reference](DIALOGUE.md) |
 | events.toml | none | events, timers, quests, journal, endings; see [event reference](EVENTS.md) |
 | rules.toml | none | flags={} initial booleans; counters={} initial signed integers |
 | weapons/*.toml | item, damage (positive integer) | damage_type="physical" (descriptive only, no resistance behavior) |

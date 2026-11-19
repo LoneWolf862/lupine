@@ -91,6 +91,7 @@ fn native_package_is_valid_launchable_and_excludes_saves_and_development_files()
     }
     fs::create_dir(f.game.join("target")).unwrap();
     fs::write(f.game.join("target/dev.txt"), "dev").unwrap();
+    fs::write(f.game.join("dialogue.toml"),"[npcs.guide]\nname='Guide'\ndescription='Packaged NPC.'\nroom='start'\nstart='hello'\n[npcs.guide.nodes.hello]\ntext='Packaged dialogue executed.'\n").unwrap();
     let before = snapshot(&f.game);
     let path = f.plan("Export with spaces").unwrap().publish().unwrap();
     assert_eq!(snapshot(&f.game), before);
@@ -129,7 +130,7 @@ fn native_package_is_valid_launchable_and_excludes_saves_and_development_files()
         .stdin
         .take()
         .unwrap()
-        .write_all(b"1\n1\nlook\nquit\n4\n")
+        .write_all(b"1\n1\nlook\ntalk guide\nquit\n4\n")
         .unwrap();
     let result = child.wait_with_output().unwrap();
     assert!(result.status.success());
@@ -137,6 +138,7 @@ fn native_package_is_valid_launchable_and_excludes_saves_and_development_files()
     assert!(text.contains("Welcome to Lupine!"));
     assert!(text.contains("Powered by Lupine"), "{text}");
     assert!(text.contains("Packaged event executed."), "{text}");
+    assert!(text.contains("Packaged dialogue executed."), "{text}");
 }
 #[test]
 fn preflight_rejects_missing_wrong_or_mismatched_binaries_before_writing() {

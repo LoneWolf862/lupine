@@ -1,0 +1,25 @@
+format_version=1
+[[scenario]]
+name="opening and canceling are free"
+commands=["people","talk helper","cancel"]
+turn=0
+npcs={guide={room="start",node="hello"}}
+flags=[]
+contains=["Introduce yourself","Conversation canceled"]
+excludes=["Receive two tokens"]
+[[scenario]]
+name="conditional choice and transfer"
+commands=["talk guide","introduce","talk guide","receive"]
+turn=2
+npcs={guide={room="start",node="return"}}
+flags=["introduced"]
+quantities=[{item="token",location={kind="inventory"},quantity=2},{item="token",location={kind="npc",id="guide"},quantity=1}]
+contains=["We have already been introduced.","Two tokens received."]
+[[scenario]]
+name="give then meet elsewhere"
+commands=["talk guide","introduce","talk guide","receive","talk guide","give","talk guide","meet","talk guide","north","talk guide"]
+turn=5
+npcs={guide={room="hall",node="done"}}
+room="hall"
+quantities=[{item="token",location={kind="inventory"},quantity=1},{item="token",location={kind="npc",id="guide"},quantity=2}]
+contains=["The guide moves to the hall.","The meeting has finished."]

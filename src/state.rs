@@ -12,12 +12,14 @@ use crate::world::{ItemId, RoomId, World};
 pub enum ItemLocation {
     Room(RoomId),
     Container(ItemId),
+    Npc(String),
     Inventory,
     Consumed,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct GameState {
+    pub dialogue: crate::dialogue::Progress,
     pub events: crate::events::Progress,
     pub story: crate::rules::StoryState,
     pub current_room: RoomId,
@@ -41,6 +43,7 @@ pub struct GameState {
 impl GameState {
     pub fn new(world: &World) -> Self {
         Self {
+            dialogue: crate::dialogue::Progress::new(&world.dialogue),
             events: crate::events::Progress::new(&world.events),
             story: crate::rules::StoryState {
                 counters: world.rules.counters.clone(),

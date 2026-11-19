@@ -1,4 +1,4 @@
-//! RORK save-file format v4: explicit conversion between mutable GameState and TOML.
+//! RORK save-file format v5: explicit conversion between mutable GameState and TOML.
 //!
 //! This module does not trigger any saving. Terminal commands, save directories,
 //! confirmations, and crash-safe disk writes are implemented by the terminal layer.
@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use crate::state::GameState;
 use crate::world::World;
 
-pub const SAVE_FORMAT_VERSION: u32 = 4;
+pub const SAVE_FORMAT_VERSION: u32 = 5;
 
 fn default_save_compatibility_version() -> u32 {
     1
@@ -22,6 +22,7 @@ fn default_next_enemy_id() -> u64 {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct SaveFile {
+    dialogue: crate::dialogue::Progress,
     events: crate::events::Progress,
     story: crate::rules::StoryState,
     save_format_version: u32,
@@ -77,6 +78,7 @@ pub fn encode_save_with_compat(
     let mut flags = state.flags.iter().cloned().collect::<Vec<_>>();
     flags.sort();
     let file = SaveFile {
+        dialogue: state.dialogue.clone(),
         events: state.events.clone(),
         story: state.story.clone(),
         save_format_version: SAVE_FORMAT_VERSION,
@@ -172,6 +174,7 @@ pub fn decode_save_with_compat(
         return Err("RORK save has duplicate completed unique encounters".into());
     }
     let state = GameState {
+        dialogue: file.dialogue,
         events: file.events,
         story: file.story,
         current_room: file.current_room,
@@ -304,6 +307,7 @@ fn validate_state(world: &World, state: &GameState) -> Result<(), String> {
         ));
     }
     crate::objects::validate_state(world, state)?;
+    world.dialogue.validate_state(&state.dialogue, world)?;
     world.events.validate_state(&state.events)?;
     Ok(())
 }

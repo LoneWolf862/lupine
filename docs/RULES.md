@@ -95,8 +95,11 @@ outcomes, preserving prose and RORK bytes. Renaming can invalidate saved state.
 [Events and story progress](EVENTS.md) extend the shared vocabulary with quest, journal,
 timer and turn conditions, and timer/quest/journal/ending effects.
 
-RORK serialization is now version 4: [object state](OBJECTS.md), counters and visited
-rooms and event progress are persistent. Only version 4 loads in this development engine; keep the matching old engine
+RORK serialization is now version 5: [object state](OBJECTS.md), counters and visited
+rooms and event progress are persistent. Only version 5 loads in this development engine; keep the matching old engine
 and game for older saves. No obsolete loader or automatic migration is introduced.
 Game save-compatibility revisions remain author-controlled and independent of Cargo.
 The published v0.9.0 engine/tag are unchanged. See [save policy](SAVE_FORMAT.md).
+
+[NPC conditions and effects](DIALOGUE.md) add location/node queries, NPC movement
+and conversation transitions. Typed item locations also accept NPC ownership.

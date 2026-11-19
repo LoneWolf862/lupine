@@ -8,6 +8,7 @@ const DIRS: &[&str] = &[
 ];
 const FILES: &[&str] = &[
     "events.toml",
+    "dialogue.toml",
     "actions.toml",
     "rules.toml",
     "game.toml",

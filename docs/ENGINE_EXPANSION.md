@@ -13,8 +13,8 @@ The baseline is main 451f409, including merged Phase 4 PRs #26â€“#30.
 | 2 | Shared nested conditions, typed effects, counters, ordered outcomes | Verified locally; draft PR #32 |
 | 3 | Authored actions/aliases, fixed-object use, player feedback | Verified locally; draft PR #33 |
 | 4 | Hidden/starting inventory, containers, quantities, consumables | Verified locally and in CI; draft PR #34 |
-| 5 | Events, timers, quests, journals, endings | Verified locally; draft PR pending |
-| 6 | NPCs, conditional dialogue, choices, transfers and movement | Approved, not implemented |
+| 5 | Events, timers, quests, journals, endings | Verified locally; draft PR #35 |
+| 6 | NPCs, conditional dialogue, choices, transfers and movement | Implemented; verification in progress |
 | 7 | Independent economy, shared rewards, world abilities, equipment/status/combat configuration | Approved, not implemented |
 | 8 | Wizard coverage, project properties, repair, duplicate/delete/reference migration | Approved, not implemented |
 | 9 | Consistent controls, draft visibility, search and room-centered navigation | Approved, not implemented |
@@ -95,3 +95,7 @@ cover ordering, timer restart/cancel, cycles, atomic failure, acquisition/defeat
 endings, save/load, migration and native exported hooks. RORK 4 deliberately adds
 event progress; existing save bytes and compatibility revisions are untouched.
 CI, native CachyOS and human beginner acceptance are not yet claimed.
+
+[Draft PR #35](https://github.com/LoneWolf862/lupine/pull/35) targets phase 4.
+
+Phase 5 Windows/Ubuntu CI passed at 4d7c10a, Actions run 44602595164.

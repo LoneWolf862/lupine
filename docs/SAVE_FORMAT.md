@@ -1,8 +1,9 @@
 # RORK Save Format
 
-## Current development: version 4
+## Current development: version 5
 
-Engine expansion phase 5 adds persistent event/turn/timer/quest/journal/ending progress
+Engine expansion phase 6 adds NPC locations, conversation nodes and NPC object ownership
+(see [DIALOGUE.md](DIALOGUE.md)). Phase 5 added persistent event/turn/timer/quest/journal/ending progress
 (see [EVENTS.md](EVENTS.md)). Phase 4 added a canonical object ledger (quantities, typed placements,
 visibility and containers) alongside the counters and visited rooms introduced in
 phase 2. All round-trip on explicit manual save/load and validate against the current

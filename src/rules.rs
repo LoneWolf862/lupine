@@ -58,6 +58,14 @@ impl Compare {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case", deny_unknown_fields)]
 pub enum Condition {
+    NpcInRoom {
+        npc: String,
+        room: String,
+    },
+    DialogueNode {
+        npc: String,
+        node: String,
+    },
     QuestStage {
         quest: String,
         stage: String,
@@ -99,6 +107,16 @@ pub enum Condition {
 impl Condition {
     pub fn met(&self, state: &GameState) -> bool {
         match self {
+            Self::NpcInRoom { npc, room } => state
+                .dialogue
+                .npcs
+                .get(npc)
+                .is_some_and(|n| n.room.as_ref() == Some(room)),
+            Self::DialogueNode { npc, node } => state
+                .dialogue
+                .npcs
+                .get(npc)
+                .is_some_and(|n| &n.node == node),
             Self::QuestStage { quest, stage } => state.events.quests.get(quest) == Some(stage),
             Self::JournalHas(id) => state.events.journal.contains(id),
             Self::TimerRunning(id) => state.events.timers.contains_key(id),
@@ -145,6 +163,11 @@ impl Condition {
             return Err("Conditions exceed 16 nesting levels".into());
         }
         match self {
+            Self::NpcInRoom { npc, room: id } => {
+                known(&world.dialogue.npcs, npc, "NPC")?;
+                room(world, id)
+            }
+            Self::DialogueNode { npc, node } => crate::dialogue::node(world, npc, node),
             Self::QuestStage { quest, stage } => quest_stage(world, quest, stage),
             Self::JournalHas(id) => known(&world.events.journal, id, "journal entry"),
             Self::TimerRunning(id) => known(&world.events.timers, id, "timer"),
@@ -186,6 +209,15 @@ impl Condition {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case", deny_unknown_fields)]
 pub enum Effect {
+    MoveNpc {
+        npc: String,
+        #[serde(default)]
+        room: Option<String>,
+    },
+    SetDialogue {
+        npc: String,
+        node: String,
+    },
     StartTimer(String),
     CancelTimer(String),
     SetQuestStage {
@@ -239,6 +271,14 @@ pub enum Effect {
 impl Effect {
     pub fn validate(&self, world: &World) -> Result<(), String> {
         match self {
+            Self::MoveNpc { npc, room: id } => {
+                known(&world.dialogue.npcs, npc, "NPC")?;
+                if let Some(id) = id {
+                    room(world, id)?;
+                }
+                Ok(())
+            }
+            Self::SetDialogue { npc, node } => crate::dialogue::node(world, npc, node),
             Self::StartTimer(id) | Self::CancelTimer(id) => {
                 known(&world.events.timers, id, "timer")
             }
@@ -309,6 +349,22 @@ impl Effect {
         output: &mut Vec<String>,
     ) -> Result<(), String> {
         match self {
+            Self::MoveNpc { npc, room } => {
+                state
+                    .dialogue
+                    .npcs
+                    .get_mut(npc)
+                    .ok_or("Missing NPC state")?
+                    .room = room.clone();
+            }
+            Self::SetDialogue { npc, node } => {
+                state
+                    .dialogue
+                    .npcs
+                    .get_mut(npc)
+                    .ok_or("Missing NPC state")?
+                    .node = node.clone();
+            }
             Self::StartTimer(id) => crate::events::start_timer(world, state, id)?,
             Self::CancelTimer(id) => {
                 state.events.timers.remove(id);
@@ -465,6 +521,7 @@ pub fn apply(
         effect.apply(world, &mut draft, &mut text)?;
     }
     crate::objects::validate_state(world, &draft)?;
+    world.dialogue.validate_state(&draft.dialogue, world)?;
     world.events.validate_state(&draft.events)?;
     *state = draft;
     Ok(text)
