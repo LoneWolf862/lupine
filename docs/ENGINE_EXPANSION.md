@@ -10,13 +10,13 @@ The baseline is main 451f409, including merged Phase 4 PRs #26â€“#30.
 | Phase | Scope | Status |
 |---|---|---|
 | 1 | Current format reference, mechanic examples, file-based scenario testing | Verified locally and in CI; draft PR #31 |
-| 2 | Shared nested conditions, typed effects, counters, ordered outcomes | Verified locally; draft PR #32 |
-| 3 | Authored actions/aliases, fixed-object use, player feedback | Verified locally; draft PR #33 |
+| 2 | Shared nested conditions, typed effects, counters, ordered outcomes | Verified locally and in CI; draft PR #32 |
+| 3 | Authored actions/aliases, fixed-object use, player feedback | Verified locally and in CI; draft PR #33 |
 | 4 | Hidden/starting inventory, containers, quantities, consumables | Verified locally and in CI; draft PR #34 |
-| 5 | Events, timers, quests, journals, endings | Verified locally; draft PR #35 |
-| 6 | NPCs, conditional dialogue, choices, transfers and movement | Verified locally; draft PR #36 |
-| 7 | Independent economy, shared rewards, world abilities, equipment/status/combat configuration | Verified locally; draft PR #37 |
-| 8 | Wizard coverage, project properties, repair, duplicate/delete/reference migration | Verified locally; draft PR #38 |
+| 5 | Events, timers, quests, journals, endings | Verified locally and in CI; draft PR #35 |
+| 6 | NPCs, conditional dialogue, choices, transfers and movement | Verified locally and in CI; draft PR #36 |
+| 7 | Independent economy, shared rewards, world abilities, equipment/status/combat configuration | Verified locally and in CI; draft PR #37 |
+| 8 | Wizard coverage, project properties, repair, duplicate/delete/reference migration | Verified locally and in CI; draft PR #38 |
 | 9 | Consistent controls, draft visibility, search and room-centered navigation | Verified locally; draft PR #39 |
 
 Validation, debug/scenario support, docs, save round trips, references and export
@@ -138,8 +138,8 @@ independent ZIP extraction/launcher acceptance passed
 room navigation, portable file selections, draft retention, narrative economy/world
 abilities, raw replacement cancellation and verified local runtime discovery.
 RORK remains 6. [Draft PR #39](https://github.com/LoneWolf862/lupine/pull/39) targets
-phase 8. Final CI is pending; native CachyOS and human beginner acceptance are not
-claimed.
+phase 8. Final-head Windows/Ubuntu CI status is tracked on PR #39; native CachyOS and human
+beginner acceptance are not claimed.
 
 ## Review handoff
 
