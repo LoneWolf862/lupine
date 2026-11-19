@@ -621,29 +621,29 @@ impl StoryRules {
 
 /// Bound nested authored data before recursive deserialization.
 pub fn decode<T: serde::de::DeserializeOwned>(value: &toml::Value) -> Result<T, String> {
-    fn bound(v: &toml::Value, d: usize) -> Result<(), String> {
+    fn bound(v: &toml::Value, d: usize, limit: usize) -> Result<(), String> {
         if d > 40 {
             return Err("Rule exceeds nesting limit".into());
         }
         match v {
             toml::Value::Array(a) => {
-                if a.len() > 128 {
-                    return Err("Rule list exceeds 128 entries".into());
+                if a.len() > limit {
+                    return Err(format!("Rule list exceeds {limit} entries"));
                 }
                 for v in a {
-                    bound(v, d + 1)?;
+                    bound(v, d + 1, 128)?;
                 }
             }
             toml::Value::Table(t) => {
-                for v in t.values() {
-                    bound(v, d + 1)?;
+                for (key, v) in t {
+                    bound(v, d + 1, if key == "effects" { 256 } else { 128 })?;
                 }
             }
             _ => (),
         }
         Ok(())
     }
-    bound(value, 0)?;
+    bound(value, 0, 128)?;
     value
         .clone()
         .try_into()

@@ -515,8 +515,8 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
             continue;
         }
         if verb.eq_ignore_ascii_case("talk") {
-            let query = command[verb.len()..].trim();
-            let query = query.strip_prefix("to ").unwrap_or(query);
+            let query = crate::resolution::normalize(command[verb.len()..].trim());
+            let query = query.strip_prefix("to ").unwrap_or(&query);
             if query.is_empty() {
                 writeln!(output, "Talk to whom? Use talk <name>.\n")?;
                 continue;

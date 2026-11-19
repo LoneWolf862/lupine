@@ -238,3 +238,19 @@ fn npc_and_scoped_node_migrations_preserve_typed_refs_and_save_bytes() {
         "untouched"
     );
 }
+
+#[test]
+fn authored_effect_batches_accept_the_documented_limit_and_reject_excess() {
+    let effect = "{set_flag='introduced'}";
+    for (count, valid) in [(256, true), (257, false)] {
+        let text = format!(
+            "id='test'\nlabel='Test'\neffects=[{}]",
+            vec![effect; count].join(",")
+        );
+        let value: toml::Value = toml::from_str(&text).unwrap();
+        assert_eq!(
+            lupine::rules::decode::<dialogue::Choice>(&value).is_ok(),
+            valid
+        );
+    }
+}
