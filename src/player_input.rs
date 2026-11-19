@@ -39,8 +39,19 @@ fn choose(
     output: &mut impl Write,
 ) -> io::Result<Option<String>> {
     let found = resolution::matches(query, candidates);
+    choose_matches(query, candidates, found, false, input, output)
+}
+
+fn choose_matches(
+    query: &str,
+    candidates: &[Candidate],
+    found: Vec<&Candidate>,
+    force_choice: bool,
+    input: &mut impl BufRead,
+    output: &mut impl Write,
+) -> io::Result<Option<String>> {
     match found.as_slice() {
-        [one] => Ok(Some(one.id.clone())),
+        [one] if !force_choice => Ok(Some(one.id.clone())),
         [] => {
             writeln!(
                 output,
@@ -145,6 +156,18 @@ pub fn prepare(
 ) -> io::Result<Option<String>> {
     let normalized = resolution::normalize(line);
     let (verb, argument) = normalized.split_once(' ').unwrap_or((&normalized, ""));
+    let normalized = if matches!(verb, "stab" | "slash" | "hit" | "strike") {
+        format!("attack {argument}")
+    } else if matches!(verb, "cast" | "use") && !argument.contains(" on ") {
+        if let Some((source, target)) = argument.split_once(" at ") {
+            format!("{verb} {source} on {target}")
+        } else {
+            normalized
+        }
+    } else {
+        normalized
+    };
+    let (verb, argument) = normalized.split_once(' ').unwrap_or((&normalized, ""));
     let visible = resolution::items(world, state);
     let carried = visible
         .iter()
@@ -164,10 +187,47 @@ pub fn prepare(
 
     if verb == "attack" {
         if let Some((enemy, weapon)) = argument.rsplit_once(" with ") {
+            // Explicit attack-with may name a learned spell, but carried weapons
+            // retain priority and misspellings never select either automatically.
+            if resolution::matches(&clean_target(weapon), &weapons).is_empty()
+                && !resolution::matches(&clean_target(weapon), &spells).is_empty()
+            {
+                let Some(spell) = select(weapon, &spells, input, output)? else {
+                    return Ok(None);
+                };
+                let Some(enemy) = select(enemy, &enemy_choices, input, output)? else {
+                    return Ok(None);
+                };
+                return Ok(Some(format!("cast {spell} on {enemy}")));
+            }
             let Some(weapon) = select(weapon, &weapons, input, output)? else {
                 return Ok(None);
             };
             let Some(enemy) = select(enemy, &enemy_choices, input, output)? else {
+                return Ok(None);
+            };
+            return Ok(Some(format!("attack {enemy} with {weapon}")));
+        }
+        if !argument.is_empty() {
+            let Some(enemy) = select(argument, &enemy_choices, input, output)? else {
+                return Ok(None);
+            };
+            if weapons.is_empty() {
+                writeln!(
+                    output,
+                    "You have no carried weapons. Try 'weapons' or 'cast <spell> on <enemy>'.\n"
+                )?;
+                return Ok(None);
+            }
+            let Some(weapon) = choose_matches(
+                "weapon",
+                &weapons,
+                weapons.iter().collect(),
+                true,
+                input,
+                output,
+            )?
+            else {
                 return Ok(None);
             };
             return Ok(Some(format!("attack {enemy} with {weapon}")));
@@ -278,6 +338,65 @@ pub fn prepare(
         }
         // Reserved save arguments preserve original spelling and spacing.
         _ if matches!(verb, "save" | "load") => Ok(Some(line.trim().to_owned())),
-        _ => Ok(Some(normalized)),
+        _ => {
+            if matches!(verb, "yes" | "no") && argument.is_empty() {
+                writeln!(output, "There is no question waiting for yes/no. To use a suggestion, type the suggested command.\n")?;
+                return Ok(None);
+            }
+            if matches!(
+                parse_command(&normalized),
+                Err(crate::parser::ParseError::Unknown(_))
+            ) && matches!(verb, "go" | "move" | "walk" | "travel" | "run" | "head")
+                && !argument.is_empty()
+            {
+                writeln!(output, "Move using an exit direction, such as 'go north'. 'look' lists this room's exits. For an object here, try 'examine <object>' or 'use <object>'.\n")?;
+                return Ok(None);
+            }
+            // Bare names are guidance, never an inferred use/attack/cast action.
+            // Let all existing verbs reach their established runner handlers.
+            if matches!(
+                parse_command(&normalized),
+                Err(crate::parser::ParseError::Unknown(_))
+            ) && !matches!(
+                verb,
+                "attack"
+                    | "cast"
+                    | "learn"
+                    | "use"
+                    | "stats"
+                    | "enemies"
+                    | "weapons"
+                    | "spells"
+                    | "spellbook"
+                    | "wallet"
+                    | "money"
+                    | "balance"
+                    | "shop"
+                    | "buy"
+                    | "sell"
+                    | "saves"
+            ) {
+                if let [item] = resolution::matches(&normalized, &visible).as_slice() {
+                    writeln!(output, "Try 'examine {}' to inspect this object, or 'use {}' to interact with it.\n", item.id, item.id)?;
+                    return Ok(None);
+                }
+                for spell in &spells {
+                    for label in [&spell.id, &spell.name] {
+                        let label = resolution::normalize(label);
+                        if normalized == label || normalized.starts_with(&format!("{label} ")) {
+                            let target = normalized[label.len()..].trim();
+                            let target = if target.is_empty() {
+                                "<target>"
+                            } else {
+                                target
+                            };
+                            writeln!(output, "To cast this spell, type 'cast {} on {target}'. Use 'spellbook' to check its targets. No spell was cast.\n", spell.id)?;
+                            return Ok(None);
+                        }
+                    }
+                }
+            }
+            Ok(Some(normalized))
+        }
     }
 }

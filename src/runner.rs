@@ -374,6 +374,8 @@ pub fn run_configured_with_io<R: BufRead, W: Write>(
         state.character = Some(config.create_character().map_err(io::Error::other)?);
     }
     let mut last_saved = state.clone();
+    // Session-only convenience: selecting a slot never triggers a save itself.
+    let mut current_save: Option<String> = None;
     writeln!(output, "{title}")?;
     writeln!(output, "Powered by Lupine. Type 'help' for commands.\n")?;
     let mut rng = EncounterRng::from_clock();
@@ -687,20 +689,40 @@ pub fn run_configured_with_io<R: BufRead, W: Write>(
             continue;
         }
         if verb.eq_ignore_ascii_case("save") {
+            // An explicit name authorizes writing that slot. Bare save asks once
+            // before reusing the last successfully saved/loaded slot.
+            let mut overwrite_authorized = !argument.is_empty();
             let name = if argument.is_empty() {
-                match prompt(&mut input, &mut output, "Save name: ")? {
-                    Some(name) => name,
-                    None => break,
+                if let Some(name) = &current_save {
+                    match confirm(
+                        &mut input,
+                        &mut output,
+                        &format!("Overwrite current save '{name}'? (yes/no):"),
+                    )? {
+                        Some(true) => overwrite_authorized = true,
+                        Some(false) => (),
+                        None => break,
+                    }
+                }
+                if overwrite_authorized {
+                    current_save.clone().expect("confirmed current save")
+                } else {
+                    match prompt(&mut input, &mut output, "Save name:")? {
+                        Some(name) => name,
+                        None => break,
+                    }
                 }
             } else {
                 argument.to_owned()
             };
-            if name.trim().is_empty() {
+            if !overwrite_authorized
+                && matches!(name.to_ascii_lowercase().as_str(), "" | "cancel" | "back")
+            {
                 writeln!(output, "Save canceled.\n")?;
                 continue;
             }
             let overwrite = match slot_exists(root, game_id, &name) {
-                Ok(true) => {
+                Ok(true) if !overwrite_authorized => {
                     match confirm(
                         &mut input,
                         &mut output,
@@ -710,7 +732,7 @@ pub fn run_configured_with_io<R: BufRead, W: Write>(
                         None => break,
                     }
                 }
-                Ok(false) => false,
+                Ok(exists) => exists && overwrite_authorized,
                 Err(error) => {
                     writeln!(output, "Save failed: {error}\n")?;
                     continue;
@@ -731,6 +753,7 @@ pub fn run_configured_with_io<R: BufRead, W: Write>(
             ) {
                 Ok(path) => {
                     last_saved = state.clone();
+                    current_save = Some(name.clone());
                     writeln!(
                         output,
                         "Saved: {}\n",
@@ -829,6 +852,7 @@ pub fn run_configured_with_io<R: BufRead, W: Write>(
                     // C4: the validated encounter is restored directly from RORK;
                     // never reroll on load, since that could regenerate defeated enemies.
                     last_saved = state.clone();
+                    current_save = Some(name.clone());
                     writeln!(output, "Loaded: {name}\n")?;
                     show_room(&world, &state, &mut output)?;
                 }
@@ -894,17 +918,22 @@ pub fn run_configured_with_io<R: BufRead, W: Write>(
             Err(ParseError::MissingDirection) => {
                 writeln!(output, "Where would you like to go? Try 'go north'.\n")?
             }
-            Err(ParseError::MissingTarget(action)) => writeln!(
-                output,
-                "Please specify a target. Try 'help' for the syntax of {action}.\n"
-            )?,
+            Err(ParseError::MissingTarget(action)) => {
+                let example = match action {
+                    "take" => "take <object> or take all",
+                    "drop" => "drop <object> or drop all",
+                    "examine" => "examine <object>",
+                    _ => "use <item> on <target>",
+                };
+                writeln!(output, "Please specify a target. Try '{example}'. 'look' shows nearby objects; 'inventory' shows what you carry.\n")?;
+            }
             Err(ParseError::Unknown(command)) => {
                 writeln!(
                     output,
                     "I don't understand '{command}'. Type 'help' for commands."
                 )?;
                 if let Some(suggestion) = suggest_verb(&command) {
-                    writeln!(output, "Did you mean '{suggestion}'?")?;
+                    writeln!(output, "Did you mean '{suggestion}'? Type '{suggestion}' to try it; suggestions do not run automatically.")?;
                 }
                 writeln!(output)?;
             }
@@ -954,14 +983,59 @@ fn suggest_verb(command: &str) -> Option<String> {
         "west",
         "up",
         "down",
+        "go",
+        "move",
+        "walk",
+        "travel",
+        "run",
+        "head",
+        "leave",
+        "stab",
+        "slash",
+        "hit",
+        "strike",
+        "inspect",
+        "grab",
+        "get",
     ];
     let verb = command.split_whitespace().next()?;
+    // A recognized verb with unsupported arguments needs syntax guidance, not
+    // a different action (e.g. "look X" must never suggest "load X").
+    if VERBS.contains(&verb) {
+        return None;
+    }
     if verb.len() < 3 || !verb.is_ascii() {
         return None;
     }
     let mut matches = VERBS
         .iter()
         .filter_map(|candidate| {
+            let remainder = command.strip_prefix(verb).unwrap_or("").trim();
+            if !remainder.is_empty()
+                && matches!(
+                    *candidate,
+                    "inventory"
+                        | "spellbook"
+                        | "spells"
+                        | "weapons"
+                        | "stats"
+                        | "enemies"
+                        | "wallet"
+                        | "balance"
+                        | "money"
+                        | "saves"
+                        | "quit"
+                        | "help"
+                        | "north"
+                        | "south"
+                        | "east"
+                        | "west"
+                        | "up"
+                        | "down"
+                )
+            {
+                return None;
+            }
             let distance = edit_distance_at_most_two(verb, candidate)?;
             (distance > 0).then_some((distance, *candidate))
         })
@@ -985,7 +1059,8 @@ fn prompt<R: BufRead, W: Write>(
     output: &mut W,
     text: &str,
 ) -> io::Result<Option<String>> {
-    write!(output, "{text}")?;
+    // Rustyline redraws the input line; keep the question above that line.
+    writeln!(output, "{}", text.trim_end())?;
     output.flush()?;
     let mut line = String::new();
     if input.read_line(&mut line)? == 0 {

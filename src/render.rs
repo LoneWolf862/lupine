@@ -54,7 +54,7 @@ pub fn describe_room(world: &World, state: &GameState, room: &Room) -> String {
 }
 
 pub fn help() -> &'static str {
-    "Commands: look (l), directions (n/s/e/w/u/d), go <direction>, examine <object> (x), take <object|all> (get/grab/pick up), drop <object|all>, inventory (i), use <item> on <target>, save [name], load [name], saves, stats, weapons, learn <scroll>, spellbook (spells), cast <ability> [on self], help (h), quit (q)."
+    "Explore: look (l), look <object>, examine <object> (x), inventory (i).\nMove: north/n, south/s, east/e, west/w, up/u, down/d; go/walk/travel/run/head <direction>. 'look' lists exits.\nObjects: take <object|all> (get/grab/pick up), drop <object|all>, use <item> on <target>. Object synonyms depend on the adventure's aliases.\nCombat: attack <enemy> with <weapon> (hit/strike/stab/slash); attack <enemy> asks which weapon.\nSpells: spellbook (spells), learn <scroll>, cast <ability> on/at <enemy|self>, use <ability> on <enemy>.\nOther RPG commands: stats, weapons, enemies, wallet, shop, buy <offer>, sell <offer>.\nManual saves: save camp (a name you choose), saves (list names), load camp. 'save' offers to overwrite the current slot; no asks for a name. With no current slot, it asks for a name. 'save <name>' writes directly, replacing that name. Enter/cancel at the name prompt cancels. No autosaving.\nHelp: help (h). Leave the adventure: quit/exit (q); unsaved progress requires yes/no confirmation.\nSuggestions never execute: type the suggested command to try it. Multiple matches ask you to choose; 0/back/cancel cancels."
 }
 
 /// Display terminology never changes the accepted command vocabulary.

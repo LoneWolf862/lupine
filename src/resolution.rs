@@ -59,9 +59,26 @@ pub fn matches<'a>(query: &str, candidates: &'a [Candidate]) -> Vec<&'a Candidat
     if !exact.is_empty() {
         return exact;
     }
-    candidates
+    let partial = candidates
         .iter()
         .filter(|c| c.labels().any(|label| normalize(label).contains(&query)))
+        .collect::<Vec<_>>();
+    if !partial.is_empty() {
+        return partial;
+    }
+    // Ordered word prefixes allow "fire scroll" -> "fireball scroll".
+    // Every query word must match a distinct word; spelling errors never execute.
+    candidates
+        .iter()
+        .filter(|c| {
+            c.labels().any(|label| {
+                let label = normalize(label);
+                let mut words = label.split_whitespace();
+                query
+                    .split_whitespace()
+                    .all(|q| words.any(|word| word.starts_with(q)))
+            })
+        })
         .collect()
 }
 
@@ -123,7 +140,7 @@ pub fn unique(query: &str, candidates: &[Candidate]) -> Result<String, String> {
         [] => {
             let mut error = format!("You don't see '{query}' among the available targets.");
             if let Some(c) = suggestion(query, candidates) {
-                error.push_str(&format!(" Did you mean '{}' ({})?", c.name, c.id));
+                error.push_str(&format!(" Did you mean '{}' ({})? Repeat your command using '{}'; suggestions do not run automatically.", c.name, c.id, c.id));
             }
             Err(error)
         }

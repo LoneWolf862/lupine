@@ -35,16 +35,18 @@ pub fn parse_command(input: &str) -> Result<Command, ParseError> {
     }
 
     match normalized.as_str() {
-        "l" | "look" => return Ok(Command::Look),
+        "l" | "look" | "look around" => return Ok(Command::Look),
         "i" | "inv" | "inventory" => return Ok(Command::Inventory),
         "h" | "help" | "?" => return Ok(Command::Help),
         "q" | "quit" | "exit" => return Ok(Command::Quit),
-        "go" | "move" | "walk" => return Err(ParseError::MissingDirection),
+        "go" | "move" | "walk" | "travel" | "run" | "head" | "leave" => {
+            return Err(ParseError::MissingDirection)
+        }
         "x" | "examine" | "inspect" | "look at" => {
             return Err(ParseError::MissingTarget("examine"))
         }
         "take" | "get" | "grab" | "pick up" => return Err(ParseError::MissingTarget("take")),
-        "drop" | "leave" => return Err(ParseError::MissingTarget("drop")),
+        "drop" => return Err(ParseError::MissingTarget("drop")),
         "use" => return Err(ParseError::MissingTarget("use")),
         _ => {}
     }
@@ -53,7 +55,15 @@ pub fn parse_command(input: &str) -> Result<Command, ParseError> {
         .strip_prefix("go ")
         .or_else(|| normalized.strip_prefix("move "))
         .or_else(|| normalized.strip_prefix("walk "))
+        .or_else(|| normalized.strip_prefix("travel "))
+        .or_else(|| normalized.strip_prefix("run "))
+        .or_else(|| normalized.strip_prefix("head "))
+        .or_else(|| normalized.strip_prefix("leave "))
         .unwrap_or(&normalized);
+    let direction_text = direction_text.strip_prefix("to ").unwrap_or(direction_text);
+    let direction_text = direction_text
+        .strip_prefix("the ")
+        .unwrap_or(direction_text);
     let direction = match direction_text {
         "n" | "north" => Some(Direction::North),
         "s" | "south" => Some(Direction::South),
@@ -67,7 +77,7 @@ pub fn parse_command(input: &str) -> Result<Command, ParseError> {
         return Ok(Command::Move(direction));
     }
 
-    for prefix in ["look at ", "examine ", "inspect ", "x "] {
+    for prefix in ["look at ", "look ", "examine ", "inspect ", "x "] {
         if let Some(rest) = normalized.strip_prefix(prefix) {
             return Ok(Command::Examine(required_target(rest, "examine")?));
         }
@@ -84,7 +94,7 @@ pub fn parse_command(input: &str) -> Result<Command, ParseError> {
     }
     if let Some(rest) = normalized.strip_prefix("use ") {
         let rest = rest.trim();
-        if let Some((item, target)) = rest.split_once(" on ") {
+        if let Some((item, target)) = rest.split_once(" on ").or_else(|| rest.split_once(" at ")) {
             return Ok(Command::Use {
                 item: required_target(item, "use")?,
                 target: required_target(target, "use")?,
