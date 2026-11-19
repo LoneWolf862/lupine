@@ -6,6 +6,13 @@ fn main() -> std::io::Result<()> {
     let args: Vec<String> = std::env::args().collect();
     let mut input = lupine::terminal::stdin()?;
     match args.as_slice() {
+        [_, command] if command == "runtime-manifest" => {
+            print!(
+                "{}",
+                lupine::creator::export::runtime_manifest().map_err(std::io::Error::other)?
+            );
+            Ok(())
+        }
         [_] => lupine::startup::run(
             &mut input,
             &mut std::io::stdout().lock(),

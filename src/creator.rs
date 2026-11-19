@@ -18,6 +18,7 @@ mod art_edit;
 mod content_edit;
 mod currency_edit;
 mod enemy_edit;
+pub mod export;
 mod fig_edit;
 mod files;
 mod interaction_edit;

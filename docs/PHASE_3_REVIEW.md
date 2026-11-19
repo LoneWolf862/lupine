@@ -63,3 +63,39 @@ Tests cover clarification of both use targets, invalid selection/cancel/EOF, exa
 names, item/spell collisions, multiword aliases and case, transpositions, visibility,
 enemy instances, RPG aliases and immutable preparation. The existing creator ambiguity
 test now uses a noncolliding ID and explicit cancel, reflecting the requested new behavior.
+
+## 3D offline export
+
+Creator E opens Windows x64 / Linux x64 / Both. Enter selects the running executable
+for its native platform. Other executable paths require an adjacent lupine.runtime.toml
+from the same trusted build; `lupine runtime-manifest` emits this metadata on the native
+platform. Export checks PE/ELF architecture, engine version, export protocol and SHA-256.
+Metadata is an integrity/compatibility check, not a signature or authenticity guarantee.
+No executable is silently downloaded or relabeled; foreign binaries are never executed.
+
+Choose a new folder outside the adventure, preview targets and file inventory, then
+explicitly confirm yes. Every binary is checked before writes. The immutable plan copies
+only recognized content/config/art files, validates the packaged adventure and includes
+the runtime, engine license, metadata, START_HERE.txt and Play.cmd/Play.sh. Empty standard
+directories are preserved. Saves, target/, Git files, editor recovery and arbitrary root
+files are excluded. Authors add their own story credits/license deliberately.
+
+Output is a distribution directory with windows-x64/ and/or linux-x64/ subfolders.
+Each is independently shareable; zip it with a normal archive tool if desired. Linux
+launch via `sh Play.sh` restores executable permission after a Windows-created ZIP.
+This is not cross-compilation. Compatible native runtimes must already be available.
+Current official-style Linux builds require compatible x86_64 glibc systems.
+
+Existing output folders, parent traversal, linked source content, recovery-in-progress
+and unsafe output paths are refused. Export never edits source files. Handled publication
+failure leaves EXPORT_INCOMPLETE.txt and an actionable message; retry into a fresh folder.
+No recursive cleanup can delete unexpected files. Publication is not crash-atomic and
+does not defend against hostile concurrent directory replacement. Limits: 8 MiB/content
+file, 64 MiB/content snapshot, 256 MiB/runtime, bounded inspection/traversal.
+
+Tests cover invalid content, missing/wrong/old/tampered runtime metadata, both-platform
+structure, spaces, cancellation/EOF/decline, existing/unsafe destinations, source-byte
+preservation, save exclusion and actual native packaged executable launch. Foreign header
+fixtures test structure only; they are explicitly not evidence of native execution.
+Self-review fixed missing required empty items/ and bounded reads against files growing
+after metadata inspection; Windows launchers disable delayed expansion for ! in paths.

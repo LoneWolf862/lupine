@@ -89,7 +89,7 @@ pub fn open<R: BufRead, W: Write>(
             )?;
         }
         super::ui::heading(output, "ADVENTURE CREATOR")?;
-        writeln!(output, "  0. Exit Creator\n  1. Play Your Adventure\n  2. Validate Your Adventure\n  3. Configure Adventure Settings\n  4. Create or Edit Items\n  5. Create or Edit Spells\n  6. Create or Edit Artwork\n  7. Create or Edit Rooms\n  8. Help\n  9. Interactions and puzzles\n  R. RPG Content\n\nEnter refreshes the tree; ? gives help.")?;
+        writeln!(output, "  0. Exit Creator\n  1. Play Your Adventure\n  2. Validate Your Adventure\n  3. Configure Adventure Settings\n  4. Create or Edit Items\n  5. Create or Edit Spells\n  6. Create or Edit Artwork\n  7. Create or Edit Rooms\n  8. Help\n  9. Interactions and puzzles\n  R. RPG Content\n  E. Export Your Adventure\n\nEnter refreshes the tree; ? gives help.")?;
         let Some(choice) = answer(input, output, "Selection:")? else {
             writeln!(
                 output,
@@ -120,6 +120,7 @@ pub fn open<R: BufRead, W: Write>(
                     writeln!(output, "Returned to the creator. Player progress was not automatically saved.")?;
                 }
             }
+            "e" => super::export::run(&root, input, output)?,
             "r" => super::rpg_menu::run(&root, input, output)?,
             "9" => super::interaction_edit::run(&root, input, output)?,
             "7" => super::room_edit::run(&root, input, output)?,
@@ -128,7 +129,7 @@ pub fn open<R: BufRead, W: Write>(
             "6" => super::art_edit::run(&root, input, output)?,
             "3" => super::fig_edit::run(&root, input, output)?,
             "8" | "?" | "help" => writeln!(output, "You are working in the adventure folder shown above.\nThe tree shows actual files; trailing / means a directory.\nTOML holds story content; optional config/*.fig holds engine settings.\n1 plays here and quit returns here. Each play starts fresh unless you\nexplicitly load a save. 2 checks all supported content and FIG settings.\nEnter refreshes the tree after external edits. 0/back/cancel leaves this\nadventure. Room edits require explicit Save confirmation; player saves remain manual.\n7 opens the Room Manager for guided names, descriptions and connections. 3 configures FIG settings; 4 edits items; 5 edits spells; 6 edits art. 9 opens puzzles and locked doors. Room Options > 7 edits conditional prose/encounters. R opens enemies, weapons, shops, currencies and encounters. Changes remain drafts until explicit confirmation.")?,
-            _ => writeln!(output, "\nPlease choose 0-9, R, or type help. Your adventure is still selected.\n")?,
+            _ => writeln!(output, "\nPlease choose 0-9, R, E, or type help. Your adventure is still selected.\n")?,
         }
     }
 }
