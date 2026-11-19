@@ -2,7 +2,7 @@
 
 ## Pick the right build
 
-The published v0.9.0 release is historical and unchanged. Phase 3 features belong to
+The published v0.9.0 release is historical and unchanged. Phase 3/4 features belong to
 0.10.0-dev.1 development builds, available after building this source or downloading
 the matching manually dispatched GitHub Actions artifact. A development artifact is
 not an official release. Windows x64 and Linux x64 are separate executables.
@@ -44,16 +44,20 @@ compatibility versions are independent of the engine version. No save happens on
 
 1. Open it in the Adventure Creator and choose E.
 2. Select Windows x64, Linux x64 or Both.
-3. For the host OS, Enter uses the running engine. For another runtime, enter its file path
+3. Select Ready-to-share ZIP or Uncompressed Folder.
+4. For the host OS, Enter uses the running engine. For another runtime, enter its file path
    and keep the matching `lupine.runtime.toml` beside it. Both must come from the same
    trusted build and match the exporting engine version.
-4. Enter a new destination folder outside the source adventure. Its parent must exist.
-5. Review the platforms and file inventory, then type yes to publish.
+5. Enter a new destination folder outside the source adventure. Its parent must exist.
+6. Review the platforms, format and file inventory, then type yes to publish.
 
-The result contains windows-x64/ and/or linux-x64/. Each has adventure/, the engine,
+Folder output contains windows-x64/ and/or linux-x64/. Each has adventure/, the engine,
 runtime metadata, Play.cmd or Play.sh, START_HERE.txt, engine license and dependency
-notices. Share the whole platform folder. You may ZIP it with Explorer/Compress-Archive
-or your preferred archive tool; archive creation is not built into Lupine. Personal RORK
+notices. ZIP output contains a separate Adventure_Name-PLATFORM.zip for each selected OS.
+Extract it before running Play.cmd or `sh Play.sh`. ZIP uses stored entries without
+compression, Unicode names and empty required directories. Limits are 256 MiB per entry
+and 512 MiB per archive; source content has the existing 8 MiB/file and 64 MiB total limits.
+Share the ZIP or whole platform folder. Personal RORK
 saves, source build directories, Git files and editor recovery data are not included.
 Add your own story license/credits deliberately; arbitrary source-root documents are
 not silently distributed. Source adventure files are never rewritten.
@@ -77,7 +81,11 @@ the captured text with `[IO.File]::WriteAllText` and a UTF8Encoding constructed 
 The portable-build workflow generates these files automatically. An old v0.9.0 runtime
 is not interchangeable with this development export runtime.
 
-An interrupted/failed export may retain EXPORT_INCOMPLETE.txt. Do not share that folder;
-retry into a fresh destination and remove the incomplete folder only after reviewing it.
-Export is not a crash-atomic multi-file operation. Do not modify source/output paths
-concurrently while exporting. Editor recovery remains a separate manual workflow.
+Export first builds/validates in a sibling .lupine-export-* workspace. Completed archives
+are synced and checked before final publication. An interrupted final publication keeps
+EXPORT_INCOMPLETE.txt: do not share that folder; retry into a fresh destination.
+Export > C can remove a workspace only with a complete cleanup record and unchanged
+inventory. It refuses unknown/modified files and links. Missing records require manual
+review. Never blindly delete recovery data. Export requires hard-link support and is not
+crash-atomic across multiple files. Avoid concurrent source/output edits. Creator recovery
+is a separate guided workflow; see [Phase 4 safety and verification](PHASE_4_REVIEW.md).

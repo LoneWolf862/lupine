@@ -44,10 +44,91 @@ RORK bytes and reopening. The executable creator acceptance migrates its bound
 object before gameplay and verifies the new binding. Shared publication tests cover
 invalid dependencies and interrupted multi-file publication.
 
-## Remaining assignment
+## 4E: integration and self-review
 
-4E integration review remains
-in progress. Cross-platform CI and final release-readiness findings are pending.
+Local Windows 10 verification: **270 tests passed**, formatting, strict all-target
+Clippy and release build passed. The optimized executable is 4,947,456 bytes. The
+full scripted walkthrough artifacts are retained under the integration worktree's
+target/phase4-acceptance-ad81a3d9/. Every adventure definition was created through
+the real CLI menus, including three connected rooms, key/locked door, conditional
+prose/art, enemies/encounters, weapons, spell/progression, two currencies, six offers,
+a fixed Mana Altar binding and its ID migration. Tests check wallet/MP arithmetic,
+combat, persistent encounters, explicit save/load and exactly eight manual slots.
+The script additionally raises/restores an offer's price through menus to verify
+bound-object insufficient-funds behavior with no save writes. It restarts, loads,
+exports, independently extracts and launches the actual packaged Windows executable
+and Play.cmd from an unrelated working directory. Source playable bytes match.
+The scaffold creator README is deliberately outside the export content allowlist.
+
+Review fixes: retain a draft after deleting its last binding before prerequisite
+navigation; select actual definitions rather than ignored optional references;
+show definition names in migration selectors and plain-language offer summaries;
+share the editable-path allowlist between publication and recovery; verify a
+recovery source before removing its current target. Added direct interrupted-ID-
+migration and unsafe-journal regressions. Unchanged read-only snapshot files do
+not make disposable baseline cleanup read-only. No parser/combat arithmetic changed.
+
+CI caught a test-environment issue: Ubuntu's default Python lacked tomllib after
+Rust tests/checks/build had passed. Phase 4D now explicitly selects Python 3.12 in
+both workflows. Python 3.11+ is needed only for the acceptance script, never play.
+No Rust dependency or Cargo.lock change; bundled dependency notices remain current.
+
+This is scripted automated acceptance and agent review, **not human beginner
+certification or native CachyOS validation**. Human review/approval remains required
+before merge or official release. No production-readiness declaration is made.
+
+## Review stack and local testing
+
+All worktrees are under C:\Users\Rex\.codex\worktrees\ and end in \Lupine.
+Merge order is 4A -> 4B -> 4C -> 4D -> 4E. Each draft targets its immediate predecessor;
+after merging a predecessor, retarget the next to main and inspect its diff/checks.
+No branch was force-pushed and no PR was merged or release published.
+
+| Phase | Draft PR | Branch / worktree folder | Checkpoint |
+|---|---|---|---|
+| 4A | [#26](https://github.com/LoneWolf862/lupine/pull/26) | codex/phase-4a-transaction-bindings / phase-4a-transaction-bindings | 3f26f9f6575152eb2db4ab9d6dbe7bae625a025b |
+| 4B | [#27](https://github.com/LoneWolf862/lupine/pull/27) | codex/phase-4b-id-migration / phase-4b-id-migration | 41aac2e76af3991f3c543c80d76a4783cf022bf1 |
+| 4C | [#28](https://github.com/LoneWolf862/lupine/pull/28) | codex/phase-4c-guided-recovery / phase-4c-guided-recovery | 510843ebbf6ab1ea15995ec3f79743a1fc682f55 |
+| 4D | [#29](https://github.com/LoneWolf862/lupine/pull/29) | codex/phase-4d-zip-export / phase-4d-zip-export | 9e4110e (runtime checkpoint bfc4977e23107d99b3b18a7e9c62017ecdd4053f) |
+| 4E | Pending draft | codex/phase-4e-integration-review / phase-4e-integration-review | Final integration checkpoint to be recorded |
+
+Primary checkout remains on main at 2377af13cf7796ae477a1664eed0d6bf7a21c0bb,
+with its preexisting personal untracked files untouched. Fetched origin/main was
+502c7d12333f0970c16e202b63194b0b86418a53. Published v0.9.0 remains immutable.
+
+In a dedicated PowerShell terminal (Python 3.11+ for scripted acceptance):
+
+```powershell
+Set-Location 'C:\Users\Rex\.codex\worktrees\phase-4e-integration-review\Lupine'
+$env:RUST_TEST_THREADS = '1'
+cargo fmt --all --check
+cargo test --locked
+cargo clippy --locked --all-targets -- -D warnings
+cargo build --locked --release
+python scripts/phase4_acceptance.py
+```
+
+The script prints a new disposable artifact directory each time. To inspect the
+retained local walkthrough interactively with isolated saves:
+
+```powershell
+$demo = Join-Path (Get-Location) 'target/phase4-acceptance-ad81a3d9'
+$env:APPDATA = Join-Path $demo 'userdata'
+$env:XDG_DATA_HOME = $env:APPDATA
+.\target\release\lupine.exe creator (Join-Path $demo 'Adventure with spaces')
+```
+
+Review T, M and E; decline confirmations once and verify drafts/files remain as
+described. Play, navigate the locked door, fight/cast, use the altar, save explicitly,
+quit/restart and load. Export ZIP to a fresh sibling directory, extract and launch
+Play.cmd. For injected recovery fixtures use `cargo test --locked recovery::tests`;
+never simulate corruption against personal adventures. Closing this dedicated shell
+restores normal save-location environment for other sessions.
+
+Next objectives: human beginner walkthrough; native CachyOS launch/history/export
+acceptance; feedback-driven prerequisite navigation; optional ZIP compression if
+distribution size warrants a dependency. Game identity, deletion migrations, RORK
+migration and unsupported recovery records remain deliberately separate work.
 
 ## 4D: staged export and ZIP packaging
 

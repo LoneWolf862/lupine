@@ -70,13 +70,18 @@ questions appear above the editable input line so terminal redraws cannot erase 
 Choose Create or Edit at startup, or `lupine creator [PATH]`. Guided menus cover rooms,
 connections, items, spells, artwork, interactions, locked doors, conditional descriptions,
 encounters, enemies, weapons, shops, currencies and implemented FIG settings. Changes stay
-drafts until explicit confirmation; previews show exact authored bytes. IDs remain stable.
+drafts until explicit confirmation; previews show exact authored bytes. Display-name edits
+keep IDs stable. **T** manages transaction-bound objects; **M** deliberately migrates
+supported IDs and their authored references, with save-compatibility warnings. Interrupted
+edits open guided recovery when the recorded evidence proves restoration/completion safe.
 
-Creator **E** exports Windows x64, Linux x64, or both into a new directory. The native
+Creator **E** exports Windows x64, Linux x64, or both as separate ZIPs or platform folders
+inside a new directory. The native
 running engine is available by default; another platform requires its matching local
 runtime and build metadata. Export validates, excludes saves/development files and adds
 launchers/instructions. It never downloads runtimes or changes source adventure files.
-Share the complete platform folder, optionally zipped using your normal archive tool.
+Share the platform ZIP (extract before launching) or the complete platform folder.
+ZIPs use stored entries without compression. Export **C** offers verified staging cleanup.
 See [Creator Quickstart](docs/CREATOR_QUICKSTART.md) and [RPG Creator Guide](docs/RPG_CREATOR_GUIDE.md).
 
 Content uses `.toml`; game-wide implemented configuration uses TOML-syntax `.fig` files.
@@ -119,8 +124,10 @@ testing remain separate from scripted or agent-driven terminal verification.
 
 Architecture, requirements, creator vision and historical milestones are in `docs/`.
 Historical stage reports retain their original versions and verification claims.
-Stable-ID migration, automatic editor recovery, pronouns and command chaining remain
-future work. The instructor-provided CSE 310 README template, honest time log and submission
+[Phase 4 review](docs/PHASE_4_REVIEW.md) records the five unmerged development PRs,
+verified behavior and conservative migration/recovery limits. Human beginner testing,
+native CachyOS testing, pronouns and command chaining remain future work.
+The instructor-provided CSE 310 README template, honest time log and submission
 evidence remain a separate obligation; this README does not claim that submission is done.
 
 ## License

@@ -20,6 +20,27 @@ const FILES: &[&str] = &[
     "character.toml",
 ];
 
+fn editable_path(path: &Path, existing: bool) -> bool {
+    let safe = path
+        .components()
+        .all(|c| matches!(c, std::path::Component::Normal(_)));
+    let category = path.parent().and_then(Path::to_str).unwrap_or("");
+    safe && (matches!(
+        path.to_str(),
+        Some("game.toml" | "interactions.toml" | "transaction_interactions.toml")
+    ) || match category {
+        "rooms" | "items" | "spells" | "enemies" | "weapons" | "shops" => {
+            path.extension().is_some_and(|e| e == "toml")
+        }
+        "config" => matches!(
+            path.file_name().and_then(|s| s.to_str()),
+            Some("character.fig" | "terminology.fig")
+        ),
+        "art" => path.extension().is_some_and(|e| e == "txt"),
+        _ => existing && path.starts_with("art") && path.extension().is_some_and(|e| e == "txt"),
+    })
+}
+
 #[derive(Clone, PartialEq)]
 struct Original {
     bytes: Vec<u8>,
@@ -176,29 +197,7 @@ impl Snapshot {
             return Err("Project files changed externally since opening this editor. Cancel and reopen; no external edits will be overwritten.".into());
         }
         for path in changes.keys() {
-            let safe = path
-                .components()
-                .all(|c| matches!(c, std::path::Component::Normal(_)));
-            let category = path.parent().and_then(Path::to_str).unwrap_or("");
-            let allowed = path == Path::new("game.toml")
-                || path == Path::new("transaction_interactions.toml")
-                || path == Path::new("interactions.toml")
-                || match category {
-                    "rooms" | "items" | "spells" | "enemies" | "weapons" | "shops" => {
-                        path.extension().is_some_and(|e| e == "toml")
-                    }
-                    "config" => matches!(
-                        path.file_name().and_then(|s| s.to_str()),
-                        Some("character.fig" | "terminology.fig")
-                    ),
-                    "art" => path.extension().is_some_and(|e| e == "txt"),
-                    _ => {
-                        path.starts_with("art")
-                            && self.files.contains_key(path)
-                            && path.extension().is_some_and(|e| e == "txt")
-                    }
-                };
-            if !safe || !allowed {
+            if !editable_path(path, self.files.contains_key(path)) {
                 return Err("This path is not an editable content file".into());
             }
             if let Some(original) = self.files.get(path) {

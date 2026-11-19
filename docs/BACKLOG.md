@@ -1,16 +1,18 @@
 # Lupine development backlog
 
-## Remaining work after Phase 3
+## Remaining work after Phase 4 development
 
 - Human Windows beginner walkthrough and native CachyOS terminal/export acceptance.
-- Transaction-object-binding authoring, stable-ID migrations and guided editor recovery.
+- Human review/merge of the five Phase 4 drafts; [scope and evidence](PHASE_4_REVIEW.md).
+- Broader beginner usability testing, particularly prerequisites and recovery guidance.
 - Optional pronouns/chained commands with explicit validation and cancellation.
-- Optional built-in archives; export currently creates shareable platform directories.
+- Optional ZIP compression; built-in export currently uses standard stored ZIP entries.
 - More targeted history scope; current memory-only history spans a CLI invocation.
 - Human-reviewed official release readiness; never rewrite v0.9.0 automatically.
 
 Startup, terminal history, numbered player clarification, suggestions and offline export
-are implemented development candidates. See [verification](PHASE_3_REVIEW.md). Keep the
+are implemented. Bindings, supported ID migration, evidence-based recovery and ZIP export
+are Phase 4 development candidates. See [verification](PHASE_4_REVIEW.md). Keep the
 runtime lightweight, offline, terminal-only and story-independent. Never autosave.
 
 ## Historical roadmap/backlog entries
