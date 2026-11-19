@@ -1,5 +1,9 @@
 # Lupine Adventure Creator
 
+## Phase 2I creator usability candidate (2026-11-18)
+
+Draft [PR #19](https://github.com/LoneWolf862/lupine/pull/19) targets `codex/phase-2h-rpg-integration`. Existing-definition selectors accept numbers, exact IDs and unambiguous names. Blank selections stay open; 0/back explicitly returns. Locked doors and teaching items use one selection screen. Door review retains answers after declined Save; description ordering and multiline recovery are improved. See the [audit, navigation rules, verification, remaining limits and Windows procedure](CREATOR_USABILITY_AUDIT.md). Nested 0/back follows its displayed finish/discard label; cancel abandons unsaved edits while earlier confirmed saves remain. Exact previews, Snapshot safety and manual-only RORK saves remain required.
+
 ## RPG content menus (Phases 2G/2H candidate)
 
 Choose **R** after explicitly enabling RPG in menu 3. Submenu: 1 enemies, 2 weapons, 3 shops, 4 currencies, 5 room encounters, 6 items, 7 spells. N creates; P previews; S saves with explicit confirmation. Room Options still uses 5 for preview and 6 for Save. Encounter settings N creates a pending enemy in the room transaction; E revises it. Shops expose all six current offer types and prerequisite managers. Weapon I opens Item Manager; prerequisite saves are separate and explicit. Currency IDs stay fixed in game.toml; starting balances affect fresh games. See [complete workflow, limits and testing](RPG_AUTHORING_DEVELOPMENT.md).

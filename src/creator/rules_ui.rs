@@ -76,7 +76,7 @@ pub(super) fn select_entry<R: BufRead, W: Write>(
         "0/back returns. Choose a number or unambiguous exact ID/name; blank keeps this menu open.",
     )?;
     loop {
-        let answer = w.line(&format!("Select {key}:"))?;
+        let answer = w.menu(&format!("Select {key}:"))?;
         if matches!(answer.trim().to_ascii_lowercase().as_str(), "0" | "back") {
             return Ok(None);
         }

@@ -1,5 +1,9 @@
 # Lupine Text Creator Wizard — Expansion Specification
 
+## Phase 2I creator usability candidate (2026-11-18)
+
+Draft [PR #19](https://github.com/LoneWolf862/lupine/pull/19) targets `codex/phase-2h-rpg-integration`. Existing-definition selectors accept numbers, exact IDs and unambiguous names. Blank selections stay open; 0/back explicitly returns. Locked doors and teaching items use one selection screen. Door review retains answers after declined Save; description ordering and multiline recovery are improved. See the [audit, navigation rules, verification, remaining limits and Windows procedure](CREATOR_USABILITY_AUDIT.md). Nested 0/back follows its displayed finish/discard label; cancel abandons unsaved edits while earlier confirmed saves remain. Exact previews, Snapshot safety and manual-only RORK saves remain required.
+
 ## Current RPG authoring candidate
 
 Phases 2G-A through 2H are implemented in draft PRs #14-#18. Scope and verification: [RPG authoring review](RPG_AUTHORING_DEVELOPMENT.md). Existing creator PRs #8-#13 are merged. RPG managers expose current schemas through shared Wizard/Document/Snapshot helpers. Room and newly created enemies publish together; prerequisite manager saves are separately confirmed. Historical milestone sections below describe earlier states.

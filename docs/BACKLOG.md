@@ -1,5 +1,9 @@
 # Lupine Development Backlog
 
+## Phase 2I creator usability candidate (2026-11-18)
+
+Draft [PR #19](https://github.com/LoneWolf862/lupine/pull/19) targets `codex/phase-2h-rpg-integration`. Existing-definition selectors accept numbers, exact IDs and unambiguous names. Blank selections stay open; 0/back explicitly returns. Locked doors and teaching items use one selection screen. Door review retains answers after declined Save; description ordering and multiline recovery are improved. See the [audit, navigation rules, verification, remaining limits and Windows procedure](CREATOR_USABILITY_AUDIT.md). Nested 0/back follows its displayed finish/discard label; cancel abandons unsaved edits while earlier confirmed saves remain. Exact previews, Snapshot safety and manual-only RORK saves remain required.
+
 ## Current RPG authoring status
 
 Enemy, weapon, shop and currency editors are implemented candidates in PRs #14-#18; see [RPG review](RPG_AUTHORING_DEVELOPMENT.md). Remaining work includes human beginner feedback, stable-ID migrations, transaction-object-binding authoring, guided recovery and further packaging/export tooling. Do not interpret the historical editor backlog below as current implementation status.
