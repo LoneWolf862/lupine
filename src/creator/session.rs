@@ -119,7 +119,7 @@ pub fn open<R: BufRead, W: Write>(
                     writeln!(output, "Returned to the creator. Player progress was not automatically saved.")?;
                 }
             }
-            "r" => super::enemy_edit::run(&root, input, output)?,
+            "r" => super::rpg_menu::run(&root, input, output)?,
             "9" => super::interaction_edit::run(&root, input, output)?,
             "7" => super::room_edit::run(&root, input, output)?,
             "4" => super::content_edit::run_items(&root, input, output)?,
