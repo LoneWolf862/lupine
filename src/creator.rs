@@ -31,6 +31,7 @@ mod project_edit;
 mod properties;
 mod room_advanced;
 mod room_edit;
+mod room_hub;
 mod room_transaction;
 mod rpg_fields;
 mod rpg_menu;

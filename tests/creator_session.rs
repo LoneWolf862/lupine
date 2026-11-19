@@ -421,7 +421,8 @@ fn menus_prompts_and_validation_have_clear_spacing() {
     ));
     assert!(output.contains("\nSelection:\n> "));
     assert!(output.contains("Adventure: Session Test\n\nExisting Rooms:\n\n  1. Starting Room"));
-    assert!(output.contains("\n\n  N. Create New Room\n  0. Return to Creator Menu"));
+    assert!(output.contains("  n. Create New Room\n  0. Cancel selection / return"));
+    assert!(output.contains("/text filters ID/name"));
     assert!(output.contains("\nValidation successful! Your adventure is ready to play.\n\n"));
 }
 
@@ -530,4 +531,71 @@ fn native_author_trace_discloses_debug_state_only_on_request() {
         );
     }
     assert!(!f.saves.exists());
+}
+
+#[test]
+fn room_browser_opens_related_content_and_keeps_confirmed_edits() {
+    let f = Fixture::new();
+    fs::write(
+        f.game.join("items/token.toml"),
+        "id='token'\nname='Token'\ndescription='A token'\nportable=true\nstarting_room='start'\n",
+    )
+    .unwrap();
+    let out=f.run("b\n/start\nstart\n2\n/token\nitems/token.toml\n2\n/description\n'Edited from the room'\n0\ns\nyes\n0\n0\n0\n0\n");
+    assert!(out.contains("Published and validated"), "{out}");
+    assert!(out.contains("ROOM: "), "{out}");
+    assert_eq!(
+        lupine::adventure::Adventure::load(&f.game)
+            .unwrap()
+            .game
+            .world
+            .item("token")
+            .unwrap()
+            .description,
+        "Edited from the room"
+    );
+    assert!(!f.saves.exists());
+}
+#[test]
+fn browse_follow_exit_and_guided_draft_status_are_read_only_until_save() {
+    let f = Fixture::new();
+    lupine::creator::add_room(&f.game, "second").unwrap();
+    fs::write(
+        f.game.join("rooms/start.toml"),
+        "id='start'\ntitle='Start'\ndescription='Start'\n[exits]\nnorth='second'\n",
+    )
+    .unwrap();
+    let before = snapshot(&f.game);
+    let out = f.run("b\nstart\n3\nsecond\n1\n1\nUnpublished title\n0\n0\n0\n0\n");
+    assert!(out.contains("(second)"), "{out}");
+    assert!(out.contains("1 unsaved file(s)"), "{out}");
+    assert_eq!(snapshot(&f.game), before);
+}
+#[test]
+fn project_file_search_retains_batch_and_lists_new_files() {
+    let f = Fixture::new();
+    let before = snapshot(&f.game);
+    let out=f.run("f\n1\nrules.toml\n1\n[counters]\nvisits=0\n.end\n0\nl\n/rules\nrules.toml\n2\n/counters/visits\n2\n0\np\ncancel\n0\n");
+    assert!(out.contains("1 unsaved file(s)"), "{out}");
+    assert!(out.contains("visits = 2"), "{out}");
+    assert_eq!(snapshot(&f.game), before);
+}
+#[test]
+fn narrative_authors_can_reach_economy_and_world_ability_forms() {
+    let f = Fixture::new();
+    let out = f.run("r\n4\n0\n0\n5\nn\nworld_test\n4\nworld\ns\nyes\n0\n0\n");
+    assert!(out.contains("CURRENCY SETTINGS"), "{out}");
+    let a = lupine::adventure::Adventure::load(&f.game).unwrap();
+    assert!(a.game.config.character.is_none());
+    assert!(a.rpg.abilities.contains_key("world_test"), "{out}");
+}
+
+#[test]
+fn raw_replacement_back_keeps_prior_batch_and_end_does_not_publish() {
+    let f = Fixture::new();
+    let before = snapshot(&f.game);
+    let out=f.run("f\n1\nrules.toml\n1\n[counters]\nvisits=1\n/end\n1\ninvalid replacement\nback\n0\np\n0\n0\n");
+    assert!(out.contains("visits=1"));
+    assert!(out.contains("1 unsaved file(s)"));
+    assert_eq!(snapshot(&f.game), before);
 }

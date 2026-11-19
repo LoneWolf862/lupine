@@ -153,7 +153,10 @@ fn main() -> std::io::Result<()> {
             println!("  lupine add art <directory> <art-id> [--dynamic]");
             println!("  lupine validate <directory>");
             println!(
-                "  lupine test <directory> <scenarios.toml>  (read-only repeatable playtests)"
+                "  lupine inspect <directory>        (authored room map and typed references)"
+            );
+            println!(
+                "  lupine test <directory> <scenarios.toml> [--trace]  (read-only playtests / debug state)"
             );
             println!("  lupine play <directory>");
             println!("  lupine --version");

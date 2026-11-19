@@ -15,14 +15,7 @@ pub(super) fn run<R: BufRead, W: Write>(
                 return Ok(());
             }
         };
-        if a.game.config.character.is_none() {
-            writeln!(
-                output,
-                "Enable RPG explicitly in Configure Adventure Settings first."
-            )?;
-            return Ok(());
-        }
-        super::ui::heading(output, "RPG CONTENT")?;
+        super::ui::heading(output, "RPG AND ECONOMY CONTENT")?;
         writeln!(
             output,
             "1. Manage enemies\n2. Manage weapons\n3. Manage shops\n4. Manage currencies\n5. Configure room encounters\n6. Manage prerequisite items\n7. Manage prerequisite spells\n8. Transaction Bindings\n0. Back"
@@ -32,7 +25,12 @@ pub(super) fn run<R: BufRead, W: Write>(
         if input.read_line(&mut s)? == 0 {
             return Ok(());
         }
-        match s.trim().to_ascii_lowercase().as_str() {
+        let choice = s.trim().to_ascii_lowercase();
+        if a.game.config.character.is_none() && matches!(choice.as_str(), "1" | "2" | "5") {
+            writeln!(output,"Enable RPG explicitly in Configure Adventure Settings first. Shops and currencies work without RPG.")?;
+            continue;
+        }
+        match choice.as_str() {
             "0" | "back" | "cancel" => return Ok(()),
             "1" => super::enemy_edit::run(root, input, output)?,
             "5" => super::room_edit::run(root, input, output)?,

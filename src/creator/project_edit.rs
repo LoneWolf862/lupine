@@ -173,15 +173,25 @@ fn fields(v: &toml::Value, p: &str, out: &mut Vec<String>) {
         _ => (),
     }
 }
-fn raw<R: BufRead, W: Write>(w: &mut Wizard<'_, R, W>) -> Result<String, String> {
-    w.say("Paste exact file text. A line .end finishes; \\.end inserts literal .end. cancel/EOF discards the entire unsaved project draft. Newlines use LF.")?;
+fn raw<R: BufRead, W: Write>(w: &mut Wizard<'_, R, W>) -> Result<Option<String>, String> {
+    w.say("Paste exact file text. A line /end (or .end) finishes; back keeps this file unchanged; cancel/EOF discards the entire unsaved project draft. Prefix literal control lines with a backslash. Newlines use LF.")?;
     let mut text = String::new();
     loop {
         let line = w.line("... ")?;
-        if line == ".end" {
-            return Ok(text);
+        if matches!(line.as_str(), ".end" | "/end") {
+            return Ok(Some(text));
         }
-        text.push_str(if line == "\\.end" { ".end" } else { &line });
+        if line.eq_ignore_ascii_case("back") {
+            return Ok(None);
+        }
+        let unescaped = if ["\\.end", "\\/end", "\\back", "\\cancel"]
+            .contains(&line.to_ascii_lowercase().as_str())
+        {
+            &line[1..]
+        } else {
+            &line
+        };
+        text.push_str(unescaped);
         text.push('\n');
         if text.len() > 8 * 1024 * 1024 {
             return Err("File exceeds 8 MiB".into());
@@ -204,8 +214,10 @@ fn edit<R: BufRead, W: Write>(
         }
         let result = (|| -> Result<(), String> {
             if c == "1" {
-                let text = raw(w)?;
-                return draft.put(path.clone(), Some(text));
+                if let Some(text) = raw(w)? {
+                    draft.put(path.clone(), Some(text))?;
+                }
+                return Ok(());
             }
             let mut value: toml::Value = toml::from_str(&text)
                 .map_err(|e| format!("Repair syntax with option 1 first: {e}"))?;
@@ -219,13 +231,16 @@ fn edit<R: BufRead, W: Write>(
             }
             let pointer =
                 w.line("Field path (/key, /array/0, /array/- to append; back returns):")?;
-            if pointer == "back" {
+            if pointer.eq_ignore_ascii_case("back") {
                 return Ok(());
             }
             let p = parts(&pointer)?;
             match c.as_str() {
                 "2" => {
                     let literal = w.line("TOML value (quote text; arrays/tables accepted):")?;
+                    if literal.eq_ignore_ascii_case("back") {
+                        return Ok(());
+                    }
                     let parsed: toml::Table =
                         toml::from_str(&format!("value = {literal}")).map_err(|e| e.to_string())?;
                     if parsed.len() != 1 {
@@ -271,18 +286,29 @@ pub(super) fn run<R: BufRead, W: Write>(
     input: &mut R,
     output: &mut W,
 ) -> io::Result<()> {
+    run_at(root, None, input, output)
+}
+pub(super) fn run_at<R: BufRead, W: Write>(
+    root: &Path,
+    selected: Option<PathBuf>,
+    input: &mut R,
+    output: &mut W,
+) -> io::Result<()> {
     let mut w = Wizard { input, output };
     let result = (|| -> Result<(), String> {
         let mut draft = Draft {
             snapshot: Snapshot::capture(root)?,
             changes: BTreeMap::new(),
         };
+        if let Some(path) = selected {
+            edit(&mut draft, path, &mut w)?;
+        }
         loop {
             w.heading(&format!(
                 "PROJECT FILES — {} unsaved file(s)",
                 draft.changes.len()
             ))?;
-            for (p, _) in draft.snapshot.all_sources() {
+            for (p, _) in draft.snapshot.all_sources().take(40) {
                 w.say(&format!(
                     "{}{}",
                     if draft.changes.contains_key(p) {
@@ -298,18 +324,26 @@ pub(super) fn run<R: BufRead, W: Write>(
                     w.say(&format!("+ {}", p.display()))?;
                 }
             }
-            w.say("1. Edit/create file\n2. Duplicate definition file\n3. Delete file\n4. Undo one file\nP. Preview every change\nV. Validate draft\nS. Validate, preview and publish\nH. Schema help\n0. Discard all unsaved changes and return")?;
+            if draft.snapshot.all_sources().count() > 40 {
+                w.say("Showing the first 40 paths; L searches every file. P previews all unsaved changes.")?;
+            }
+            w.say("L. Browse/search files\n1. Edit/create file\n2. Duplicate definition file\n3. Delete file\n4. Undo one file\nP. Preview every change\nV. Validate draft\nS. Validate, preview and publish\nH. Schema help\n0. Discard all unsaved changes and return")?;
             let c = w.menu("Operation:")?.to_ascii_lowercase();
             if matches!(c.as_str(), "0" | "back") {
                 return Ok(());
             }
             let result = (|| -> Result<(), String> {
                 match c.as_str(){
+                "l"=>{
+                    let mut paths=draft.snapshot.all_sources().map(|(p,_)|p.clone()).chain(draft.changes.keys().cloned()).collect::<Vec<_>>();paths.sort();paths.dedup();
+                    let list=paths.into_iter().filter(|p|!matches!(draft.changes.get(p),Some(None))).map(|p|{let id=p.to_string_lossy().replace('\\', "/");let name=draft.text(&p).ok().and_then(|s|s.parse::<toml::Value>().ok()).and_then(|v|v.get("name").or_else(||v.get("title")).and_then(toml::Value::as_str).map(str::to_owned)).unwrap_or_else(||id.clone());(id,name)}).collect::<Vec<_>>();
+                    if let Some(path)=super::content_edit::choose(&mut w,"PROJECT FILES",&list)?{edit(&mut draft,path.into(),&mut w)?;}
+                },
                 "p"=>draft.preview(&mut w)?,
                 "v"=>{draft.snapshot.validate_changes(&draft.changes)?;if draft.changes.is_empty(){crate::adventure::Adventure::load(root)?;}w.say("Draft is valid. Nothing published.")?;},
                 "s"=>{if draft.changes.is_empty(){w.say("No unsaved changes.")?;}else{draft.snapshot.validate_changes(&draft.changes)?;draft.preview(&mut w)?;if confirm(&mut w,"Publish all displayed changes, including deletions?")?{draft.snapshot.commit_changes(&draft.changes)?;w.say("Published and validated. Player saves unchanged.")?;draft=Draft{snapshot:Snapshot::capture(root)?,changes:BTreeMap::new()};}}},
                 "h"=>w.say("All implemented schemas are editable here, including nested conditions/effects and arrays. game.toml: metadata/currencies; rules.toml: flags/counters; actions.toml: commands; events.toml: hooks/timers/quests/journal/endings; dialogue.toml: NPCs/nodes/choices; systems.toml: equipment/statuses. rooms/items/spells/enemies/weapons/shops hold individual definitions. config/*.fig: character, terminology, combat. See docs/CONTENT_REFERENCE.md and docs/PROJECT_EDITOR.md; bundled samples provide complete examples. Edits may temporarily have broken references. Fix every affected file, then validate/publish as one transaction. RORK files cannot be edited here. Duplicate creates a new ID without redirecting references; M handles deliberate migrations.")?,
-                "1"|"2"|"3"|"4"=>{let line=w.line("Relative content file path (back returns):")?;if line=="back"{return Ok(());}let p=PathBuf::from(line);
+                "1"|"2"|"3"|"4"=>{let line=w.line("Relative content file path (back returns):")?;if line.eq_ignore_ascii_case("back"){return Ok(());}let p=PathBuf::from(line);
                     if !editable_path(&p,draft.snapshot.source(&p).is_some()){return Err("Unsupported or unsafe path".into());}
                     match c.as_str(){
                         "1"=>edit(&mut draft,p,&mut w)?,

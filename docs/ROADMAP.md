@@ -12,7 +12,7 @@ its original review records are historical, not current merge status.
 Creator work through Phase 2I and Phase 3 PRs #20–#24 are merged.
 The human-feedback follow-up addresses disappearing prompts, save naming and practical
 parser phrases; see [follow-up scope and verification](PLAYER_FEEDBACK_FOLLOWUP.md).
-Version 0.11.0-dev.6 identifies current
+Version 0.11.0-dev.8 identifies current
 development; v0.9.0 remains unchanged. [Actual verification](PHASE_3_REVIEW.md).
 
 Phase 4 adds transaction bindings, supported ID migration, guided editor recovery and
@@ -101,4 +101,4 @@ Phase 2C.2 implements a self-documenting default directory tree and commented FI
 
 Phase 2C.2 now generates commented supported defaults and explicitly disables RPG in new adventures; legacy missing-key behavior remains enabled. Validation results are recorded in CODEX_HANDOFF.md.
 
-Approved engine expansion Phase 8 candidate implements complete-schema project drafts, invalid-project repair, duplicate/delete, publication properties/export texts, combat FIG editing and author inspection/trace. Phase 9 remains the next usability pass. Verification is recorded in [ENGINE_EXPANSION.md](ENGINE_EXPANSION.md).
+Approved engine expansion Phase 8 candidate implements complete-schema project drafts, invalid-project repair, duplicate/delete, publication properties/export texts, combat FIG editing and author inspection/trace. Phase 9 implements searchable navigation, visible drafts, room-centered browsing and local runtime discovery. Verification is recorded in [ENGINE_EXPANSION.md](ENGINE_EXPANSION.md).

@@ -17,7 +17,7 @@ The baseline is main 451f409, including merged Phase 4 PRs #26â€“#30.
 | 6 | NPCs, conditional dialogue, choices, transfers and movement | Verified locally; draft PR #36 |
 | 7 | Independent economy, shared rewards, world abilities, equipment/status/combat configuration | Verified locally; draft PR #37 |
 | 8 | Wizard coverage, project properties, repair, duplicate/delete/reference migration | Verified locally; draft PR #38 |
-| 9 | Consistent controls, draft visibility, search and room-centered navigation | Approved, not implemented |
+| 9 | Consistent controls, draft visibility, search and room-centered navigation | Implemented candidate; verification in progress |
 
 Validation, debug/scenario support, docs, save round trips, references and export
 coverage accompany each phase. Each major phase uses an isolated feature branch,
@@ -125,3 +125,5 @@ targets phase 6. CI, native CachyOS and human beginner acceptance are not yet cl
 Phase 7 Windows/Ubuntu CI passed at 0d48cc7, Actions run 44609348060.
 
 Phase 8 local Windows: all 347 tests passed, formatting and strict all-target Clippy passed; release build and native creator/manual-save/independent-ZIP/launcher acceptance passed (target/phase4-acceptance-829a1563/). Nine new regressions cover repair/deletion recovery, publication refusal, cancellation/EOF, combat settings, author trace and metadata export. Complete-schema coverage uses structural/text editing, with dedicated property/combat forms; it does not claim bespoke beginner forms for every feature. Recovery journal is v2, RORK remains 6. [Draft PR #38](https://github.com/LoneWolf862/lupine/pull/38) targets phase 7. CI, native CachyOS and human beginner acceptance are not yet claimed.
+
+Phase 8 Windows/Ubuntu CI passed at a9a7ecc, Actions run 44611857492.

@@ -103,6 +103,7 @@ fn manage<R: BufRead, W: Write>(root: &Path, w: &mut Wizard<'_, R, W>) -> Result
     w.say("Currencies live in game.toml alongside adventure metadata. Shops and enemy rewards refer to fixed IDs. Primary currency is shown first in the wallet. Saves retain balances; this editor never renames IDs, removes currencies, rewrites saves, or changes compatibility versions.")?;
     loop {
         w.heading("CURRENCY SETTINGS")?;
+        d.status(w)?;
         w.say(&format!("Current saved primary: {}\n{}\n1. Configure primary currency\n2. Add another currency\n3. Edit additional currency\nP. Exact manifest preview\nS. Save\n0. Discard",a.wallet.primary.as_deref().unwrap_or("none"),d.doc.get("currency").map(ToString::to_string).unwrap_or_default()))?;
         match w.menu("Selection:")?.trim().to_ascii_lowercase().as_str(){
    "0"|"back"=>return Ok(()),

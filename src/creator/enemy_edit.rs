@@ -137,6 +137,7 @@ fn form_inner<R: BufRead, W: Write>(
     w.say("Enemies are reusable combat definitions. Add them to a room through Rooms > Advanced > Encounters. Defining an enemy alone does not spawn it. Existing IDs remain fixed. Stat changes can invalidate saved combat HP; saves are never rewritten. No attacks means no counterattack.")?;
     loop {
         w.heading("ENEMY OPTIONS")?;
+        d.status(w)?;
         w.say("1. Display name\n2. Description\n3. Level\n4. Maximum HP\n5. Attack power\n6. Defense\n7. Experience reward\n8. Attacks\n9. Item drops\nC. Currency rewards\nP. Exact preview\nS. Save\n0. Discard and return")?;
         let choice = w.menu("Selection:")?.trim().to_ascii_lowercase();
         match choice.as_str() {
@@ -159,7 +160,7 @@ fn form_inner<R: BufRead, W: Write>(
                 let (key,help,default,min,max)=match choice.as_str(){
                     "3"=>("level","Enemy level is authored independently; it does not automatically scale other stats.",1,1,u32::MAX as i64),
                     "4"=>("max_hp","Health determines damage the enemy can survive. Gameplay keeps exact enemy HP private.",25,1,u32::MAX as i64),
-                    "5"=>("attack_power","100 means 1.00x attack damage; 200 means 2.00x. Damage rounds half up, minimum 1.",100,1,u32::MAX as i64),
+                    "5"=>("attack_power","100 means 1.00x attack damage; 200 means 2.00x. Damage rounds half up; combat.fig configures the minimum.",100,1,u32::MAX as i64),
                     "6"=>("defense","Subtracts from incoming damage; valid hits still deal at least 1.",0,0,u32::MAX as i64),
                     _=>("experience","XP awarded once on defeat. Player progression is configured separately. TOML supports signed 64-bit integers.",0,0,i64::MAX),
                 };

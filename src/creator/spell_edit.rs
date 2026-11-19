@@ -37,19 +37,20 @@ pub(super) fn form<R: BufRead, W: Write>(
 ) -> Result<bool, String> {
     loop {
         w.heading("SPELL OPTIONS")?;
+        d.status(w)?;
         w.say(&format!("{} ({})\n1. Display name\n2. Description\n3. MP cost\n4. Effect / target\n5. Power\n6. Teaching item\n7. Inspect / preview\nS. Save\n0. Discard and return",d.text("name"),d.text("id")))?;
         match w.menu("Selection:")?.trim().to_ascii_lowercase().as_str() {
             "0" | "back" => { w.say("Draft discarded; no draft changes saved.")?; return Ok(false); },
             "1" => if let Some(s)=w.ask("Spell name",d.text("name"),"Displayed name; ID remains stable",|s| super::validate_text(s,120))? {d.set("name",value(s));},
             "2" => if let Some(s)=w.description_labeled("Description", d.text("description"))? {d.set("description",value(s));},
             s @ ("3" | "5") => {
-                let (key, label, min) = if s=="3" { ("mana_cost", "MP spent per cast", 0) } else { ("power", "Damage or restoration amount", 1) };
+                let (key, label, min) = if s=="3" { ("mana_cost", "MP spent per cast", 0) } else { ("power", "Damage or restoration amount", if d.text("kind")=="world" {0}else{1}) };
                 let current=d.doc.get(key).and_then(Item::as_integer).unwrap_or(min);
                 if let Some(n)=number(w,label,current,min,u32::MAX as i64)? {d.set(key,value(n));}
             },
             "4" => {
-                w.say("Damage requires a living enemy target (cast <spell> on <enemy>). Heal restores your HP. Restore mana restores your MP; MP cost is still paid. Power must be positive.")?;
-                if let Some(s)=choose(w,"Effect:",&[("damage".into(),"Damage an enemy".into()),("heal".into(),"Heal the player".into()),("restore_mana".into(),"Restore player MP".into())])? {d.set("kind",value(s));}
+                w.say("Damage requires a living enemy target (cast <spell> on <enemy>). Heal restores your HP. Restore mana restores your MP; MP cost is still paid. Power must be positive for these kinds. World uses shared effects (edit those in F); zero MP world abilities need no RPG.")?;
+                if let Some(s)=choose(w,"Effect:",&[("damage".into(),"Damage an enemy".into()),("heal".into(),"Heal the player".into()),("restore_mana".into(),"Restore player MP".into()),("world".into(),"Shared world effects".into())])? {d.set("kind",value(s));}
             },
             "6" => {
                 w.say("A teaching item is consumed by learn <item>. It must be portable and available to carry. Create items with main menu 4. Choose 0/back to keep the link, or type remove to clear it.")?;

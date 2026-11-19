@@ -19,6 +19,7 @@ pub(super) fn run<R: BufRead, W: Write>(
         let mut d = Document::load(&snapshot, "game.toml".into(), "")?;
         loop {
             w.heading("PROJECT PROPERTIES")?;
+            d.status(&mut w)?;
             w.say(&format!("Game ID: {} (stable)\nTitle: {}\n1. Title\n2. Author\n3. Description\n4. Game version label\n5. Credits\n6. Game license text\n7. Player instructions\nP. Preview\nS. Save\n0. Discard and return",d.text("id"),d.text("title")))?;
             w.say("Publication metadata does not change save compatibility. No license is assumed. Export includes your exact credits, license and instructions when supplied.")?;
             match w.menu("Property:")?.to_ascii_lowercase().as_str() {

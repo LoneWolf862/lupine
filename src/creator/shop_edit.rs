@@ -71,9 +71,10 @@ pub(super) fn form<R: BufRead, W: Write>(
     snapshot: &Snapshot,
     w: &mut Wizard<'_, R, W>,
 ) -> Result<bool, String> {
-    w.say("A shop belongs to one room. Offers exchange currencies for goods/services, or pay players for items. Inventory items are unique, not stacks; one item cannot be stocked in multiple offers. Create prerequisite items, spells and currencies before opening this draft. Existing shop/offer IDs remain stable for saved stock and object bindings.")?;
+    w.say("A shop belongs to one room. Offers exchange currencies for goods/services, or pay players for items. Stackable items can be stocked in multiple offers. Use Project Files (F) for quantity and shared condition/effect fields. Create prerequisite items, spells and currencies before opening this draft. Existing shop/offer IDs remain stable for saved stock and object bindings.")?;
     loop {
         w.heading("SHOP OPTIONS")?;
+        d.status(w)?;
         w.say("1. Display name\n2. Room\n3. Add offer\n4. Edit offer\nP. Exact preview\nS. Save\n0. Discard")?;
         match w.menu("Selection:")?.trim().to_ascii_lowercase().as_str() {
             "0" | "back" => return Ok(false),

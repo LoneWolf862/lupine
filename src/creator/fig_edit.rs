@@ -49,6 +49,7 @@ fn character<R: BufRead, W: Write>(
     w.say("Character settings control optional RPG stats and progression. New projects default to disabled. An existing FIG with no enabled key is enabled. Changes apply on reload. Existing player saves are not rewritten; incompatible settings may require a deliberate game.toml save_compatibility_version change.")?;
     loop {
         w.heading("CHARACTER CONFIGURATION")?;
+        d.status(w)?;
         for (i, key) in fields.iter().enumerate() {
             let current = if key == "enabled" && existed && !d.doc.contains_key(key) {
                 "true (omitted in existing file)".into()
@@ -121,6 +122,7 @@ fn terminology<R: BufRead, W: Write>(
     w.say("Terminology changes displayed labels, not player commands. spellbook and spells remain commands. No mana/currency renaming fields are implemented.")?;
     loop {
         w.heading("TERMINOLOGY CONFIGURATION")?;
+        d.status(w)?;
         for (i, key) in ["spellbook", "spells"].iter().enumerate() {
             let current = d
                 .doc
@@ -199,6 +201,7 @@ fn combat<R: BufRead, W: Write>(
     let mut d = Document::load(snapshot, PathBuf::from("config/combat.fig"), template)?;
     loop {
         w.heading("COMBAT CONFIGURATION")?;
+        d.status(w)?;
         w.say(&format!(
             "{}\n1. Minimum damage\n2. Retaliation\nP. Preview\nS. Save\n0. Discard and return",
             d.doc

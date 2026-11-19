@@ -167,3 +167,5 @@ This section supersedes earlier descriptions of save/load as optional for Lupine
 ### Implemented creator expansion (development candidate)
 
 Complete current-schema structural/text editing, multi-file repair, definition copying and validated deletion use explicit Snapshot publication. Dedicated combat FIG and publication-property forms are available. Author inspection and scenario trace never write progress. Publication credits/license/instructions accompany exports when authored. These features preserve manual-only RORK version 6 and do not promise human beginner or native CachyOS acceptance. Details: [PROJECT_EDITOR.md](PROJECT_EDITOR.md).
+
+Phase 9 candidate: shared searchable/paged lists retain explicit selection and stable displayed numbers; draft visibility and room-centered navigation preserve separate confirmation boundaries. Local runtime discovery never executes or downloads candidates. See CREATOR_NAVIGATION.md and ENGINE_EXPANSION.md for verification.
