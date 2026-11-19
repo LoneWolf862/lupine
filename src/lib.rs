@@ -17,6 +17,7 @@ pub mod shops;
 pub mod startup;
 pub mod state;
 pub mod story_loader;
+pub mod terminal;
 pub mod wallet;
 pub mod world;
 

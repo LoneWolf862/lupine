@@ -19,3 +19,24 @@ absence of save-directory creation. Native Linux/human acceptance is recorded se
 Review finding: bound manifest reads and displayed titles as well as directory scans.
 This is local discovery, not a recursive file browser. Missing/unreadable search roots
 are skipped; an explicitly selected invalid adventure reports an error.
+
+## 3B terminal editing
+
+The executable wraps stdin with Rustyline 18.0.1 only when stdin/stdout are terminals
+and TERM is not dumb. The existing generic BufRead APIs remain scriptable; redirected
+input keeps the same buffered reader across menus and gameplay. The CLI shares up to
+100 history entries across prompts in the current invocation (including creator/menu
+answers). Empty lines and consecutive duplicates are omitted. History disappears on
+exit. Up/down recall, left/right and backspace edit; Ctrl-C cancels the current line;
+EOF exits. Terminal control bytes arriving through plain gameplay input are rejected.
+
+Rustyline provides Windows/Unix editing and Unicode cursor handling instead of a new
+platform-specific raw-key implementation. Default features are disabled: no file
+history, directory helper, custom bindings or fuzzy-search dependencies. APIs checked
+against https://docs.rs/rustyline/18.0.1/rustyline/ . Runtime stays offline.
+
+Agent-driven Windows PTY check: look, Up recall, Down/Up navigation, replacing recalled
+look with inventory using backspace, and quit worked. This is not human testing.
+Self-review found and fixed a nested stdin-lock deadlock in fixture launch; fixture
+now borrows the CLI reader. Windows locks running executables, so stop walkthroughs
+before rebuilding. Generic input and in-memory history policy have regression tests.

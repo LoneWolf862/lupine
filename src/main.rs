@@ -4,31 +4,31 @@ mod fixture_world;
 
 fn main() -> std::io::Result<()> {
     let args: Vec<String> = std::env::args().collect();
+    let mut input = lupine::terminal::stdin()?;
     match args.as_slice() {
         [_] => lupine::startup::run(
-            &mut std::io::stdin().lock(),
+            &mut input,
             &mut std::io::stdout().lock(),
             &lupine::save_files::default_save_root()?,
             &lupine::startup::search_roots()?,
         ),
-        [_, command] if command == "fixture" => lupine::runner::run_with_game_id(
+        [_, command] if command == "fixture" => lupine::runner::run_with_io_and_saves(
             fixture_world::fixture_world(),
             "LUPINE v0.8.4 — Engine Test Adventure",
             "lupine_fixture",
+            &lupine::save_files::default_save_root()?,
+            &mut input,
+            &mut std::io::stdout().lock(),
         ),
         [_, command] if command == "creator" => {
             let saves = lupine::save_files::default_save_root()?;
-            lupine::creator::session::start(
-                &mut std::io::stdin().lock(),
-                &mut std::io::stdout().lock(),
-                &saves,
-            )
+            lupine::creator::session::start(&mut input, &mut std::io::stdout().lock(), &saves)
         }
         [_, command, path] if command == "creator" => {
             let saves = lupine::save_files::default_save_root()?;
             lupine::creator::session::open(
                 std::path::Path::new(path),
-                &mut std::io::stdin().lock(),
+                &mut input,
                 &mut std::io::stdout().lock(),
                 &saves,
             )
@@ -40,24 +40,18 @@ fn main() -> std::io::Result<()> {
                 adventure.summary(&mut std::io::stdout().lock())
             } else {
                 let saves = lupine::save_files::default_save_root()?;
-                adventure.play(
-                    &saves,
-                    &mut std::io::stdin().lock(),
-                    &mut std::io::stdout().lock(),
-                )
+                adventure.play(&saves, &mut input, &mut std::io::stdout().lock())
             }
         }
         [_, command] if command == "new" => {
-            let result = lupine::creator::new_game_wizard(
-                &mut std::io::stdin().lock(),
-                &mut std::io::stdout().lock(),
-            );
+            let result =
+                lupine::creator::new_game_wizard(&mut input, &mut std::io::stdout().lock());
             match result {
                 Ok(path) => {
                     let saves = lupine::save_files::default_save_root()?;
                     lupine::creator::session::open(
                         &path,
-                        &mut std::io::stdin().lock(),
+                        &mut input,
                         &mut std::io::stdout().lock(),
                         &saves,
                     )
