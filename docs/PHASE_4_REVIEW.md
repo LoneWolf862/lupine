@@ -38,7 +38,7 @@ the snapshot and reuses the existing multi-file rollback path. No save version i
 bumped: creators must deliberately choose their game's compatibility policy.
 Old flags may remain loadable but change behavior, so compatibility is never promised.
 
-Five focused tests cover all categories, inline bindings/implicit currency IDs,
+Six focused tests cover all categories, inline bindings/implicit currency IDs,
 cross-file puzzles/art, invalid IDs, collisions, cancellation, stale files, unchanged
 RORK bytes and reopening. The executable creator acceptance migrates its bound
 object before gameplay and verifies the new binding. Shared publication tests cover
@@ -60,6 +60,11 @@ exports, independently extracts and launches the actual packaged Windows executa
 and Play.cmd from an unrelated working directory. Source playable bytes match.
 The scaffold creator README is deliberately outside the export content allowlist.
 
+A separate Windows live-terminal smoke test opened the binding by its display
+name, discarded edits, entered/canceled migration and export, validated and exited.
+Its isolated save directory was never created. This supplements the scripted
+walkthrough; it is still agent-operated testing, not human usability certification.
+
 Review fixes: retain a draft after deleting its last binding before prerequisite
 navigation; select actual definitions rather than ignored optional references;
 show definition names in migration selectors and plain-language offer summaries;
@@ -72,6 +77,33 @@ CI caught a test-environment issue: Ubuntu's default Python lacked tomllib after
 Rust tests/checks/build had passed. Phase 4D now explicitly selects Python 3.12 in
 both workflows. Python 3.11+ is needed only for the acceptance script, never play.
 No Rust dependency or Cargo.lock change; bundled dependency notices remain current.
+
+### Verified GitHub Actions
+
+All results below were observed completed successfully on 2026-11-19. Each run
+has Windows Server 2022 and Ubuntu 22.04 jobs; the integration code checkpoint is
+40af0a35acb580f7481960bf66e2fe52fc4f9779. Later handoff-only documentation commits
+do not change that tested runtime or acceptance script.
+
+| Checkpoint | Run | Result |
+|---|---|---|
+| 4A / 3f26f9f | [Creator checks](https://github.com/LoneWolf862/lupine/actions/runs/44498445011) | Both OS jobs passed |
+| 4B / 41aac2e | [Creator checks](https://github.com/LoneWolf862/lupine/actions/runs/44499141466) | Both OS jobs passed |
+| 4C / 510843e | [Creator checks](https://github.com/LoneWolf862/lupine/actions/runs/44500606678) | Both OS jobs passed |
+| 4D / 9e4110e | [Creator checks](https://github.com/LoneWolf862/lupine/actions/runs/44502912392) | Both OS jobs passed, including native ZIP acceptance |
+| 4E / 40af0a3 | [Creator checks](https://github.com/LoneWolf862/lupine/actions/runs/44503159599) | Both OS jobs passed, including native ZIP acceptance |
+| 4E / 40af0a3 | [Portable development builds](https://github.com/LoneWolf862/lupine/actions/runs/44503164494) | Both native package jobs passed; Ubuntu interactive history also passed |
+
+The portable workflow produced development artifacts, not releases. Both-platform
+export was additionally exercised on Windows using the local native executable
+and the actual Ubuntu CI artifact from the portable run. The downloaded artifact
+matched its recorded SHA-256 before extraction. Separate Windows/Linux ZIPs passed
+independent CRC/extraction, platform/version/digest, content and exclusion checks;
+source and save bytes were unchanged. The foreign binary was never executed on
+Windows; native Linux execution is established by the Ubuntu job above.
+Artifacts and runtime digests are recorded in
+target/phase4-acceptance-ad81a3d9/both-platform-summary.json. Windows ZIP size was
+5,072,796 bytes; Linux ZIP size was 5,685,447 bytes.
 
 This is scripted automated acceptance and agent review, **not human beginner
 certification or native CachyOS validation**. Human review/approval remains required
@@ -89,8 +121,8 @@ No branch was force-pushed and no PR was merged or release published.
 | 4A | [#26](https://github.com/LoneWolf862/lupine/pull/26) | codex/phase-4a-transaction-bindings / phase-4a-transaction-bindings | 3f26f9f6575152eb2db4ab9d6dbe7bae625a025b |
 | 4B | [#27](https://github.com/LoneWolf862/lupine/pull/27) | codex/phase-4b-id-migration / phase-4b-id-migration | 41aac2e76af3991f3c543c80d76a4783cf022bf1 |
 | 4C | [#28](https://github.com/LoneWolf862/lupine/pull/28) | codex/phase-4c-guided-recovery / phase-4c-guided-recovery | 510843ebbf6ab1ea15995ec3f79743a1fc682f55 |
-| 4D | [#29](https://github.com/LoneWolf862/lupine/pull/29) | codex/phase-4d-zip-export / phase-4d-zip-export | 9e4110e (runtime checkpoint bfc4977e23107d99b3b18a7e9c62017ecdd4053f) |
-| 4E | Pending draft | codex/phase-4e-integration-review / phase-4e-integration-review | Final integration checkpoint to be recorded |
+| 4D | [#29](https://github.com/LoneWolf862/lupine/pull/29) | codex/phase-4d-zip-export / phase-4d-zip-export | 9e4110e0c147325314061cf4cc11f83da2c9df6c (runtime checkpoint bfc4977e23107d99b3b18a7e9c62017ecdd4053f) |
+| 4E | [#30](https://github.com/LoneWolf862/lupine/pull/30) | codex/phase-4e-integration-review / phase-4e-integration-review | 40af0a35acb580f7481960bf66e2fe52fc4f9779 (integration code; subsequent handoff-only commit on this branch) |
 
 Primary checkout remains on main at 2377af13cf7796ae477a1664eed0d6bf7a21c0bb,
 with its preexisting personal untracked files untouched. Fetched origin/main was
@@ -118,7 +150,7 @@ $env:XDG_DATA_HOME = $env:APPDATA
 .\target\release\lupine.exe creator (Join-Path $demo 'Adventure with spaces')
 ```
 
-Review T, M and E; decline confirmations once and verify drafts/files remain as
+Review T (also R > 8), M and E; decline confirmations once and verify drafts/files remain as
 described. Play, navigate the locked door, fight/cast, use the altar, save explicitly,
 quit/restart and load. Export ZIP to a fresh sibling directory, extract and launch
 Play.cmd. For injected recovery fixtures use `cargo test --locked recovery::tests`;
@@ -129,6 +161,11 @@ Next objectives: human beginner walkthrough; native CachyOS launch/history/expor
 acceptance; feedback-driven prerequisite navigation; optional ZIP compression if
 distribution size warrants a dependency. Game identity, deletion migrations, RORK
 migration and unsupported recovery records remain deliberately separate work.
+
+Documentation updated: README.md, AGENTS.md, docs/ARCHITECTURE.md,
+docs/BACKLOG.md, docs/ROADMAP.md, docs/CREATOR_QUICKSTART.md,
+docs/RPG_CREATOR_GUIDE.md, docs/INSTALLATION.md, docs/SAVE_FORMAT.md and this
+review. Historical Phase 3 evidence remains historical rather than being rewritten.
 
 ## 4D: staged export and ZIP packaging
 
@@ -158,7 +195,8 @@ with synthetic foreign headers establish structure only, not foreign execution.
 scripts/phase4_acceptance.py drives the actual native executable through full
 menu authoring, binding, migration, gameplay, manual save/restart/load, ZIP export,
 independent extraction and native launcher execution. Both CI workflows run it
-on Windows Server 2022 and Ubuntu. Results remain pending until recorded below.
+on Windows Server 2022 and Ubuntu. Successful runs and the additional real-runtime
+Both-platform verification are recorded in the integration section above.
 
 ## 4C: guided editor recovery
 
@@ -182,5 +220,6 @@ need manual review. Stop other creator processes before recovery. This is not a
 hostile-concurrency or power-loss atomicity guarantee. Baseline plus proposed data
 can require roughly twice the 64 MiB snapshot size, in addition to displaced files.
 Temporary staging and baseline copies may exist, but no authored file changes
-before confirmation. Four failure-simulation tests cover multiple publication
-stages, cancellation, external edits, missing/corrupt/unknown data and retry.
+before confirmation. Six failure-simulation tests cover multiple publication
+stages, cancellation, external edits, missing/corrupt/unknown data, retry, direct
+ID migration and unsafe journal paths.
