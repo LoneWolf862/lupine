@@ -12,7 +12,7 @@ The baseline is main 451f409, including merged Phase 4 PRs #26â€“#30.
 | 1 | Current format reference, mechanic examples, file-based scenario testing | Verified locally and in CI; draft PR #31 |
 | 2 | Shared nested conditions, typed effects, counters, ordered outcomes | Verified locally; draft PR #32 |
 | 3 | Authored actions/aliases, fixed-object use, player feedback | Verified locally; draft PR #33 |
-| 4 | Hidden/starting inventory, containers, quantities, consumables | Implemented candidate; verification in progress |
+| 4 | Hidden/starting inventory, containers, quantities, consumables | Verified locally; draft PR pending |
 | 5 | Events, timers, quests, journals, endings | Approved, not implemented |
 | 6 | NPCs, conditional dialogue, choices, transfers and movement | Approved, not implemented |
 | 7 | Independent economy, shared rewards, world abilities, equipment/status/combat configuration | Approved, not implemented |
@@ -71,3 +71,16 @@ New tests cover aliases, carried tools, ambiguity/cancellation, atomic failure,
 reserved verbs, migration, fixed source interactions, private enemy inspection and
 authored movement. Export reloads authored actions. CI pending; human beginner
 and native CachyOS acceptance are not claimed.
+
+Phase 3 Windows/Ubuntu CI passed at 7bec031, Actions run 44594678114.
+[Draft PR #33](https://github.com/LoneWolf862/lupine/pull/33) targets phase 2.
+
+Phase 4 local Windows: the full 297-test suite passed. An additional direct-combat
+closed-container regression passed with the focused object/combat suites (298 distinct
+tests now). Formatting and strict all-target Clippy passed; release build and the
+independent Rust consumer passed. Native creator/manual save/load, independent ZIP
+extraction and launcher acceptance passed after updating its RORK assertions to the
+new schema (target/phase4-acceptance-d7a6758c/). Existing object tests were retained.
+RORK version 3 deliberately persists the canonical object ledger; no existing save
+files or compatibility revisions are rewritten. CI pending; native CachyOS and
+human beginner acceptance are not claimed.

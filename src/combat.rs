@@ -132,8 +132,11 @@ pub fn physical_attack(
     };
     let weapon = &content.weapons[&id];
     let item = world.item(&id).expect("resolved weapon item");
-    if !state.is_carried(&weapon.item) {
-        return CombatAction::free(format!("You must carry {} to attack with it.", item.name));
+    if !state.is_carried(&weapon.item) || !state.is_accessible(&weapon.item) {
+        return CombatAction::free(format!(
+            "You must carry and be able to reach {} to attack with it.",
+            item.name
+        ));
     }
     let index = match target_index(encounters, active, target) {
         Ok(i) => i,

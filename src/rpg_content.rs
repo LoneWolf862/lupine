@@ -227,7 +227,7 @@ impl RpgContent {
         let mut weapons = self
             .weapons
             .values()
-            .filter(|w| state.is_carried(&w.item))
+            .filter(|w| state.is_carried(&w.item) && state.is_accessible(&w.item))
             .collect::<Vec<_>>();
         weapons.sort_by(|a, b| a.item.cmp(&b.item));
         if weapons.is_empty() {

@@ -272,3 +272,57 @@ fn quantity_effects_and_conditions_share_atomic_capacity_and_uniqueness_checks()
     assert_ne!(duplicate, encoded);
     assert!(lupine::save::decode_save(w, &a.game.id, &duplicate).is_err());
 }
+
+#[test]
+fn closed_bag_weapons_are_unusable_even_through_the_combat_api() {
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("samples/rpg_persistent");
+    let mut a = Adventure::load(&root).unwrap();
+    a.game.world.items.push(lupine::world::Item {
+        id: "bag".into(),
+        name: "bag".into(),
+        aliases: vec![],
+        description: "Bag".into(),
+        descriptions: vec![],
+        portable: true,
+        starting_room: String::new(),
+    });
+    a.game.world.object_defs.insert(
+        "bag".into(),
+        objects::Definition {
+            initial: Some(L::Inventory),
+            container: Some(objects::Container::default()),
+            ..Default::default()
+        },
+    );
+    let w = &a.game.world;
+    let mut s = GameState::new(w);
+    s.character = Some(
+        a.game
+            .config
+            .character
+            .as_ref()
+            .unwrap()
+            .create_character()
+            .unwrap(),
+    );
+    let weapon = a.rpg.weapons.keys().next().unwrap().clone();
+    s.set_location(weapon.clone(), L::Container("bag".into()));
+    s.current_room = "woods".into();
+    a.encounters
+        .enter_room("woods", &mut s, &mut lupine::encounters::EncounterRng(1));
+    let mut active = std::mem::take(&mut s.active_enemies);
+    let before = s.clone();
+    let enemies = active.clone();
+    let action = lupine::combat::physical_attack(
+        w,
+        &a.rpg,
+        &a.encounters,
+        &mut s,
+        &mut active,
+        &format!("goblin with {weapon}"),
+    );
+    assert!(!action.turn_spent);
+    assert_eq!(s, before);
+    assert_eq!(active, enemies);
+    assert!(a.rpg.weapons(w, &s).contains("no usable weapons"));
+}
