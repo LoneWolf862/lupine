@@ -46,8 +46,38 @@ invalid dependencies and interrupted multi-file publication.
 
 ## Remaining assignment
 
-4D ZIP export and 4E integration review remain
+4E integration review remains
 in progress. Cross-platform CI and final release-readiness findings are pending.
+
+## 4D: staged export and ZIP packaging
+
+Creator E selects Windows x64, Linux x64 or Both, then ZIP or Folder. Both produces
+separate platform archives. ZIP32 uses stored entries (no compression), UTF-8 names,
+CRC-32, fixed timestamps and Unix executable attributes. The small writer follows
+the [PKWARE specification](https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT)
+without adding dependencies. Limits: 256 MiB per ZIP entry, 512 MiB per archive,
+8192 package entries; source content retains the existing 8/64 MiB bounds.
+
+Export builds and validates in a unique sibling .lupine-export-* workspace. ZIPs
+are synced and read back with SHA-256 before final publication. Final destinations
+are exclusively created; publication keeps EXPORT_INCOMPLETE.txt until all files
+are linked and checked. Existing destinations are refused. No runtime downloads,
+cross-platform relabeling, save packaging or source adventure changes occur.
+
+Export > C removes only a completed workspace's recorded, hash-verified inventory.
+Unknown/modified files, links and incomplete/missing records are refused. Crashes
+before the cleanup record exists require manual review. Failed final publication
+retains its incomplete marker; retry to a new destination. Hard-link support is
+required, as for creator transactions. No broad recursive deletion is used.
+
+Independent Python zipfile extraction tests cover CRCs, Unicode names, empty
+directories, runtime bytes, exclusions and no overwrites. Unit tests exercise
+size limits, write failure and conservative cleanup/retry. Both-platform tests
+with synthetic foreign headers establish structure only, not foreign execution.
+scripts/phase4_acceptance.py drives the actual native executable through full
+menu authoring, binding, migration, gameplay, manual save/restart/load, ZIP export,
+independent extraction and native launcher execution. Both CI workflows run it
+on Windows Server 2022 and Ubuntu. Results remain pending until recorded below.
 
 ## 4C: guided editor recovery
 

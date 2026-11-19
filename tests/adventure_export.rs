@@ -190,7 +190,7 @@ fn guided_export_cancel_eof_and_decline_do_not_publish() {
         "0\n".into(),
         format!("{target}\ncancel\n"),
         format!(
-            "{target}\n{}\n{}\nno\n",
+            "{target}\n2\n{}\n{}\nno\n",
             f.binary.display(),
             f.root.join("export").display()
         ),
@@ -199,6 +199,40 @@ fn guided_export_cancel_eof_and_decline_do_not_publish() {
             .unwrap();
         assert!(!f.root.join("export").exists());
     }
+}
+
+#[test]
+fn zip_round_trip_is_independently_readable_and_never_overwrites() {
+    use lupine::creator::export::OutputFormat;
+    let f = Fixture::new();
+    fs::write(f.game.join("art/雪 scene.txt"), "Unicode art\n").unwrap();
+    fs::write(f.game.join("private.rork"), "never include").unwrap();
+    let before = snapshot(&f.game);
+    let path = f
+        .plan("ZIP export")
+        .unwrap()
+        .publish_format(OutputFormat::Zip)
+        .unwrap();
+    let archive = fs::read_dir(&path).unwrap().next().unwrap().unwrap().path();
+    let extracted = f.root.join("extracted");
+    let result=Command::new("python").args(["-c", "import sys,zipfile; z=zipfile.ZipFile(sys.argv[1]); assert z.testzip() is None; assert len(z.namelist())==len(set(z.namelist())); assert 'adventure/art/雪 scene.txt' in z.namelist(); assert 'adventure/enemies/' in z.namelist(); assert not any(n.endswith('.rork') for n in z.namelist()); z.extractall(sys.argv[2])"]).arg(&archive).arg(&extracted).output().unwrap();
+    assert!(
+        result.status.success(),
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
+    Adventure::load(&extracted.join("adventure")).unwrap();
+    assert_eq!(
+        fs::read(extracted.join(Target::host().unwrap().executable())).unwrap(),
+        fs::read(&f.binary).unwrap()
+    );
+    assert_eq!(snapshot(&f.game), before);
+    assert!(f.plan("ZIP export").is_err());
+    assert!(fs::read_dir(&f.root).unwrap().all(|e| !e
+        .unwrap()
+        .file_name()
+        .to_string_lossy()
+        .starts_with(".lupine-export-")));
 }
 #[test]
 fn both_platform_preflight_and_package_structure_with_synthetic_foreign_header() {
@@ -242,7 +276,7 @@ fn both_platform_preflight_and_package_structure_with_synthetic_foreign_header()
         &output,
         &[
             (Target::host().unwrap(), f.binary.clone()),
-            (foreign, binary),
+            (foreign, binary.clone()),
         ],
     )
     .unwrap()
@@ -255,4 +289,21 @@ fn both_platform_preflight_and_package_structure_with_synthetic_foreign_header()
             .is_file());
         Adventure::load(&path.join(target.label()).join("adventure")).unwrap();
     }
+    let zip_path = ExportPlan::prepare(
+        &f.game,
+        &f.root.join("both ZIPs"),
+        &[
+            (Target::host().unwrap(), f.binary.clone()),
+            (foreign, binary),
+        ],
+    )
+    .unwrap()
+    .publish_format(lupine::creator::export::OutputFormat::Zip)
+    .unwrap();
+    for target in [Target::Windows, Target::Linux] {
+        assert!(zip_path
+            .join(format!("Export_Test-{}.zip", target.label()))
+            .is_file());
+    }
+    assert_eq!(fs::read_dir(zip_path).unwrap().count(), 2);
 }
