@@ -127,8 +127,9 @@ impl<R: BufRead, W: Write> Wizard<'_, R, W> {
         self.say(
             "Write one line below, or type /multi to write several lines. Instructions will follow.",
         )?;
+        let mut current = default.to_owned();
         loop {
-            let first = self.line(&format!("{label} [{default}]: "))?;
+            let first = self.line(&format!("{label} [{current}]: "))?;
             if first.eq_ignore_ascii_case("back") {
                 return Ok(None);
             }
@@ -144,7 +145,7 @@ impl<R: BufRead, W: Write> Wizard<'_, R, W> {
                     if line.eq_ignore_ascii_case("back") {
                         return Ok(None);
                     }
-                    if line == "?" {
+                    if line == "?" || line.eq_ignore_ascii_case("help") {
                         self.say("Type /end to finish, back to discard this edit, or cancel to abandon the current operation. Use \\? for a literal question mark.")?;
                         continue;
                     }
@@ -155,13 +156,16 @@ impl<R: BufRead, W: Write> Wizard<'_, R, W> {
                 }
                 lines.join("\n")
             } else if first.is_empty() {
-                default.to_owned()
+                current.clone()
             } else {
                 first.strip_prefix('\\').unwrap_or(&first).to_owned()
             };
             match super::validate_text(&value, 65536) {
                 Ok(()) => return Ok(Some(value)),
-                Err(e) => self.say(&e)?,
+                Err(e) => {
+                    self.say(&format!("{e}. Your text is retained below; enter a corrected description or back to leave this field unchanged."))?;
+                    current = value;
+                }
             }
         }
     }

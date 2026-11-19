@@ -341,7 +341,7 @@ pub(super) fn manage<R: BufRead, W: Write>(
             w.say("I. Prerequisite items\nT. Prerequisite spells\nC. Currencies\nThese managers save separately; return before starting a shop draft.")?;
         }
         let choice = w
-            .line("Selection (number, exact ID/name, N, or 0/back):")?
+            .menu("Selection (number, exact ID/name, N, or 0/back):")?
             .trim()
             .to_owned();
         if matches!(choice.to_ascii_lowercase().as_str(), "0" | "back") {

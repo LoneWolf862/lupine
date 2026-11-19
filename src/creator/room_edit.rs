@@ -137,7 +137,7 @@ impl Draft {
 }
 
 fn menu<R: BufRead, W: Write>(w: &mut Wizard<'_, R, W>, prompt: &str) -> Result<String, String> {
-    let line = w.line(prompt)?;
+    let line = w.menu(prompt)?;
     if matches!(line.trim().to_ascii_lowercase().as_str(), "?" | "help") {
         w.say("Changes stay in memory until Save and explicit confirmation. 0/back returns, cancel abandons this draft. ? explains prompts. Existing IDs cannot be renamed here because exits and saved games refer to them.")?;
         return Ok("help".into());

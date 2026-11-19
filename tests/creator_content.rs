@@ -498,3 +498,33 @@ fn conditional_description_reorder_changes_runtime_priority_and_preserves_commen
         .1
         .contains("Second."));
 }
+
+#[test]
+fn door_declined_save_allows_revision_without_duplicate_rules_or_lost_key() {
+    let f = bronze_fixture();
+    let out = f.run("9\n2\nstart\neast\nkey3\nn\ngate\nGate\nGate.\n\nFirst message.\nback\nRevised message.\n\n\nno\n4\nRevised blocked.\nyes\n0\n0\n");
+    assert!(out.contains("Save declined; door draft retained"), "{out}");
+    assert!(out.contains("DOOR CREATED"), "{out}");
+    assert!(out.contains("east -> Hall (hall)"), "{out}");
+    assert!(out.contains("use Bronze Key on Gate"), "{out}");
+    let v: toml::Value = f.read("interactions.toml").parse().unwrap();
+    assert_eq!(v["interactions"].as_array().unwrap().len(), 1);
+    assert_eq!(v["exit_rules"].as_array().unwrap().len(), 1);
+    assert_eq!(
+        v["interactions"][0]["success_text"].as_str(),
+        Some("Revised message.")
+    );
+    assert_eq!(
+        v["exit_rules"][0]["blocked_text"].as_str(),
+        Some("Revised blocked.")
+    );
+}
+
+#[test]
+fn artwork_rejects_one_bad_line_without_losing_accepted_lines() {
+    let f = Fixture::new();
+    let out =
+        f.run("6\nn\nrecovered\n1\n  first  \n\u{1b}[31m\n  corrected  \n/end\ns\nyes\n0\n0\n");
+    assert!(out.contains("earlier lines are retained"), "{out}");
+    assert_eq!(f.read("art/recovered.txt"), "  first  \n  corrected  \n");
+}

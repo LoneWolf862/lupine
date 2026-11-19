@@ -68,7 +68,7 @@ fn manage<R: BufRead, W: Write>(root: &Path, w: &mut Wizard<'_, R, W>) -> Result
             "N. New weapon\nI. Create/edit prerequisite items (separate confirmed save)\n0. Return",
         )?;
         let choice = w
-            .line("Selection (number, exact item ID/name, N, I, or 0):")?
+            .menu("Selection (number, exact item ID/name, N, I, or 0):")?
             .trim()
             .to_owned();
         let mut d = match choice.to_ascii_lowercase().as_str() {

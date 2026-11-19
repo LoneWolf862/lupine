@@ -293,7 +293,7 @@ fn locked_door<R: BufRead, W: Write>(
         w.say("Door creation canceled; nothing changed.")?;
         return Ok(());
     };
-    let mut d = Document::load(snapshot, PathBuf::from("interactions.toml"), "")?;
+    let original = Document::load(snapshot, PathBuf::from("interactions.toml"), "")?;
     let mut changes = BTreeMap::new();
     let Some(key) = door_item(snapshot, w, &room, true, &mut changes)? else {
         w.say("Door creation canceled; nothing changed.")?;
@@ -303,88 +303,135 @@ fn locked_door<R: BufRead, W: Write>(
         w.say("Door creation canceled; nothing changed.")?;
         return Ok(());
     };
-    let Some(flag) = w.ask(
+    let mut answers = [
+        format!("{door}_open"),
+        "The key turns; the door unlocks.".into(),
+        "The door cannot be unlocked again.".into(),
+        "The door is locked.".into(),
+    ];
+    let labels = [
         "Unlocked flag",
-        &format!("{door}_open"),
-        "Use this same flag for changing descriptions/art. It begins unset.",
-        super::validate_id,
-    )?
-    else {
-        w.say("Door creation canceled; nothing changed.")?;
-        return Ok(());
-    };
-    let Some(success) = w.ask(
         "Success message",
-        "The key turns; the door unlocks.",
-        "Shown after unlocking",
-        |s| super::validate_text(s, 65536),
-    )?
-    else {
-        w.say("Door creation canceled; nothing changed.")?;
-        return Ok(());
-    };
-    let Some(failure) = w.ask(
         "Failure message",
-        "The door cannot be unlocked again.",
-        "Shown when the interaction requirements fail",
-        |s| super::validate_text(s, 65536),
-    )?
-    else {
-        w.say("Door creation canceled; nothing changed.")?;
-        return Ok(());
-    };
-    let Some(blocked) = w.ask(
         "Locked exit message",
-        "The door is locked.",
+    ];
+    let helps = [
+        "A named yes/no memory, initially unset. Use it for changing descriptions/art.",
+        "Shown after unlocking",
+        "Shown when interaction requirements fail",
         "Shown when trying to travel before unlocking",
-        |s| super::validate_text(s, 65536),
-    )?
-    else {
-        w.say("Door creation canceled; nothing changed.")?;
-        return Ok(());
+    ];
+    w.say("Enter accepts each displayed value; back revisits the previous message without losing answers. At the first flag question, back cancels this door draft.")?;
+    let mut step = 0;
+    while step < answers.len() {
+        match w.ask(labels[step], &answers[step], helps[step], |s| {
+            if step == 0 {
+                super::validate_id(s)
+            } else {
+                super::validate_text(s, 65536)
+            }
+        })? {
+            Some(v) => {
+                answers[step] = v;
+                step += 1;
+            }
+            None if step > 0 => step -= 1,
+            None => {
+                w.say("Door creation canceled; nothing changed.")?;
+                return Ok(());
+            }
+        }
+    }
+    let [mut flag, mut success, mut failure, mut blocked] = answers;
+    let adventure = Adventure::load(&snapshot.root)?;
+    let name = |id: &str| -> String {
+        changes
+            .get(&PathBuf::from(format!("items/{id}.toml")))
+            .and_then(|s| s.parse::<toml::Value>().ok())
+            .and_then(|v| {
+                v.get("name")
+                    .and_then(toml::Value::as_str)
+                    .map(str::to_owned)
+            })
+            .or_else(|| adventure.game.world.item(id).map(|i| i.name.clone()))
+            .unwrap_or_else(|| id.to_owned())
     };
-    let mut requires = Array::new();
-    requires.push(one("has_item", &key));
-    requires.push(one("flag_unset", &flag));
-    let mut effects = Array::new();
-    effects.push(one("set_flag", &flag));
-    let mut t = Table::new();
-    t["item"] = value(&key);
-    t["target"] = value(&door);
-    t["requires"] = value(requires);
-    t["effects"] = value(effects);
-    t["success_text"] = value(success);
-    t["failure_text"] = value(failure);
-    rules_ui::append(&mut d.doc, "interactions", t)?;
-    let mut t = Table::new();
-    let mut requires = Array::new();
-    requires.push(one("flag_set", &flag));
-    t["from"] = value(&room);
-    t["direction"] = value(&dir);
-    t["requires"] = value(requires);
-    t["blocked_text"] = value(blocked);
-    rules_ui::append(&mut d.doc, "exit_rules", t)?;
-    changes.insert(d.path.clone(), d.contents());
-    let summary = format!("Door: {door}\nLocation: {room}\nAffected exit: {dir}\nRequired key: {key}\nStarting state: locked\nInteraction: take {key}, then use {key} on {door}\nUnlock memory (flag): {flag}\nReverse route: unchanged");
-    w.heading("LOCKED DOOR DRAFT")?;
-    w.say(&summary)?;
-    for (p, s) in &changes {
-        DraftFile::text(
-            &p.to_string_lossy(),
-            s,
-            "Locked door: all related files are saved together.",
-        )
-        .preview(&snapshot.root, w.output)?;
-    }
-    if confirm(w, "Save this door, items and rules together?")? {
-        snapshot.commit(&changes)?;
-        w.heading("DOOR CREATED")?;
+    let key_name = name(&key);
+    let door_name = name(&door);
+    let location = adventure.game.world.room(&room).ok_or("Room disappeared")?;
+    let destination = location
+        .exits
+        .iter()
+        .find(|(d, _)| d.label() == dir)
+        .map(|(_, id)| id.as_str())
+        .ok_or("Exit disappeared")?;
+    let destination_name = adventure
+        .game
+        .world
+        .room(destination)
+        .map(|r| r.title.as_str())
+        .unwrap_or(destination);
+    loop {
+        let mut d = Document::load(snapshot, original.path.clone(), "")?;
+        let mut requires = Array::new();
+        requires.push(one("has_item", &key));
+        requires.push(one("flag_unset", &flag));
+        let mut effects = Array::new();
+        effects.push(one("set_flag", &flag));
+        let mut t = Table::new();
+        t["item"] = value(&key);
+        t["target"] = value(&door);
+        t["requires"] = value(requires);
+        t["effects"] = value(effects);
+        t["success_text"] = value(&success);
+        t["failure_text"] = value(&failure);
+        rules_ui::append(&mut d.doc, "interactions", t)?;
+        let mut t = Table::new();
+        let mut requires = Array::new();
+        requires.push(one("flag_set", &flag));
+        t["from"] = value(&room);
+        t["direction"] = value(&dir);
+        t["requires"] = value(requires);
+        t["blocked_text"] = value(&blocked);
+        rules_ui::append(&mut d.doc, "exit_rules", t)?;
+        changes.insert(d.path.clone(), d.contents());
+        let summary = format!("Door: {door_name} ({door})\nLocation: {} ({room})\nAffected exit: {dir} -> {destination_name} ({destination})\nRequired key: {key_name} ({key})\nStarting state: locked\nInteraction: take {key_name}, then use {key_name} on {door_name}\nUnlock memory (flag): {flag}\nReverse route: unchanged", location.title);
+        w.heading("LOCKED DOOR DRAFT")?;
         w.say(&summary)?;
-        w.say("Locked door saved and validated. Validation PASSED. Ready to playtest.")?;
-    } else {
-        w.say("Door creation canceled; no door, item or rule changes saved.")?;
+        for (p, s) in &changes {
+            DraftFile::text(
+                &p.to_string_lossy(),
+                s,
+                "Locked door: all related files are saved together.",
+            )
+            .preview(&snapshot.root, w.output)?;
+        }
+        if confirm(w, "Save this door, items and rules together?")? {
+            match snapshot.commit(&changes) {
+            Ok(()) => {
+                w.heading("DOOR CREATED")?;
+                w.say(&summary)?;
+                w.say("Locked door saved and validated. Validation PASSED. Ready to playtest.")?;
+                return Ok(());
+            }
+            Err(e) => w.say(&format!("Save needs attention: {e}\nDoor draft retained. External edits or recovery conflicts require review and reopening."))?,
+        }
+        } else {
+            w.say("Save declined; door draft retained. No files changed.")?;
+        }
+        w.say("1. Revise unlock flag\n2. Revise success message\n3. Revise failure message\n4. Revise blocked message\nS. Preview and retry save\n0/back. Discard door draft")?;
+        loop {
+            match w.menu("Selection:")?.to_ascii_lowercase().as_str() {
+            "0" | "back" => { w.say("Door creation canceled; nothing changed.")?; return Ok(()); },
+            "1" => { if let Some(v) = w.ask("Unlocked flag", &flag, "Shared story memory; initially unset", super::validate_id)? { flag=v; } break; },
+            "2" => { if let Some(v) = w.description_labeled("Success message", &success)? {success=v;} break; },
+            "3" => { if let Some(v) = w.description_labeled("Failure message", &failure)? {failure=v;} break; },
+            "4" => { if let Some(v) = w.description_labeled("Locked exit message", &blocked)? {blocked=v;} break; },
+            "s" => break,
+            _ => w.say("Choose 1-4 to revise, S to retry, or 0/back to discard. Your draft is retained.")?,
+        }
+        }
     }
-    Ok(())
 }
 pub(super) fn run<R: BufRead, W: Write>(
     root: &Path,

@@ -28,9 +28,14 @@ fn art_entries(snapshot: &Snapshot) -> Vec<(String, String)> {
 fn read_art<R: BufRead, W: Write>(w: &mut Wizard<'_, R, W>) -> Result<Option<String>, String> {
     w.say("ASCII art is a picture made from text. Type/paste lines, including spaces and blank lines. /end finishes; back discards; cancel leaves this draft. Escape a literal control line with one backslash. Other backslashes and whitespace are preserved.")?;
     let mut result = String::new();
+    let mut rejected = false;
     loop {
         let line = w.line("... ")?;
         if line == "/end" {
+            if rejected && result.is_empty() {
+                w.say("No valid artwork entered; previous artwork retained.")?;
+                return Ok(None);
+            }
             return Ok(Some(result));
         }
         if line.eq_ignore_ascii_case("back") {
@@ -42,9 +47,14 @@ fn read_art<R: BufRead, W: Write>(w: &mut Wizard<'_, R, W>) -> Result<Option<Str
         } else {
             &line
         };
+        let previous_len = result.len();
         result.push_str(line);
         result.push('\n');
-        crate::story_loader::validate_art(&result, "Artwork draft")?;
+        if let Err(e) = crate::story_loader::validate_art(&result, "Artwork draft") {
+            result.truncate(previous_len);
+            rejected = true;
+            w.say(&format!("{e}\nThat line was rejected; earlier lines are retained. Enter a corrected line, /end to finish accepted lines, or back to leave the artwork unchanged."))?;
+        }
     }
 }
 fn room<R: BufRead, W: Write>(snapshot: &Snapshot, w: &mut Wizard<'_, R, W>) -> Result<(), String> {
@@ -125,6 +135,7 @@ fn edit<R: BufRead, W: Write>(
             "1"=>if let Some(s)=read_art(w)?{text=s;},
             "2"=>DraftFile::text(&path.to_string_lossy(),&text,"Artwork preview; whitespace is significant.").preview(&snapshot.root,w.output)?,
             "s"=>{
+                if original.is_none() && text.is_empty() { w.say("Enter artwork before saving a new file; nothing changed.")?; continue; }
                 if original.as_ref()==Some(&text){w.say("No changes to save.")?;continue;}
                 DraftFile::text(&path.to_string_lossy(),&text,"Saving edits the authored artwork, not player progress.").preview(&snapshot.root,w.output)?;
                 if confirm(w,"Save artwork?")? {
@@ -152,7 +163,7 @@ fn manage<R: BufRead, W: Write>(root: &Path, w: &mut Wizard<'_, R, W>) -> Result
             "N. Create artwork\nR. Attach/change room artwork and variants\n0. Return to creator",
         )?;
         let choice = w
-            .line("Selection (number, exact artwork filename, N, R, or 0):")?
+            .menu("Selection (number, exact artwork filename, N, R, or 0):")?
             .trim()
             .to_owned();
         if matches!(choice.as_str(), "0" | "back") {
