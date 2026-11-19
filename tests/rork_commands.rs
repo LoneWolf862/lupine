@@ -60,17 +60,12 @@ fn saves_and_loads_across_process_sessions() {
 }
 
 #[test]
-fn overwrite_requires_confirmation() {
+fn explicit_named_save_writes_without_questions_including_overwrite() {
     let root = temporary_root();
     play(&root, "save Initial\nquit\n");
-    let first = fs::read(slot_path(&root, "fixture", "Initial").unwrap()).unwrap();
-    let result = play(&root, "take key\nsave Initial\nno\nquit\nyes\n");
-    assert!(result.contains("Save canceled"), "{result}");
-    assert_eq!(
-        first,
-        fs::read(slot_path(&root, "fixture", "Initial").unwrap()).unwrap()
-    );
-    let result = play(&root, "take key\nsave Initial\nyes\nquit\n");
+    let result = play(&root, "take key\nsave Initial\nquit\n");
+    assert!(!result.contains("yes/no"), "{result}");
+    assert!(!result.contains("Save name:"), "{result}");
     assert!(result.contains("Saved:"), "{result}");
     let world = fixture_world::fixture_world();
     let state = read_slot(&root, &world, "fixture", "Initial").unwrap();
@@ -137,25 +132,17 @@ fn snapshot_stays_in_memory_without_save_command() {
 }
 
 #[test]
-fn bare_save_explains_names_and_does_not_mistake_movement_for_a_name() {
+fn first_save_only_prompts_for_a_name() {
     let root = temporary_root();
-    let result = play(&root, "save\nnorth\nno\nlook\nquit\n");
-    assert!(
-        result.contains("Type a name, not a game command."),
-        "{result}"
-    );
+    let result = play(&root, "save\nnorth\nquit\n");
+    assert!(!result.contains("manual save"), "{result}");
+    assert!(!result.contains("game command"), "{result}");
+    assert!(!result.contains("yes/no"), "{result}");
     assert!(result.contains("Save name:\n"), "{result}");
     assert!(
-        result.contains("'north' looks like a game command. Use it as the save name? (yes/no)\n"),
-        "{result}"
-    );
-    assert!(result.contains("Save canceled"), "{result}");
-    assert!(
         !result.contains("Test Corridor"),
-        "no movement on declined naming: {result}"
+        "naming must not move the player: {result}"
     );
-    assert!(!root.exists());
-    let result = play(&root, "save\nnorth\nyes\nquit\n");
     assert!(result.contains("Saved: north.fixture.rork"), "{result}");
     assert!(!result.contains("Unsaved progress"));
     assert_eq!(
@@ -169,7 +156,7 @@ fn bare_save_explains_names_and_does_not_mistake_movement_for_a_name() {
 
 #[test]
 fn name_cancel_eof_and_explicit_command_names_remain_manual() {
-    for ending in ["cancel\nquit\n", "back\nquit\n", "\nquit\n", "", "north\n"] {
+    for ending in ["cancel\nquit\n", "back\nquit\n", "\nquit\n", ""] {
         let root = temporary_root();
         play(&root, &format!("save\n{ending}"));
         assert!(!root.exists());
@@ -188,10 +175,10 @@ fn confirmation_questions_are_complete_lines_and_declines_preserve_state() {
     let original = fs::read(slot_path(&root, "fixture", "camp").unwrap()).unwrap();
     let result = play(
         &root,
-        "take key\nsave camp\nno\nload camp\nno\nexit\nmaybe\nno\ninventory\nexit\nyes\n",
+        "load camp\ntake key\nsave\nno\ncancel\nload camp\nno\nexit\nmaybe\nno\ninventory\nexit\nyes\n",
     );
     for text in [
-        "Save exists. Overwrite? (yes/no):\n",
+        "Overwrite current save 'camp'? (yes/no):\n",
         "Discard unsaved progress and load? (yes/no):\n",
         "Unsaved progress. Quit without saving? (yes/no):\n",
     ] {
@@ -199,6 +186,89 @@ fn confirmation_questions_are_complete_lines_and_declines_preserve_state() {
     }
     assert!(result.contains("Please answer yes or no."));
     assert!(result.contains("You are carrying: brass key"));
+    assert_eq!(
+        fs::read(slot_path(&root, "fixture", "camp").unwrap()).unwrap(),
+        original
+    );
+    fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn current_save_overwrite_and_save_as_follow_successful_writes() {
+    let root = temporary_root();
+    let result = play(&root, "save Forest Camp\ntake key\nsave\nyes\ndrop key\nsave\nno\nNew Camp\ntake key\nsave\nyes\nquit\n");
+    assert_eq!(
+        result
+            .matches("Overwrite current save 'Forest Camp'?")
+            .count(),
+        2,
+        "{result}"
+    );
+    assert_eq!(
+        result.matches("Overwrite current save 'New Camp'?").count(),
+        1,
+        "{result}"
+    );
+    assert_eq!(result.matches("Save name:").count(), 1, "{result}");
+    assert!(
+        !result.contains("Save exists. Overwrite?"),
+        "no duplicate confirmations: {result}"
+    );
+    for name in ["Forest Camp", "New Camp"] {
+        assert_eq!(
+            read_slot(&root, &fixture_world::fixture_world(), "fixture", name)
+                .unwrap()
+                .location("brass_key"),
+            Some(ItemLocation::Inventory)
+        );
+    }
+    fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn load_selects_current_slot_and_failures_or_declines_do_not_replace_it() {
+    let root = temporary_root();
+    play(&root, "save First\ntake key\nsave Second\nquit\n");
+    let second = fs::read(slot_path(&root, "fixture", "Second").unwrap()).unwrap();
+    let result = play(
+        &root,
+        "load First\ntake key\nload Second\nno\nload missing\nsave ../invalid\nsave\nyes\nquit\n",
+    );
+    assert!(
+        result.contains("Overwrite current save 'First'?"),
+        "{result}"
+    );
+    assert_eq!(
+        read_slot(&root, &fixture_world::fixture_world(), "fixture", "First")
+            .unwrap()
+            .location("brass_key"),
+        Some(ItemLocation::Inventory)
+    );
+    assert_eq!(
+        fs::read(slot_path(&root, "fixture", "Second").unwrap()).unwrap(),
+        second
+    );
+    fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn canceled_or_eof_save_preserves_current_slot_and_fresh_sessions_have_none() {
+    let root = temporary_root();
+    play(&root, "save camp\nquit\n");
+    let original = fs::read(slot_path(&root, "fixture", "camp").unwrap()).unwrap();
+    for ending in ["", "no\n", "no\ncancel\nquit\nyes\n", "no\n\nquit\nyes\n"] {
+        play(&root, &format!("load camp\ntake key\nsave\n{ending}"));
+        assert_eq!(
+            fs::read(slot_path(&root, "fixture", "camp").unwrap()).unwrap(),
+            original
+        );
+    }
+    let result = play(&root, "save\ncancel\nquit\n");
+    assert!(result.contains("Save name:"));
+    assert!(!result.contains("Overwrite current save"));
+    // Naming an existing slot through the prompt still asks before replacing it.
+    let result = play(&root, "take key\nsave\ncamp\nno\nquit\nyes\n");
+    assert!(result.contains("Save exists. Overwrite?"));
     assert_eq!(
         fs::read(slot_path(&root, "fixture", "camp").unwrap()).unwrap(),
         original

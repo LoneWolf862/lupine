@@ -10,10 +10,16 @@ Rustyline owns/redraws its input line, so its empty prompt erased these question
 Questions now finish on a separate line, and Rustyline supplies its own visible `> `.
 Creator questions already use separate lines and keep their existing flow.
 
-Bare save explains that the next response is a name, with camp as an example and
-Enter/cancel/back to cancel. Command-like names such as north require yes/no confirmation.
-No cancels without movement or a file; EOF cancels without a file. Explicit `save north`
-still names a save north. Existing overwrite confirmation remains mandatory.
+After the owner's follow-up playtest, bare save uses the shorter `Save name:` prompt.
+If a slot was successfully saved or loaded in this play session, bare save first asks
+`Overwrite current save 'NAME'? (yes/no):`. Yes writes that slot once; no asks for a name.
+Enter/cancel/back at the name prompt cancels; EOF never saves. Explicit `save forest camp`
+writes directly to that named slot, including replacement of the same name without another
+question. A name selected through the prompt still requires confirmation if it exists.
+Name validation, collision checks and staged file replacement remain unchanged.
+The current slot changes only after successful save/load, is never serialized, and resets
+on each fresh play. Failed or declined operations leave it unchanged. No command-name guard
+or explanatory paragraph remains at the save-name prompt.
 
 The transcript's first exit was immediately after a successful save: no unsaved-state
 confirmation was needed. The second exit had unsaved movement; its question was hidden.
@@ -48,8 +54,9 @@ automatic typo acceptance or arbitrary natural-language inference were introduce
 ## Verification and review
 
 Regression cases extend parser_experience and rork_commands: new grammar, word-prefix
-ambiguity, authored alias priority, no mutation on cancellation, command-like save names,
-explicit names, EOF, visible question lines, overwrite/load/quit declines and saved bytes.
+ambiguity, authored alias priority, no mutation on cancellation, current-slot save/save-as,
+explicit names, EOF, fresh sessions, failed/declined load/save, visible question lines,
+overwrite/load/quit declines and saved bytes.
 The existing stable-ID and ordinary item/spell collision tests remain in place.
 
 The Linux PTY script now waits for completed question lines before sending answers and
@@ -65,8 +72,10 @@ From this feature worktree, run cargo run --release and choose the RPG Persisten
 Try take fire scroll, learn fire scroll, take dagger, travel south, attack goblin (cancel,
 then select), and cast fireball at goblin. Try walet, then yes, then wallet.
 
-Type save, then north. The complete question should remain visible; no cancels without
-moving or writing a save. Save deliberately with save camp. Move, then exit: no continues,
+Type save: with no current slot, only Save name appears. Enter camp. Move, then save:
+yes overwrites camp; no asks for a new name. Enter forest camp to create another slot.
+Try save camp to write directly, then load forest camp and save to verify the current slot.
+Move, then exit: no continues,
 yes leaves without saving. Use load camp to restore only when explicitly requested.
 Retest Up/Down and editing in the friend's normal Windows terminal. Keep any personal
 saves; this patch does not rename, rewrite or remove the existing north save.

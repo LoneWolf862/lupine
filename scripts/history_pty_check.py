@@ -52,16 +52,12 @@ try:
     expect(b"> ")
     # Questions must end on their own line before rustyline redraws the input.
     os.write(fd, b"save\n")
-    expect(b"Type a name, not a game command.")
     expect(b"Save name:\r\n")
     expect(b"> ")
-    os.write(fd, b"north\n")
-    expect(b"Use it as the save name? (yes/no)\r\n")
-    expect(b"> ")
-    os.write(fd, b"no\n")
+    os.write(fd, b"cancel\n")
     expect(b"Save canceled.")
     expect(b"> ")
-    assert not userdata.exists(), "Declining a command-like name must not save"
+    assert not userdata.exists(), "Canceling naming must not save"
     os.write(fd, b"save\n")
     expect(b"Save name:\r\n")
     expect(b"> ")
@@ -74,10 +70,13 @@ try:
     os.write(fd, b"take key\n")
     expect(b"You take the brass key.")
     expect(b"> ")
-    os.write(fd, b"save camp\n")
-    expect(b"Save exists. Overwrite? (yes/no):\r\n")
+    os.write(fd, b"save\n")
+    expect(b"Overwrite current save 'camp'? (yes/no):\r\n")
     expect(b"> ")
     os.write(fd, b"no\n")
+    expect(b"Save name:\r\n")
+    expect(b"> ")
+    os.write(fd, b"cancel\n")
     expect(b"Save canceled.")
     expect(b"> ")
     os.write(fd, b"load camp\n")
@@ -96,13 +95,31 @@ try:
     expect(b"You are carrying: brass key")
     expect(b"> ")
     assert slots[0].read_bytes() == saved, "Declines must preserve the saved snapshot"
+    os.write(fd, b"save\n")
+    expect(b"Overwrite current save 'camp'? (yes/no):\r\n")
+    expect(b"> ")
+    os.write(fd, b"yes\n")
+    expect(b"Saved:")
+    expect(b"> ")
+    assert slots[0].read_bytes() != saved, "Confirmed save must update the current slot"
+    saved = slots[0].read_bytes()
+    os.write(fd, b"save\n")
+    expect(b"Overwrite current save 'camp'? (yes/no):\r\n")
+    expect(b"> ")
+    os.write(fd, b"no\n")
+    expect(b"Save name:\r\n")
+    expect(b"> ")
+    os.write(fd, b"forest camp\n")
+    expect(b"Saved: forestcamp.")
+    expect(b"> ")
+    assert len(list(userdata.rglob("*.rork"))) == 2
     os.write(fd, b"\x04")
     expect(b"Goodbye!")
     _, status = os.waitpid(pid, 0)
     assert os.waitstatus_to_exitcode(status) == 0
     pid = 0
     assert slots[0].read_bytes() == saved, "EOF must not save"
-    print("Linux PTY: history/editing, visible save/load/quit prompts, naming guard, declines and EOF passed.")
+    print("Linux PTY: history/editing, visible prompts, current-slot overwrite/save-as, declines and EOF passed.")
 finally:
     (root / "target/history-pty-transcript.bin").write_bytes(transcript)
     os.close(fd)

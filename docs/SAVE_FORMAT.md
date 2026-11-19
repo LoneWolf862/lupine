@@ -1,5 +1,12 @@
 # RORK Save Format — v0.6.0-A Working Specification
 
+Current command behavior (2026-11-19): saving remains exclusively player-initiated.
+Bare `save` offers to overwrite the last successfully saved/loaded slot in this session;
+no asks `Save name:`. Fresh sessions ask for a name immediately. Explicit `save NAME`
+writes that named slot without another question, including replacing the same name.
+This session-only slot selection does not change RORK serialization or compatibility.
+The stage records below describe earlier behavior; see [current player guidance](INSTALLATION.md).
+
 > Historical design/stage record: feature-status and compatibility claims below describe earlier development. Current policy and file paths are in [NEXT_PHASE_REQUIREMENTS.md](NEXT_PHASE_REQUIREMENTS.md) and [CONFIG_FIG_SPEC.md](CONFIG_FIG_SPEC.md). Character configuration now belongs in `config/character.fig`.
 
 **Stage A: serialization only (not yet integrated into gameplay).** `src/save.rs` provides `encode_save` and `decode_save`, with TOML-based save format version 1 and validation against the currently loaded `World`. The `save`, `load`, and `saves` commands, filesystem storage, overwrite confirmation, unsaved-progress warnings and cross-platform compatibility policy remain **planned for stages B/C**.

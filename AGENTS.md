@@ -53,7 +53,10 @@ No-argument startup is a menu; fixture explicitly runs the Rust test adventure. 
 redirected input and scriptable BufRead APIs. Suggestions/clarification never mutate state;
 ordinary item use has priority over spell aliases. Exact enemy HP stays private.
 Keep questions on completed output lines above the terminal editor's input prompt.
-Bare save must explain naming and confirm command-like names. Suggestions stay advisory;
+Bare save offers to overwrite the last successfully saved/loaded slot in this play session;
+no asks for a name, and a fresh session asks for a name immediately. Explicit save NAME
+authorizes writing that slot without another question. Keep name/collision validation.
+Suggestions stay advisory;
 missing weapon selection and cancellation must not spend a turn or mutate game state.
 
 Export requires a new destination outside the adventure and explicit confirmation. Never

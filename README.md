@@ -58,10 +58,12 @@ Bare spell names provide syntax guidance without casting or choosing a target.
 **Saving is strictly manual:** `save <name>`, `saves`, `load <name>`. RORK files live in
 your user-data directory. There is no autosave, save-on-quit or automatic recovery after
 defeat. Unsaved quit/load confirmations remain in place. See [save format](docs/SAVE_FORMAT.md).
-Bare `save` explains naming and accepts Enter/cancel/back to cancel. A name resembling a
-command (such as north) requires explicit confirmation; declining neither saves nor moves.
-`save north` remains an explicit request to use that name. Save/load/quit questions appear
-above the editable input line so terminal redraws cannot erase them.
+Bare `save` offers to overwrite the last slot successfully saved or loaded in this play
+session. Yes updates that slot; no asks `Save name:`. With no current slot, it asks for a
+name immediately. Enter/cancel/back at the name prompt cancels. `save forest camp` writes
+directly to that named slot, replacing the same name without another question. Selecting
+an existing name through the name prompt still asks before overwriting. Save/load/quit
+questions appear above the editable input line so terminal redraws cannot erase them.
 
 ## Creators
 

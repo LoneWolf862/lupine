@@ -34,7 +34,10 @@ Numbered target clarification supports cancellation without spending a turn or r
 
 Manual saves: `save name`, `saves`, `load name`. Windows uses `%APPDATA%\Lupine\saves`;
 Linux uses `$XDG_DATA_HOME/lupine/saves` or `~/.local/share/lupine/saves`. Names are isolated
-by stable game ID. Existing slots require overwrite confirmation. Save format and game
+by stable game ID. Bare `save` offers to overwrite the last successfully saved/loaded slot
+in this play session; no asks for a name. With no current slot, it asks for a name directly.
+`save name` writes that named slot without another question, replacing the same name.
+Save format and game
 compatibility versions are independent of the engine version. No save happens on exit.
 
 ## Export an adventure

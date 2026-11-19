@@ -73,7 +73,7 @@ pub fn slot_path(root: &Path, game_id: &str, name: &str) -> Result<PathBuf, Stri
     Ok(game_dir(root, game_id)?.join(format!("{}.{}.rork", slot_slug(name)?, game_id)))
 }
 
-/// Returns whether a slot already exists; caller must confirm before overwrite.
+/// Returns whether a slot already exists; callers supply explicit overwrite authorization.
 pub fn slot_exists(root: &Path, game_id: &str, name: &str) -> Result<bool, String> {
     Ok(slot_path(root, game_id, name)?.exists())
 }

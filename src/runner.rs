@@ -374,6 +374,8 @@ pub fn run_configured_with_io<R: BufRead, W: Write>(
         state.character = Some(config.create_character().map_err(io::Error::other)?);
     }
     let mut last_saved = state.clone();
+    // Session-only convenience: selecting a slot never triggers a save itself.
+    let mut current_save: Option<String> = None;
     writeln!(output, "{title}")?;
     writeln!(output, "Powered by Lupine. Type 'help' for commands.\n")?;
     let mut rng = EncounterRng::from_clock();
@@ -687,39 +689,40 @@ pub fn run_configured_with_io<R: BufRead, W: Write>(
             continue;
         }
         if verb.eq_ignore_ascii_case("save") {
+            // An explicit name authorizes writing that slot. Bare save asks once
+            // before reusing the last successfully saved/loaded slot.
+            let mut overwrite_authorized = !argument.is_empty();
             let name = if argument.is_empty() {
-                writeln!(output, "Choose a name for this manual save, for example camp.\nType a name, not a game command. Enter or cancel returns to play.")?;
-                match prompt(&mut input, &mut output, "Save name:")? {
-                    Some(name) => name,
-                    None => break,
+                if let Some(name) = &current_save {
+                    match confirm(
+                        &mut input,
+                        &mut output,
+                        &format!("Overwrite current save '{name}'? (yes/no):"),
+                    )? {
+                        Some(true) => overwrite_authorized = true,
+                        Some(false) => (),
+                        None => break,
+                    }
+                }
+                if overwrite_authorized {
+                    current_save.clone().expect("confirmed current save")
+                } else {
+                    match prompt(&mut input, &mut output, "Save name:")? {
+                        Some(name) => name,
+                        None => break,
+                    }
                 }
             } else {
                 argument.to_owned()
             };
-            if argument.is_empty()
+            if !overwrite_authorized
                 && matches!(name.to_ascii_lowercase().as_str(), "" | "cancel" | "back")
             {
                 writeln!(output, "Save canceled.\n")?;
                 continue;
             }
-            if argument.is_empty() && looks_like_command(&name) {
-                match confirm(
-                    &mut input,
-                    &mut output,
-                    &format!(
-                        "'{name}' looks like a game command. Use it as the save name? (yes/no)"
-                    ),
-                )? {
-                    Some(true) => (),
-                    Some(false) => {
-                        writeln!(output, "Save canceled. No command was executed; enter your next command below.\n")?;
-                        continue;
-                    }
-                    None => break,
-                }
-            }
             let overwrite = match slot_exists(root, game_id, &name) {
-                Ok(true) => {
+                Ok(true) if !overwrite_authorized => {
                     match confirm(
                         &mut input,
                         &mut output,
@@ -729,7 +732,7 @@ pub fn run_configured_with_io<R: BufRead, W: Write>(
                         None => break,
                     }
                 }
-                Ok(false) => false,
+                Ok(exists) => exists && overwrite_authorized,
                 Err(error) => {
                     writeln!(output, "Save failed: {error}\n")?;
                     continue;
@@ -750,6 +753,7 @@ pub fn run_configured_with_io<R: BufRead, W: Write>(
             ) {
                 Ok(path) => {
                     last_saved = state.clone();
+                    current_save = Some(name.clone());
                     writeln!(
                         output,
                         "Saved: {}\n",
@@ -848,6 +852,7 @@ pub fn run_configured_with_io<R: BufRead, W: Write>(
                     // C4: the validated encounter is restored directly from RORK;
                     // never reroll on load, since that could regenerate defeated enemies.
                     last_saved = state.clone();
+                    current_save = Some(name.clone());
                     writeln!(output, "Loaded: {name}\n")?;
                     show_room(&world, &state, &mut output)?;
                 }
@@ -942,44 +947,6 @@ fn is_defeated(state: &GameState) -> bool {
         .character
         .as_ref()
         .is_some_and(|character| character.hp == 0)
-}
-
-fn looks_like_command(name: &str) -> bool {
-    let normalized = crate::resolution::normalize(name);
-    let verb = normalized.split_whitespace().next().unwrap_or("");
-    parse_command(&normalized).is_ok()
-        || matches!(
-            verb,
-            "go" | "move"
-                | "walk"
-                | "travel"
-                | "run"
-                | "head"
-                | "take"
-                | "drop"
-                | "use"
-                | "attack"
-                | "stab"
-                | "slash"
-                | "hit"
-                | "strike"
-                | "cast"
-                | "learn"
-                | "save"
-                | "load"
-                | "saves"
-                | "stats"
-                | "enemies"
-                | "wallet"
-                | "money"
-                | "balance"
-                | "weapons"
-                | "spells"
-                | "spellbook"
-                | "shop"
-                | "buy"
-                | "sell"
-        )
 }
 
 // Lightweight command spelling suggestions. Never execute the suggestion.
