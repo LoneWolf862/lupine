@@ -8,7 +8,7 @@ pub enum ParseError {
     Unknown(String),
 }
 
-fn clean_target(text: &str) -> String {
+pub(crate) fn clean_target(text: &str) -> String {
     text.split_whitespace()
         .filter(|word| !matches!(*word, "the" | "a" | "an"))
         .collect::<Vec<_>>()

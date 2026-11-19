@@ -245,9 +245,9 @@ fn advanced_room_encounters_preserve_existing_weights_and_conditions() {
 #[test]
 fn mixed_case_item_names_match_without_aliases_and_keep_ambiguity() {
     let f = Fixture::new();
-    f.run("4\nn\nkey\n1\n1\nBrass Key\ns\nyes\nn\nother\n1\n1\nIron Key\ns\nyes\n0\n0\n");
-    let out = f.run("1\ntake key\ntake BRASS KEY\ninventory\nquit\nyes\n0\n");
-    assert!(out.contains("Which key do you mean"), "{out}");
+    f.run("4\nn\nbrass_key\n1\n1\nBrass Key\ns\nyes\nn\nother\n1\n1\nIron Key\ns\nyes\n0\n0\n");
+    let out = f.run("1\ntake key\ncancel\ntake BRASS KEY\ninventory\nquit\nyes\n0\n");
+    assert!(out.contains("Which key did you mean"), "{out}");
     assert!(out.contains("You take the Brass Key"), "{out}");
 }
 

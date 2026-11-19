@@ -73,6 +73,18 @@ fn valid_id(id: &str) -> bool {
 }
 
 impl RpgContent {
+    pub(crate) fn resolve_ability(&self, query: &str) -> Result<&Ability, String> {
+        let mut candidates = self
+            .abilities
+            .values()
+            .map(|a| crate::resolution::Candidate::new(&a.id, &a.name))
+            .collect::<Vec<_>>();
+        candidates.sort_by(|a, b| a.id.cmp(&b.id));
+        let id = crate::resolution::unique(query, &candidates)?;
+        self.abilities
+            .get(&id)
+            .ok_or_else(|| "Unknown ability.".into())
+    }
     /// Load optional definitions. Empty directories and absent directories are valid.
     pub fn load(directory: &Path, world: &World, has_character: bool) -> Result<Self, String> {
         let mut result = Self::default();
@@ -152,21 +164,23 @@ impl RpgContent {
     }
 
     pub fn learn(&self, world: &World, state: &mut GameState, text: &str) -> String {
-        let Some(ability) = self.abilities.values().find(|a| {
-            a.learn_from_item
-                .as_ref()
-                .and_then(|id| world.item(id))
-                .is_some_and(|item| {
-                    item.id.eq_ignore_ascii_case(text)
-                        || item.name.eq_ignore_ascii_case(text)
-                        || item
-                            .aliases
-                            .iter()
-                            .any(|alias| alias.eq_ignore_ascii_case(text))
-                })
-        }) else {
-            return format!("No ability can be learned from '{text}'.");
+        let candidates = crate::resolution::items(world, state)
+            .into_iter()
+            .filter(|i| {
+                self.abilities
+                    .values()
+                    .any(|a| a.learn_from_item.as_deref() == Some(i.id.as_str()))
+            })
+            .collect::<Vec<_>>();
+        let id = match crate::resolution::unique(text, &candidates) {
+            Ok(id) => id,
+            Err(message) => return message,
         };
+        let ability = self
+            .abilities
+            .values()
+            .find(|a| a.learn_from_item.as_deref() == Some(id.as_str()))
+            .expect("resolved teaching item");
         if state.learned_abilities.contains(&ability.id) {
             return format!("You already know {}.", ability.name);
         }
@@ -242,12 +256,9 @@ impl RpgContent {
             .map_or((text.trim(), None), |(name, target)| {
                 (name.trim(), Some(target.trim()))
             });
-        let Some(ability) = self
-            .abilities
-            .values()
-            .find(|a| a.id.eq_ignore_ascii_case(name) || a.name.eq_ignore_ascii_case(name))
-        else {
-            return format!("Unknown ability '{name}'.");
+        let ability = match self.resolve_ability(name) {
+            Ok(ability) => ability,
+            Err(message) => return message,
         };
         if !state.learned_abilities.contains(&ability.id) {
             return format!("You haven't learned {}.", ability.name);
