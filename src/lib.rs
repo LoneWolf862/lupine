@@ -8,6 +8,7 @@ pub mod creator;
 pub mod diagnostics;
 pub mod encounters;
 pub mod engine;
+pub mod objects;
 pub mod parser;
 pub mod player_input;
 pub mod render;

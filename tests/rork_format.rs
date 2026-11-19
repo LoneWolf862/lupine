@@ -16,7 +16,7 @@ fn roundtrip_restores_inventory_flags_and_current_room() {
         execute_command(&game.world, &mut state, parse_command(cmd).unwrap());
     }
     let text = encode_save(&game.world, &state, &game.id, "Forest Camp").unwrap();
-    assert!(text.contains("save_format_version = 2"));
+    assert!(text.contains("save_format_version = 3"));
     assert!(text.contains("save_name = \"Forest Camp\""));
     let restored = decode_save(&game.world, &game.id, &text).unwrap();
     assert_eq!(state, restored);
@@ -35,7 +35,7 @@ fn output_is_deterministic_and_human_readable() {
     let a = encode_save(&game.world, &state, &game.id, "My Save").unwrap();
     let b = encode_save(&game.world, &state, &game.id, "My Save").unwrap();
     assert_eq!(a, b);
-    assert!(a.contains("[item_locations.brass_key]"));
+    assert!(a.contains("[[objects.placements.brass_key]]"));
 }
 
 #[test]
@@ -53,7 +53,7 @@ fn rejects_bad_schema_and_malformed_toml() {
     let err = decode_save(
         &game.world,
         &game.id,
-        &text.replace("save_format_version = 2", "save_format_version = 99"),
+        &text.replace("save_format_version = 3", "save_format_version = 99"),
     )
     .unwrap_err();
     assert!(err.contains("save_format_version"), "{err}");
@@ -64,7 +64,7 @@ fn rejects_bad_schema_and_malformed_toml() {
 fn rejects_missing_or_unknown_items_and_rooms() {
     let game = example();
     let mut state = GameState::new(&game.world);
-    state.item_locations.remove("brass_key");
+    state.objects.placements.remove("brass_key");
     let err = encode_save(&game.world, &state, &game.id, "Camp").unwrap_err();
     assert!(err.contains("missing location"), "{err}");
     let mut state = GameState::new(&game.world);
@@ -105,5 +105,5 @@ fn rejects_duplicate_flags_and_invalid_location_shape() {
     let bad_location = text.replace("kind = \"room\"", "kind = \"inventory\"");
     assert!(decode_save(&game.world, &game.id, &bad_location)
         .unwrap_err()
-        .contains("must not specify a room"));
+        .contains("Invalid RORK"));
 }

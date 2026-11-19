@@ -18,9 +18,7 @@ fn room_object_placeholder_updates_after_items_move() {
     assert!(first.contains("rusty dagger"), "{first}");
     for item in &game.world.items {
         if state.location(&item.id) == Some(ItemLocation::Room(camp_id.clone())) {
-            state
-                .item_locations
-                .insert(item.id.clone(), ItemLocation::Inventory);
+            state.set_location(item.id.clone(), ItemLocation::Inventory);
         }
     }
     let second = describe_room(&game.world, &state, game.world.room(&camp_id).unwrap());

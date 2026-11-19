@@ -10,8 +10,21 @@ pub fn describe_room(world: &World, state: &GameState, room: &Room) -> String {
     let objects = world
         .items
         .iter()
-        .filter(|item| state.location(&item.id) == Some(ItemLocation::Room(room.id.clone())))
-        .map(|item| item.name.as_str())
+        .filter(|item| {
+            !state.objects.hidden.contains(&item.id)
+                && state.count_at(&item.id, &ItemLocation::Room(room.id.clone())) > 0
+        })
+        .map(|item| {
+            if crate::objects::definition(world, &item.id).stackable {
+                format!(
+                    "{} ({})",
+                    item.name,
+                    state.count_at(&item.id, &ItemLocation::Room(room.id.clone()))
+                )
+            } else {
+                item.name.clone()
+            }
+        })
         .collect::<Vec<_>>();
     let visible = if objects.is_empty() {
         "Objects: none".to_string()
@@ -54,7 +67,7 @@ pub fn describe_room(world: &World, state: &GameState, room: &Room) -> String {
 }
 
 pub fn help() -> &'static str {
-    "Explore: look (l), look <object>, examine <object> (x), inventory (i).\nMove: north/n, south/s, east/e, west/w, up/u, down/d; go/walk/travel/run/head <direction>. 'look' lists exits.\nObjects: take <object|all> (get/grab/pick up), drop <object|all>, use <item> on <target>. Object synonyms depend on the adventure's aliases.\nCombat: attack <enemy> with <weapon> (hit/strike/stab/slash); attack <enemy> asks which weapon.\nSpells: spellbook (spells), learn <scroll>, cast <ability> on/at <enemy|self>, use <ability> on <enemy>.\nOther RPG commands: stats, weapons, enemies, wallet, shop, buy <offer>, sell <offer>.\nManual saves: save camp (a name you choose), saves (list names), load camp. 'save' offers to overwrite the current slot; no asks for a name. With no current slot, it asks for a name. 'save <name>' writes directly, replacing that name. Enter/cancel at the name prompt cancels. No autosaving.\nHelp: help (h). Leave the adventure: quit/exit (q); unsaved progress requires yes/no confirmation.\nSuggestions never execute: type the suggested command to try it. Multiple matches ask you to choose; 0/back/cancel cancels."
+    "Explore: look (l), look <object>, examine <object> (x), inventory (i).\nMove: north/n, south/s, east/e, west/w, up/u, down/d; go/walk/travel/run/head <direction>. 'look' lists exits.\nObjects: take <object|all> (get/grab/pick up), drop <object|all>, use <item> on <target>. Object synonyms depend on the adventure's aliases.\nContainers: open/close <container>, unlock/lock <container> with <key>, put [quantity] <item> in <container>, take [quantity] <item> from <container>. Quantities default to one. Consume/eat/drink <item> uses one carried consumable.\nCombat: attack <enemy> with <weapon> (hit/strike/stab/slash); attack <enemy> asks which weapon.\nSpells: spellbook (spells), learn <scroll>, cast <ability> on/at <enemy|self>, use <ability> on <enemy>.\nOther RPG commands: stats, weapons, enemies, wallet, shop, buy <offer>, sell <offer>.\nManual saves: save camp (a name you choose), saves (list names), load camp. 'save' offers to overwrite the current slot; no asks for a name. With no current slot, it asks for a name. 'save <name>' writes directly, replacing that name. Enter/cancel at the name prompt cancels. No autosaving.\nHelp: help (h). Leave the adventure: quit/exit (q); unsaved progress requires yes/no confirmation.\nSuggestions never execute: type the suggested command to try it. Multiple matches ask you to choose; 0/back/cancel cancels."
 }
 
 /// Display terminology never changes the accepted command vocabulary.

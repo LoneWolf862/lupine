@@ -59,6 +59,16 @@ impl Compare {
 #[serde(rename_all = "snake_case", deny_unknown_fields)]
 pub enum Condition {
     HasItem(String),
+    ItemVisible(String),
+    ContainerOpen(String),
+    ContainerLocked(String),
+    ItemCount {
+        item: String,
+        op: Compare,
+        value: u32,
+        #[serde(default)]
+        location: Option<ItemLocation>,
+    },
     FlagSet(String),
     FlagUnset(String),
     All(Vec<Condition>),
@@ -66,13 +76,36 @@ pub enum Condition {
     Not(Box<Condition>),
     InRoom(String),
     Visited(String),
-    ItemInRoom { item: String, room: String },
-    Counter { id: String, op: Compare, value: i64 },
+    ItemInRoom {
+        item: String,
+        room: String,
+    },
+    Counter {
+        id: String,
+        op: Compare,
+        value: i64,
+    },
 }
 impl Condition {
     pub fn met(&self, state: &GameState) -> bool {
         match self {
-            Self::HasItem(id) => state.location(id) == Some(ItemLocation::Inventory),
+            Self::HasItem(id) => state.is_carried(id),
+            Self::ItemVisible(id) => state.is_accessible(id),
+            Self::ContainerOpen(id) => state.objects.containers.get(id).is_some_and(|c| c.open),
+            Self::ContainerLocked(id) => state.objects.containers.get(id).is_some_and(|c| c.locked),
+            Self::ItemCount {
+                item,
+                op,
+                value,
+                location,
+            } => op.met(
+                i64::from(
+                    location
+                        .as_ref()
+                        .map_or_else(|| state.carried_quantity(item), |p| state.count_at(item, p)),
+                ),
+                i64::from(*value),
+            ),
             Self::FlagSet(id) => state.flags.contains(id),
             Self::FlagUnset(id) => !state.flags.contains(id),
             Self::All(c) => c.iter().all(|c| c.met(state)),
@@ -81,7 +114,7 @@ impl Condition {
             Self::InRoom(id) => state.current_room == *id,
             Self::Visited(id) => state.story.visited.contains(id),
             Self::ItemInRoom { item, room } => {
-                state.location(item) == Some(ItemLocation::Room(room.clone()))
+                state.count_at(item, &ItemLocation::Room(room.clone())) > 0
             }
             Self::Counter { id, op, value } => state
                 .story
@@ -98,7 +131,19 @@ impl Condition {
             return Err("Conditions exceed 16 nesting levels".into());
         }
         match self {
-            Self::HasItem(id) => item(world, id),
+            Self::HasItem(id) | Self::ItemVisible(id) => item(world, id),
+            Self::ContainerOpen(id) | Self::ContainerLocked(id) => {
+                crate::objects::validate_location(world, &ItemLocation::Container(id.clone()))
+            }
+            Self::ItemCount {
+                item: id, location, ..
+            } => {
+                item(world, id)?;
+                if let Some(p) = location {
+                    crate::objects::validate_location(world, p)?;
+                }
+                Ok(())
+            }
             Self::FlagSet(id) | Self::FlagUnset(id) => flag(world, id),
             Self::InRoom(id) | Self::Visited(id) => room(world, id),
             Self::ItemInRoom { item: id, room: r } => {
@@ -125,13 +170,45 @@ impl Condition {
 pub enum Effect {
     SetFlag(String),
     ClearFlag(String),
-    MoveItemToRoom { item: String, room: String },
+    MoveItemToRoom {
+        item: String,
+        room: String,
+    },
     GiveItem(String),
     RemoveItem(String),
+    RevealItem(String),
+    HideItem(String),
+    AddItem {
+        item: String,
+        quantity: u32,
+    },
+    RemoveQuantity {
+        item: String,
+        quantity: u32,
+    },
+    TransferItem {
+        item: String,
+        from: ItemLocation,
+        to: ItemLocation,
+        quantity: u32,
+    },
+    SetContainer {
+        item: String,
+        #[serde(default)]
+        open: Option<bool>,
+        #[serde(default)]
+        locked: Option<bool>,
+    },
     MovePlayer(String),
     ShowText(String),
-    SetCounter { id: String, value: i64 },
-    AddCounter { id: String, amount: i64 },
+    SetCounter {
+        id: String,
+        value: i64,
+    },
+    AddCounter {
+        id: String,
+        amount: i64,
+    },
 }
 impl Effect {
     pub fn validate(&self, world: &World) -> Result<(), String> {
@@ -147,7 +224,39 @@ impl Effect {
                 }
                 Ok(())
             }
-            Self::RemoveItem(id) => item(world, id),
+            Self::RemoveItem(id) | Self::RevealItem(id) | Self::HideItem(id) => item(world, id),
+            Self::AddItem { item: id, quantity }
+            | Self::RemoveQuantity { item: id, quantity }
+            | Self::TransferItem {
+                item: id, quantity, ..
+            } => {
+                item(world, id)?;
+                if !world.item(id).unwrap().portable
+                    || *quantity == 0
+                    || *quantity > crate::objects::MAX_QUANTITY
+                    || (!crate::objects::definition(world, id).stackable && *quantity > 1)
+                {
+                    return Err(format!("Invalid portable item quantity for '{id}'"));
+                }
+                if let Self::TransferItem { from, to, .. } = self {
+                    crate::objects::validate_location(world, from)?;
+                    crate::objects::validate_location(world, to)?;
+                }
+                Ok(())
+            }
+            Self::SetContainer {
+                item: id,
+                open,
+                locked,
+            } => {
+                crate::objects::validate_location(world, &ItemLocation::Container(id.clone()))?;
+                if (open.is_none() && locked.is_none())
+                    || (*open == Some(true) && *locked == Some(true))
+                {
+                    return Err("SetContainer needs a valid open/locked change".into());
+                }
+                Ok(())
+            }
             Self::MovePlayer(id) => room(world, id),
             Self::ShowText(s) => {
                 if s.chars()
@@ -161,8 +270,71 @@ impl Effect {
             Self::SetCounter { id, .. } | Self::AddCounter { id, .. } => counter(world, id),
         }
     }
-    fn apply(&self, state: &mut GameState, output: &mut Vec<String>) -> Result<(), String> {
+    fn apply(
+        &self,
+        world: &World,
+        state: &mut GameState,
+        output: &mut Vec<String>,
+    ) -> Result<(), String> {
         match self {
+            Self::RevealItem(id) => {
+                state.objects.hidden.remove(id);
+            }
+            Self::HideItem(id) => {
+                state.objects.hidden.insert(id.clone());
+            }
+            Self::SetContainer { item, open, locked } => {
+                let c = state
+                    .objects
+                    .containers
+                    .get_mut(item)
+                    .ok_or("Missing container state")?;
+                if let Some(v) = open {
+                    c.open = *v;
+                }
+                if let Some(v) = locked {
+                    c.locked = *v;
+                }
+            }
+            Self::AddItem { item, quantity } => {
+                let stacks = state
+                    .objects
+                    .placements
+                    .get_mut(item)
+                    .ok_or("Unknown item")?;
+                if let Some(s) = stacks
+                    .iter_mut()
+                    .find(|s| s.location == ItemLocation::Inventory)
+                {
+                    s.quantity = s
+                        .quantity
+                        .checked_add(*quantity)
+                        .ok_or("Quantity overflow")?;
+                } else {
+                    stacks.push(crate::objects::Stack {
+                        location: ItemLocation::Inventory,
+                        quantity: *quantity,
+                    });
+                }
+                stacks.sort_by(|a, b| a.location.cmp(&b.location));
+            }
+            Self::RemoveQuantity { item, quantity } => {
+                let mut remaining = *quantity;
+                while remaining > 0 {
+                    let from = state
+                        .available_source(item, true)
+                        .ok_or("Not enough accessible carried items")?;
+                    let amount = remaining.min(state.count_at(item, &from));
+                    state.transfer(world, item, &from, &ItemLocation::Consumed, amount)?;
+                    remaining -= amount;
+                }
+            }
+            Self::TransferItem {
+                item,
+                from,
+                to,
+                quantity,
+            } => state.transfer(world, item, from, to, *quantity)?,
             Self::SetFlag(id) => {
                 state.flags.insert(id.clone());
             }
@@ -170,22 +342,16 @@ impl Effect {
                 state.flags.remove(id);
             }
             Self::MoveItemToRoom { item, room } => {
-                state
-                    .item_locations
-                    .insert(item.clone(), ItemLocation::Room(room.clone()));
+                state.set_location(item.clone(), ItemLocation::Room(room.clone()));
             }
             Self::GiveItem(id) => {
-                state
-                    .item_locations
-                    .insert(id.clone(), ItemLocation::Inventory);
+                state.set_location(id.clone(), ItemLocation::Inventory);
             }
             Self::RemoveItem(id) => {
                 if state.location(id) == Some(ItemLocation::Consumed) {
                     return Err(format!("Item '{id}' is already unavailable"));
                 }
-                state
-                    .item_locations
-                    .insert(id.clone(), ItemLocation::Consumed);
+                state.set_location(id.clone(), ItemLocation::Consumed);
             }
             Self::MovePlayer(id) => {
                 state.current_room = id.clone();
@@ -237,8 +403,9 @@ pub fn apply(
     let mut text = Vec::new();
     for effect in effects {
         effect.validate(world)?;
-        effect.apply(&mut draft, &mut text)?;
+        effect.apply(world, &mut draft, &mut text)?;
     }
+    crate::objects::validate_state(world, &draft)?;
     *state = draft;
     Ok(text)
 }

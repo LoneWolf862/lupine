@@ -1,6 +1,6 @@
 use crate::commands::Command;
 use crate::render::{describe_room, help};
-use crate::state::{GameState, ItemLocation};
+use crate::state::GameState;
 use crate::world::{select_description, Item, World};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -59,8 +59,14 @@ pub fn execute_command(world: &World, state: &mut GameState, command: Command) -
             let carried = world
                 .items
                 .iter()
-                .filter(|item| state.location(&item.id) == Some(ItemLocation::Inventory))
-                .map(|item| item.name.as_str())
+                .filter(|item| state.is_carried(&item.id) && state.is_accessible(&item.id))
+                .map(|item| {
+                    if crate::objects::definition(world, &item.id).stackable {
+                        format!("{} ({})", item.name, state.carried_quantity(&item.id))
+                    } else {
+                        item.name.clone()
+                    }
+                })
                 .collect::<Vec<_>>();
             if carried.is_empty() {
                 message("You are carrying nothing.")
@@ -69,38 +75,26 @@ pub fn execute_command(world: &World, state: &mut GameState, command: Command) -
             }
         }
         Command::Examine(target) => match resolve(world, state, &target) {
-            Ok(item) => message(select_description(
-                &item.description,
-                &item.descriptions,
-                state,
+            Ok(item) => message(format!(
+                "{}{}",
+                select_description(&item.description, &item.descriptions, state),
+                crate::objects::describe_container(world, state, &item.id)
             )),
             Err(error) => message(error),
         },
         Command::Take(target) => match resolve(world, state, &target) {
             Err(error) => message(error),
-            Ok(item) if state.location(&item.id) == Some(ItemLocation::Inventory) => {
-                message(format!("You are already carrying the {}.", item.name))
-            }
-            Ok(item) if !item.portable => message(format!("The {} cannot be moved.", item.name)),
-            Ok(item) => {
-                state
-                    .item_locations
-                    .insert(item.id.clone(), ItemLocation::Inventory);
-                message(format!("You take the {}.", item.name))
-            }
+            Ok(item) => message(
+                crate::objects::manipulate(world, state, "take", &item.id, None, 1)
+                    .unwrap_or_else(|e| e),
+            ),
         },
         Command::Drop(target) => match resolve(world, state, &target) {
             Err(error) => message(error),
-            Ok(item) if state.location(&item.id) != Some(ItemLocation::Inventory) => {
-                message(format!("You are not carrying the {}.", item.name))
-            }
-            Ok(item) => {
-                state.item_locations.insert(
-                    item.id.clone(),
-                    ItemLocation::Room(state.current_room.clone()),
-                );
-                message(format!("You drop the {}.", item.name))
-            }
+            Ok(item) => message(
+                crate::objects::manipulate(world, state, "drop", &item.id, None, 1)
+                    .unwrap_or_else(|e| e),
+            ),
         },
         Command::Use { item, target } => {
             let item = match resolve(world, state, &item) {
@@ -111,7 +105,7 @@ pub fn execute_command(world: &World, state: &mut GameState, command: Command) -
                 Ok(target) => target,
                 Err(error) => return message(error),
             };
-            if item.portable && state.location(&item.id) != Some(ItemLocation::Inventory) {
+            if item.portable && !state.is_carried(&item.id) {
                 return message(format!("You must be carrying the {} to use it.", item.name));
             }
             match world

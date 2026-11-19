@@ -286,7 +286,7 @@ fn item_form<R: BufRead, W: Write>(
                 let default = if d.doc["portable"].as_bool() == Some(true) { "yes" } else { "no" };
                 if let Some(s) = w.ask("Portable?", default, "yes permits taking; no makes a fixed object", |s| if ["yes","no"].contains(&s) { Ok(()) } else { Err("Enter yes or no".into()) })? { if s=="no" && (!teaching.is_empty() || weapon) { w.say(if weapon {"Cannot make a weapon item fixed. Players must carry it to attack."} else {"Cannot make a teaching item fixed. Remove or change its teaching link in Spell Manager first."})?; } else { d.set("portable", value(s=="yes")); } }
             },
-            "5" => { w.say("Starting room affects new play sessions; existing player saves are not rewritten.")?; if let Some(id) = choose(w,"Starting room:",&entries(snapshot,"rooms")?)? { d.set("starting_room",value(id)); } },
+            "5" => { w.say("Starting room affects new play sessions; existing player saves are not rewritten.")?; if let Some(id) = choose(w,"Starting room:",&entries(snapshot,"rooms")?)? { d.doc.remove("initial"); d.set("starting_room",value(id)); } },
             "6" => d.preview(&snapshot.root,w.output)?,
             "7" => super::room_advanced::descriptions(&mut d.doc, snapshot, w)?,
             "s" => if save(snapshot, d, w)? { return Ok(true); },

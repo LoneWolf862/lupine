@@ -12,7 +12,7 @@ its original review records are historical, not current merge status.
 Creator work through Phase 2I and Phase 3 PRs #20–#24 are merged.
 The human-feedback follow-up addresses disappearing prompts, save naming and practical
 parser phrases; see [follow-up scope and verification](PLAYER_FEEDBACK_FOLLOWUP.md).
-Version 0.11.0-dev.2 identifies current
+Version 0.11.0-dev.3 identifies current
 development; v0.9.0 remains unchanged. [Actual verification](PHASE_3_REVIEW.md).
 
 Phase 4 adds transaction bindings, supported ID migration, guided editor recovery and

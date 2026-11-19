@@ -84,9 +84,7 @@ fn hidden_loot_drops_and_is_persistent_state() {
 #[test]
 fn defeat_removes_enemy_once_before_rewards() {
     let (game, encounter, content, mut state) = fixture();
-    state
-        .item_locations
-        .insert("rusty_dagger".into(), ItemLocation::Inventory);
+    state.set_location("rusty_dagger".into(), ItemLocation::Inventory);
     let mut active = vec![EnemyInstance {
         instance_id: 1,
         enemy_id: "goblin".into(),

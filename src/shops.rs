@@ -220,7 +220,9 @@ impl ShopContent {
                         binding.shop
                     )
                 })?;
-                if item.starting_room != shop.room {
+                if crate::objects::initial_location(world, &item.id)
+                    != Some(ItemLocation::Room(shop.room.clone()))
+                {
                     return Err(format!(
                         "{}: interaction item '{}' must start in the shop's room '{}'",
                         bindings_path.display(),
@@ -304,7 +306,7 @@ impl ShopContent {
         for shop in self.shops.values() {
             for offer in &shop.offers {
                 if offer.kind == "item" {
-                    state.item_locations.insert(
+                    state.set_location(
                         offer.item.as_ref().expect("validated item").clone(),
                         ItemLocation::Consumed,
                     );
@@ -382,19 +384,17 @@ impl ShopContent {
         let mut draft = state.clone();
         if offer.kind == "sell_item" {
             let id = offer.item.as_ref().expect("validated item offer");
-            if draft.location(id) != Some(ItemLocation::Inventory) {
+            if !draft.is_carried(id) {
                 return Err("You do not carry the required item.".into());
             }
-            draft
-                .item_locations
-                .insert(id.clone(), ItemLocation::Consumed);
+            draft.set_location(id.clone(), ItemLocation::Consumed);
             wallet.credit(&mut draft, &offer.currency, offer.price)?;
         } else {
             wallet.debit(&mut draft, &offer.currency, offer.price)?;
             match offer.kind.as_str() {
                 "item" => {
                     let id = offer.item.as_ref().expect("validated item offer");
-                    if draft.location(id) == Some(ItemLocation::Inventory) {
+                    if draft.is_carried(id) {
                         return Err("You already own that item.".into());
                     }
                     // Items are reserved by ShopContent::prepare_inventory; only these
@@ -402,9 +402,7 @@ impl ShopContent {
                     if draft.location(id) != Some(ItemLocation::Consumed) {
                         return Err("That item is not available for purchase.".into());
                     }
-                    draft
-                        .item_locations
-                        .insert(id.clone(), ItemLocation::Inventory);
+                    draft.set_location(id.clone(), ItemLocation::Inventory);
                 }
                 "restore_hp" => {
                     let player = draft

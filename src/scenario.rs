@@ -1,8 +1,8 @@
 //! Read-only, file-authored acceptance scenarios through the real player runner.
-use crate::{adventure::Adventure, state::ItemLocation};
+use crate::adventure::Adventure;
 use serde::Deserialize;
 use std::{
-    collections::HashSet,
+    collections::{BTreeSet, HashSet},
     io::{self, Cursor, Write},
     path::Path,
 };
@@ -36,6 +36,16 @@ struct Scenario {
     flags: Option<Vec<String>>,
     counters: Option<std::collections::BTreeMap<String, i64>>,
     visited: Option<Vec<String>>,
+    hidden: Option<Vec<String>>,
+    #[serde(default)]
+    quantities: Vec<QuantityAssertion>,
+}
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct QuantityAssertion {
+    item: String,
+    location: crate::state::ItemLocation,
+    quantity: u32,
 }
 
 fn validate_lines(lines: &[String]) -> Result<(), String> {
@@ -127,11 +137,12 @@ pub fn run(root: &Path, path: &Path, output: &mut impl Write) -> Result<(), Stri
         }
         if let Some(inventory) = &case.inventory {
             let actual = state
-                .item_locations
-                .iter()
-                .filter(|(_, l)| **l == ItemLocation::Inventory)
-                .map(|(id, _)| id.clone())
-                .collect::<HashSet<_>>();
+                .objects
+                .placements
+                .keys()
+                .filter(|id| state.is_carried(id))
+                .cloned()
+                .collect::<BTreeSet<_>>();
             if actual != inventory.iter().cloned().collect() {
                 errors.push(format!("expected inventory {inventory:?}, got {actual:?}"));
             }
@@ -154,6 +165,27 @@ pub fn run(root: &Path, path: &Path, output: &mut impl Write) -> Result<(), Stri
                 errors.push(format!(
                     "expected visited rooms {visited:?}, got {:?}",
                     state.story.visited
+                ));
+            }
+        }
+        if let Some(hidden) = &case.hidden {
+            if state.objects.hidden != hidden.iter().cloned().collect() {
+                errors.push(format!(
+                    "expected hidden items {hidden:?}, got {:?}",
+                    state.objects.hidden
+                ));
+            }
+        }
+        for assertion in &case.quantities {
+            if !state.objects.placements.contains_key(&assertion.item)
+                || state.count_at(&assertion.item, &assertion.location) != assertion.quantity
+            {
+                errors.push(format!(
+                    "expected {} of '{}' at {:?}, got {}",
+                    assertion.quantity,
+                    assertion.item,
+                    assertion.location,
+                    state.count_at(&assertion.item, &assertion.location)
                 ));
             }
         }

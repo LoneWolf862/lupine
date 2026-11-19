@@ -5,7 +5,7 @@ use crate::{
     parser::{clean_target, parse_command},
     resolution::{self, Candidate},
     rpg_content::RpgContent,
-    state::{GameState, ItemLocation},
+    state::GameState,
     world::World,
 };
 use std::io::{self, BufRead, Write};
@@ -171,7 +171,7 @@ pub fn prepare(
     let visible = resolution::items(world, state);
     let carried = visible
         .iter()
-        .filter(|i| state.location(&i.id) == Some(ItemLocation::Inventory))
+        .filter(|i| state.is_carried(&i.id))
         .cloned()
         .collect::<Vec<_>>();
     let enemy_choices = enemies(encounters, state);
@@ -322,7 +322,7 @@ pub fn prepare(
             } else if action == "take" {
                 visible
                     .iter()
-                    .filter(|i| state.location(&i.id) != Some(ItemLocation::Inventory))
+                    .filter(|i| state.available_source(&i.id, false).is_some())
                     .cloned()
                     .collect()
             } else {

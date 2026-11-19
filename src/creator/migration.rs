@@ -23,7 +23,7 @@ fn category(file: &Path, path: &[String], scope: &str) -> Option<String> {
     let is = |p| matches(path, p);
     let condition_roots = match (parent, root) {
         ("rooms", _) => vec!["descriptions.*.when.*", "art_variants.*.when.*"],
-        ("items", _) => vec!["descriptions.*.when.*"],
+        ("items", _) => vec!["descriptions.*.when.*", "consumable.requires.*"],
         ("", "interactions.toml") => vec![
             "interactions.*.requires.*",
             "exit_rules.*.requires.*",
@@ -35,7 +35,7 @@ fn category(file: &Path, path: &[String], scope: &str) -> Option<String> {
     for prefix in condition_roots {
         let len = prefix.split('.').count();
         if path.len() > len && matches(&path[..len], prefix) {
-            return condition_reference(&path[len..]).map(str::to_owned);
+            return condition_reference(&path[len..], scope).map(str::to_owned);
         }
     }
     if parent.is_empty() && matches!(root, "interactions.toml" | "actions.toml") {
@@ -47,8 +47,17 @@ fn category(file: &Path, path: &[String], scope: &str) -> Option<String> {
         ] {
             let len = prefix.split('.').count();
             if path.len() > len && matches(&path[..len], prefix) {
-                return effect_reference(&path[len..]).map(str::to_owned);
+                return effect_reference(&path[len..], scope).map(str::to_owned);
             }
+        }
+    }
+    if parent == "items" {
+        if is("initial.id") {
+            return location_category(scope).map(str::to_owned);
+        }
+        let prefix = "consumable.effects.*";
+        if path.len() > 3 && matches(&path[..3], prefix) {
+            return effect_reference(&path[3..], scope).map(str::to_owned);
         }
     }
     if is("id") {
@@ -68,7 +77,7 @@ fn category(file: &Path, path: &[String], scope: &str) -> Option<String> {
             ("art_variants.*.when.*.flag_set", "flags"),
             ("art_variants.*.when.*.flag_unset", "flags"),
         ]),
-        "items" => fields.push(("starting_room", "rooms")),
+        "items" => fields.extend([("starting_room", "rooms"), ("container.key", "items")]),
         "spells" => fields.push(("learn_from_item", "items")),
         "weapons" => fields.push(("item", "items")),
         "enemies" => fields.extend([
@@ -137,25 +146,38 @@ fn category(file: &Path, path: &[String], scope: &str) -> Option<String> {
         .find(|(p, _)| is(p))
         .map(|(_, c)| c.into())
 }
-fn condition_reference(path: &[String]) -> Option<&'static str> {
+fn condition_reference(path: &[String], scope: &str) -> Option<&'static str> {
     let words = path.iter().map(String::as_str).collect::<Vec<_>>();
     match words.as_slice() {
-        ["all" | "any", _, ..] => condition_reference(&path[2..]),
-        ["not", ..] => condition_reference(&path[1..]),
-        ["has_item"] | ["item_in_room", "item"] => Some("items"),
+        ["all" | "any", _, ..] => condition_reference(&path[2..], scope),
+        ["not", ..] => condition_reference(&path[1..], scope),
+        ["has_item" | "item_visible" | "container_open" | "container_locked"]
+        | ["item_count", "item"]
+        | ["item_in_room", "item"] => Some("items"),
         ["flag_set" | "flag_unset"] => Some("flags"),
         ["in_room" | "visited"] | ["item_in_room", "room"] => Some("rooms"),
         ["counter", "id"] => Some("counters"),
+        ["item_count", "location", "id"] => location_category(scope),
         _ => None,
     }
 }
-fn effect_reference(path: &[String]) -> Option<&'static str> {
+fn effect_reference(path: &[String], scope: &str) -> Option<&'static str> {
     let words = path.iter().map(String::as_str).collect::<Vec<_>>();
     match words.as_slice() {
         ["set_flag" | "clear_flag"] => Some("flags"),
-        ["give_item" | "remove_item"] | ["move_item_to_room", "item"] => Some("items"),
+        ["give_item" | "remove_item" | "reveal_item" | "hide_item"]
+        | ["move_item_to_room" | "add_item" | "remove_quantity" | "transfer_item"
+        | "set_container", "item"] => Some("items"),
         ["move_player"] | ["move_item_to_room", "room"] => Some("rooms"),
         ["set_counter" | "add_counter", "id"] => Some("counters"),
+        ["transfer_item", "from" | "to", "id"] => location_category(scope),
+        _ => None,
+    }
+}
+fn location_category(scope: &str) -> Option<&'static str> {
+    match scope {
+        "location:room" => Some("rooms"),
+        "location:container" => Some("items"),
         _ => None,
     }
 }
@@ -171,6 +193,11 @@ fn walk(
             .and_then(Item::as_str)
             .unwrap_or(scope)
             .to_owned();
+        let scope = t
+            .get("kind")
+            .and_then(Item::as_str)
+            .map(|k| format!("location:{k}"))
+            .unwrap_or(scope);
         for (k, v) in t.iter_mut() {
             path.push(k.get().to_owned());
             walk(v, path, &scope, f);
@@ -207,6 +234,11 @@ fn walk_value(
             .and_then(Value::as_str)
             .unwrap_or(scope)
             .to_owned();
+        let scope = t
+            .get("kind")
+            .and_then(Value::as_str)
+            .map(|k| format!("location:{k}"))
+            .unwrap_or(scope);
         for (k, v) in t.iter_mut() {
             path.push(k.get().to_owned());
             walk_value(v, path, &scope, f);

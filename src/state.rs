@@ -1,10 +1,17 @@
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{BTreeMap, HashSet};
 
 use crate::world::{ItemId, RoomId, World};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, serde::Deserialize)]
+#[serde(
+    tag = "kind",
+    content = "id",
+    rename_all = "snake_case",
+    deny_unknown_fields
+)]
 pub enum ItemLocation {
     Room(RoomId),
+    Container(ItemId),
     Inventory,
     Consumed,
 }
@@ -13,7 +20,7 @@ pub enum ItemLocation {
 pub struct GameState {
     pub story: crate::rules::StoryState,
     pub current_room: RoomId,
-    pub item_locations: HashMap<ItemId, ItemLocation>,
+    pub objects: crate::objects::ObjectState,
     pub flags: HashSet<String>,
     pub character: Option<crate::rpg::Character>,
     pub learned_abilities: HashSet<String>,
@@ -32,23 +39,13 @@ pub struct GameState {
 
 impl GameState {
     pub fn new(world: &World) -> Self {
-        let item_locations = world
-            .items
-            .iter()
-            .map(|item| {
-                (
-                    item.id.clone(),
-                    ItemLocation::Room(item.starting_room.clone()),
-                )
-            })
-            .collect();
         Self {
             story: crate::rules::StoryState {
                 counters: world.rules.counters.clone(),
                 visited: [world.starting_room.clone()].into_iter().collect(),
             },
             current_room: world.starting_room.clone(),
-            item_locations,
+            objects: crate::objects::ObjectState::new(world),
             flags: world
                 .rules
                 .flags
@@ -67,16 +64,26 @@ impl GameState {
         }
     }
 
+    /// Summary for callers needing one location. Use count_at for split stacks.
     pub fn location(&self, id: &str) -> Option<ItemLocation> {
-        self.item_locations.get(id).cloned()
-    }
-
-    pub fn is_accessible(&self, id: &str) -> bool {
-        match self.location(id) {
-            Some(ItemLocation::Inventory) => true,
-            Some(ItemLocation::Room(room)) => room == self.current_room,
-            Some(ItemLocation::Consumed) => false,
-            None => false,
+        let stacks = self.objects.placements.get(id)?;
+        if stacks.iter().any(|s| s.location == ItemLocation::Inventory) {
+            return Some(ItemLocation::Inventory);
         }
+        Some(
+            stacks
+                .first()
+                .map_or(ItemLocation::Consumed, |s| s.location.clone()),
+        )
+    }
+    pub fn is_accessible(&self, id: &str) -> bool {
+        !self.objects.hidden.contains(id)
+            && self
+                .objects
+                .placements
+                .get(id)
+                .into_iter()
+                .flatten()
+                .any(|s| s.quantity > 0 && self.place_accessible(&s.location, 0))
     }
 }

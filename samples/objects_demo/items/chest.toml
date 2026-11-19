@@ -1,0 +1,6 @@
+id="chest"
+name="chest"
+description="A demonstration chest."
+portable=false
+starting_room="workroom"
+container={locked=true,key="key",capacity=5}

@@ -1,0 +1,5 @@
+id="key"
+name="key"
+description="A demonstration key."
+portable=true
+initial={kind="inventory"}

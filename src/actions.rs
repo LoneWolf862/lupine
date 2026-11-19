@@ -214,7 +214,7 @@ impl Action {
             return Err("That action is not available here.".into());
         }
         if let Some(id) = &self.item {
-            if state.location(id) != Some(crate::state::ItemLocation::Inventory) {
+            if !state.is_carried(id) {
                 return Err(format!(
                     "You must be carrying the {}.",
                     world.item(id).unwrap().name

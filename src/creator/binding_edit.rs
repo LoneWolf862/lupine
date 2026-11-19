@@ -40,17 +40,12 @@ fn references<R: BufRead, W: Write>(
     let Some(item) = choose(w, "Object the player uses", &objects)? else {
         return Ok(());
     };
-    let room = &a
-        .game
-        .world
-        .item(&item)
-        .ok_or("Missing object")?
-        .starting_room;
+    let room = crate::objects::initial_location(&a.game.world, &item);
     let shops = a
         .shops
         .shops
         .values()
-        .filter(|shop| shop.room == *room)
+        .filter(|shop| room == Some(crate::state::ItemLocation::Room(shop.room.clone())))
         .map(|shop| (shop.id.clone(), shop.name.clone()))
         .collect::<Vec<_>>();
     w.say("The object must start in the shop's room. Players use <object> there. Portable objects also work while accessible in that room. Each object can have only one binding.")?;

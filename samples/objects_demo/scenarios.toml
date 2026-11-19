@@ -1,0 +1,19 @@
+format_version=1
+[[scenario]]
+name="closed and hidden contents are inaccessible"
+commands=["take gem from chest", "take note"]
+contains=["Open the source container first."]
+inventory=["key","ration"]
+hidden=["note"]
+quantities=[{item="ration",location={kind="inventory"},quantity=5}]
+[[scenario]]
+name="unlock and transfer split stacks"
+commands=["unlock chest with key","open chest","put 2 ration in chest","take gem from chest","take ration from chest","consume ration"]
+inventory=["key","ration","gem"]
+counters={meals=1}
+quantities=[{item="ration",location={kind="inventory"},quantity=3},{item="ration",location={kind="container",id="chest"},quantity=1}]
+[[scenario]]
+name="reveal controls resolution and take all"
+commands=["search","take all"]
+inventory=["key","ration","note"]
+hidden=[]
