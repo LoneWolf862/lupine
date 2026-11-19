@@ -303,9 +303,9 @@ pub fn award_defeat(
     state: &mut GameState,
     defeated: &EnemyInstance,
     rng: &mut impl RandomSource,
-) -> String {
+) -> Result<String, String> {
     let Some(enemy) = encounters.enemies.get(&defeated.enemy_id) else {
-        return String::new();
+        return Err(format!("Unknown defeated enemy: {}", defeated.enemy_id));
     };
     let mut messages = Vec::new();
     let mut effects = Vec::new();
@@ -351,15 +351,9 @@ pub fn award_defeat(
         }
     }
     effects.extend(enemy.rewards.clone());
-    match crate::rules::apply(world, state, &effects) {
-        Ok(mut lines) => {
-            lines.extend(messages);
-            lines.join("\n")
-        }
-        Err(e) => {
-            format!("Defeat rewards could not complete: {e}. All reward changes were rolled back.")
-        }
-    }
+    let mut lines = crate::rules::apply(world, state, &effects)?;
+    lines.extend(messages);
+    Ok(lines.join("\n"))
 }
 
 #[cfg(test)]

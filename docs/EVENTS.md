@@ -63,10 +63,12 @@ by previous events. A once event is marked complete only after it fires successf
 unmet requirements do not consume it. Effects can enqueue additional enter/acquisition
 events. A complete batch is bounded to 128 event firings; cycles fail with a diagnostic.
 
-An event batch is atomic **separately from the successful player action that triggered
-it**. On a hook error, the action remains committed, but all hook/timer/turn changes
-and their success output roll back. The runner reports the failure. Author scenarios
-should exercise both successful and rejected effect paths.
+The player command and its required consequences share **one turn transaction**.
+A hook error rolls back the original action, all earlier hooks, rewards, status
+changes, retaliation, timers, turn count and encounter changes. The runner restores
+its random-number position and discards staged success output, then reports the
+failure. No event or action is automatically retried. Author scenarios should
+exercise both successful and rejected paths; see [turn transactions](TURN_TRANSACTIONS.md).
 
 ## Turns and timers
 

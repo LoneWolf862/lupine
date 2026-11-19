@@ -341,15 +341,15 @@ pub fn select(
     Ok(lines)
 }
 /// Viewing and cancellation are read-only; one confirmed choice returns to gameplay.
-pub(crate) fn talk(
+pub(crate) fn prepare(
     w: &World,
-    s: &mut GameState,
+    s: &GameState,
     query: &str,
     input: &mut impl BufRead,
     output: &mut impl Write,
-) -> io::Result<bool> {
+) -> io::Result<Option<(String, String)>> {
     let Some(id) = crate::player_input::choose(query, &candidates(w, s), input, output)? else {
-        return Ok(false);
+        return Ok(None);
     };
     let npc = &w.dialogue.npcs[&id];
     let n = &npc.nodes[&s.dialogue.npcs[&id].node];
@@ -366,7 +366,7 @@ pub(crate) fn talk(
         .collect::<Vec<_>>();
     if choices.is_empty() {
         writeln!(output, "No dialogue choices are available.\n")?;
-        return Ok(false);
+        return Ok(None);
     }
     for (i, c) in choices.iter().enumerate() {
         writeln!(output, "  {}. {} [{}]", i + 1, c.label, c.id)?;
@@ -379,7 +379,7 @@ pub(crate) fn talk(
         output.flush()?;
         let mut line = String::new();
         if input.read_line(&mut line)? == 0 {
-            return Ok(false);
+            return Ok(None);
         }
         let answer = line.trim();
         if matches!(
@@ -387,7 +387,7 @@ pub(crate) fn talk(
             "0" | "back" | "cancel" | "quit"
         ) {
             writeln!(output, "Conversation canceled. Nothing changed.\n")?;
-            return Ok(false);
+            return Ok(None);
         }
         let selected = answer
             .parse::<usize>()
@@ -402,19 +402,7 @@ pub(crate) fn talk(
                     .find(|c| c.id.eq_ignore_ascii_case(answer))
             });
         if let Some(c) = selected {
-            return match select(w, s, &id, &c.id) {
-                Ok(lines) => {
-                    for line in lines {
-                        writeln!(output, "{line}")?;
-                    }
-                    writeln!(output)?;
-                    Ok(true)
-                }
-                Err(e) => {
-                    writeln!(output, "{e}\n")?;
-                    Ok(false)
-                }
-            };
+            return Ok(Some((id.clone(), c.id.clone())));
         }
         writeln!(output, "Choose a listed number or ID, or cancel.")?;
     }

@@ -170,3 +170,11 @@ Separate review branch on top of phase 9. NPCs/*.toml contains one complete NPC 
 Local Windows verification (2026-11-19): all 362 tests passed; cargo fmt --all -- --check, cargo clippy --all-targets -- -D warnings and cargo build --locked --release passed. Native scripted creator/manual-save/ZIP launch acceptance passed (target/phase4-acceptance-2236d940). A save created using the prior phase-9 release binary and old dialogue layout loaded into the new release and split sample, restoring the NPC node without rewriting save bytes (target/npc-save-compat-b569b8be). New regressions cover independent files, malformed/duplicate IDs, missing/empty/wrong-case directories, scoped node migrations, explicit old-layout repair, duplication/deletion, file moves and recovery/external edits. Unix symlink rejection is covered by a platform-specific test. Historical phase results above are unchanged.
 
 Review: [draft PR #40](https://github.com/LoneWolf862/lupine/pull/40) targets #39; keep unmerged. Windows/Ubuntu CI results for the final head are recorded on the PR. No claim of human beginner testing.
+
+## Whole-turn transaction follow-up (0.11.0-dev.10)
+
+Player actions, rewards and event/timer consequences now share a rollback boundary,
+including GameState, session RNG and staged output. See TURN_TRANSACTIONS.md for
+scope, ordering and the deliberate reward API change. RORK remains 6. Integration
+coverage exercises cross-system failure paths through the real runner. Final full
+suite and release verification are pending; no CachyOS or wizard work is included.

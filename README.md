@@ -5,7 +5,7 @@ RPG engine. Authors build adventures with editable TOML content, FIG configurati
 the guided Adventure Creator. HOWLBOUND is only the tentative name of a future original
 adventure; no original story is prescribed by this engine.
 
-**Development version: 0.11.0-dev.9.** Creator work through Phase 2I and Phase 3
+**Development version: 0.11.0-dev.10.** Creator work through Phase 2I and Phase 3
 startup, history, parser and export improvements (#20–#24) are merged.
 They are not a published release. The existing
 [v0.9.0 standalone release](https://github.com/LoneWolf862/lupine/releases/tag/v0.9.0)

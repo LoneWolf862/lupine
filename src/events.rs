@@ -381,9 +381,17 @@ fn dispatch(
     }
     Ok(())
 }
-/// Event batches are atomic separately from the already successful player action.
-/// On failure its action remains committed, while hooks/timers and their output roll back.
+/// Complete a turn; on failure restore the state captured before its player action.
 pub fn finish(w: &World, state: &mut GameState, step: Step) -> Result<Vec<String>, String> {
+    match finish_inner(w, state, &step) {
+        Ok(lines) => Ok(lines),
+        Err(error) => {
+            *state = step.before;
+            Err(error)
+        }
+    }
+}
+fn finish_inner(w: &World, state: &mut GameState, step: &Step) -> Result<Vec<String>, String> {
     w.events.validate_state(&state.events)?;
     if !step.eligible
         || (!step.performed && *state == step.before)
@@ -399,7 +407,7 @@ pub fn finish(w: &World, state: &mut GameState, step: Step) -> Result<Vec<String
         .turn
         .checked_add(1)
         .ok_or("Turn counter overflow")?;
-    let mut queue = VecDeque::from(step.triggers);
+    let mut queue = VecDeque::from(step.triggers.clone());
     for trigger in changes(&step.before, &draft) {
         if !queue.contains(&trigger) {
             queue.push_back(trigger);

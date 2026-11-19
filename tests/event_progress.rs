@@ -199,20 +199,22 @@ fn endings_block_further_gameplay_but_allow_manual_save_and_journal() {
     );
 }
 #[test]
-fn failed_event_batch_rolls_back_hooks_but_preserves_the_triggering_action() {
+fn failed_event_batch_rolls_back_the_entire_triggering_action() {
     let f = Fixture::new();
     fs::write(
         f.0.join("rules.toml"),
         format!("[counters]\npings=0\ntaken={}\narrivals=0\n", i64::MAX),
     )
     .unwrap();
+    let (before, _) = f.play("");
     let (s, text) = f.play("take key\n");
-    assert!(s.is_carried("key"));
+    assert_eq!(s, before);
+    assert!(!s.is_carried("key"));
     assert_eq!(s.events.turn, 0);
     assert!(!s.events.completed.contains(&"acquired".into()));
     assert_eq!(s.events.timers["alarm"].remaining, 2);
     assert!(!text.contains("Acquisition reward."));
-    assert!(text.contains("event changes were rolled back"));
+    assert!(text.contains("all turn changes were rolled back"));
 }
 #[test]
 fn cyclic_enter_events_are_bounded_and_startup_batch_is_atomic() {
