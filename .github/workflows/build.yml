@@ -37,7 +37,7 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
       - name: Native exported-package acceptance
         shell: pwsh
-        run: python scripts/phase3_acceptance.py
+        run: python scripts/phase4_acceptance.py
       - name: Linux interactive history acceptance
         if: runner.os == 'Linux'
         run: python3 scripts/history_pty_check.py

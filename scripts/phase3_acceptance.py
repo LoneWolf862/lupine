@@ -62,6 +62,7 @@ quit
 {story}
 e
 {number}
+2
 
 {destination}
 yes

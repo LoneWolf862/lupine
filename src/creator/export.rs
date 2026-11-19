@@ -159,6 +159,11 @@ pub struct ExportPlan {
     content: BTreeMap<PathBuf, Vec<u8>>,
     runtimes: Vec<Runtime>,
 }
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum OutputFormat {
+    Zip,
+    Folder,
+}
 impl ExportPlan {
     /// Preflight every target before creating anything. The plan owns immutable bytes.
     pub fn prepare(
@@ -232,6 +237,77 @@ impl ExportPlan {
         writeln!(output,"Each platform folder includes the executable, adventure/, START_HERE.txt, a launcher and engine license. Source files stay unchanged.")
     }
     pub fn publish(self) -> Result<PathBuf, String> {
+        self.publish_format(OutputFormat::Folder)
+    }
+    pub fn publish_format(mut self, format: OutputFormat) -> Result<PathBuf, String> {
+        files::validate_destination(&self.destination)?;
+        let destination = self.destination.clone();
+        let stage = super::export_workspace::reserve(
+            destination.parent().ok_or("Missing destination parent")?,
+        )?;
+        self.destination = stage.join("packages");
+        let result = (|| {
+            self.write_packages()?;
+            let output = if format == OutputFormat::Zip {
+                let out = stage.join("archives");
+                fs::create_dir(&out).map_err(|e| e.to_string())?;
+                let slug = self
+                    .title
+                    .chars()
+                    .map(|c| if c.is_ascii_alphanumeric() { c } else { '_' })
+                    .take(80)
+                    .collect::<String>();
+                for runtime in &self.runtimes {
+                    let name = format!(
+                        "{}-{}.zip",
+                        if slug.trim_matches('_').is_empty() {
+                            "Adventure"
+                        } else {
+                            &slug
+                        },
+                        runtime.target.label()
+                    );
+                    let part = out.join(format!("{name}.part"));
+                    super::archive::create(&self.destination.join(runtime.target.label()), &part)?;
+                    fs::hard_link(&part, out.join(name)).map_err(|e| e.to_string())?;
+                    fs::remove_file(part).map_err(|e| e.to_string())?;
+                }
+                out
+            } else {
+                self.destination.clone()
+            };
+            super::export_workspace::record(&stage)?;
+            let inventory = super::archive::inventory(&output)?;
+            // Reserve the final directory exclusively; never replace an existing export.
+            files::validate_destination(&destination)?;
+            fs::create_dir(&destination).map_err(|e| e.to_string())?;
+            write(&destination.join("EXPORT_INCOMPLETE.txt"),b"Export publication incomplete. Do not distribute. Retry into a new destination. Preserve unknown or modified files; no source adventure files changed.\n")?;
+            for (_, relative, dir) in &inventory {
+                if *dir {
+                    fs::create_dir(destination.join(relative)).map_err(|e| e.to_string())?;
+                } else {
+                    let source = output.join(relative);
+                    let expected = super::archive::file_hash(&source)?;
+                    fs::hard_link(&source, destination.join(relative))
+                        .map_err(|e| e.to_string())?;
+                    if super::archive::file_hash(&destination.join(relative))? != expected {
+                        return Err("Published export digest mismatch".into());
+                    }
+                }
+            }
+            fs::remove_file(destination.join("EXPORT_INCOMPLETE.txt"))
+                .map_err(|e| e.to_string())?;
+            super::export_workspace::cleanup(&stage).map_err(|e| {
+                format!(
+                    "Export is complete at {}, but staging cleanup needs attention: {e}",
+                    destination.display()
+                )
+            })?;
+            Ok(destination.clone())
+        })();
+        result.map_err(|e:String|format!("{e}\nExport workspace: {}. Use Export > C for verified cleanup when a complete record exists; otherwise preserve it for manual review. No source files changed.",stage.display()))
+    }
+    fn write_packages(&self) -> Result<(), String> {
         files::validate_destination(&self.destination)?;
         fs::create_dir(&self.destination).map_err(|e| e.to_string())?;
         let result = (|| {
@@ -284,7 +360,7 @@ impl ExportPlan {
             Ok(())
         })();
         result.map_err(|error:String|format!("{error}\nExport incomplete at {}. Do not distribute it. No source files changed; retry into a new folder.",self.destination.display()))?;
-        Ok(self.destination)
+        Ok(())
     }
 }
 fn write(path: &Path, bytes: &[u8]) -> Result<(), String> {
@@ -313,6 +389,12 @@ fn collect(
             return Err(format!("{}: export refuses linked content", path.display()));
         }
         if meta.is_dir() {
+            if matches!(
+                path.file_name().and_then(|n| n.to_str()),
+                Some(".git" | "target" | ".lupine-room-edit")
+            ) {
+                continue;
+            }
             if relative.starts_with("art") {
                 collect(root, rel, content)?;
             }
@@ -361,16 +443,48 @@ fn prompt(
 }
 pub fn run(source: &Path, input: &mut impl BufRead, output: &mut impl Write) -> io::Result<()> {
     super::ui::heading(output, "EXPORT YOUR ADVENTURE")?;
-    writeln!(output,"Export creates a new distribution folder; source files and player saves stay separate.\n  1. Windows x64\n  2. Linux x64\n  3. Both platforms\n  0. Back")?;
+    writeln!(output,"Export creates a new distribution folder containing ZIPs or platform folders.\n  1. Windows x64\n  2. Linux x64\n  3. Both platforms\n  C. Clean a recorded export workspace\n  0. Back")?;
     let targets = loop {
         let Some(choice) = prompt(input, output, "Choose target platform:")? else {
             return Ok(());
         };
         match choice.as_str() {
+            "c" | "C" => {
+                let Some(path) = prompt(
+                    input,
+                    output,
+                    "Exact .lupine-export-* workspace path (not the final export):",
+                )?
+                else {
+                    return Ok(());
+                };
+                writeln!(output,"Cleanup refuses unknown or modified content. Source adventures and final packages are not cleanup targets.")?;
+                if prompt(
+                    input,
+                    output,
+                    "Confirm verified workspace cleanup? Type yes:",
+                )?
+                .is_some_and(|s| s.eq_ignore_ascii_case("yes"))
+                {
+                    match super::export_workspace::cleanup(Path::new(&path)) {
+                        Ok(()) => writeln!(output, "Verified workspace removed.")?,
+                        Err(e) => writeln!(output, "Cleanup refused: {e}")?,
+                    }
+                }
+                return Ok(());
+            }
             "1" => break vec![Target::Windows],
             "2" => break vec![Target::Linux],
             "3" => break vec![Target::Windows, Target::Linux],
             _ => writeln!(output, "Choose 1, 2, 3 or 0.")?,
+        }
+    };
+    let format = loop {
+        let Some(choice)=prompt(input,output,"Output format:\n  1. Ready-to-share ZIP (stored, no compression)\n  2. Uncompressed Folder\n  0. Cancel")? else{return Ok(());};
+        match choice.as_str() {
+            "1" => break OutputFormat::Zip,
+            "2" => break OutputFormat::Folder,
+            _ => writeln!(output, "Choose 1 or 2.")?,
         }
     };
     let mut binaries = Vec::new();
@@ -411,6 +525,7 @@ pub fn run(source: &Path, input: &mut impl BufRead, output: &mut impl Write) -> 
         }
     };
     plan.preview(output)?;
+    writeln!(output,"Output format: {format:?}. Both platforms produce separate packages. ZIP entries are bounded to 256 MiB each and 512 MiB per archive.")?;
     let Some(answer) = prompt(
         input,
         output,
@@ -423,10 +538,10 @@ pub fn run(source: &Path, input: &mut impl BufRead, output: &mut impl Write) -> 
         writeln!(output, "Export canceled. Nothing written.")?;
         return Ok(());
     }
-    match plan.publish() {
+    match plan.publish_format(format) {
         Ok(path) => {
             super::ui::heading(output, "EXPORT COMPLETE!")?;
-            writeln!(output,"Package folder: {}\nShare the complete platform folder, or zip it using your archive tool.\nPlayers follow START_HERE.txt; no Rust installation is needed.",path.display())?;
+            writeln!(output,"Package folder: {}\nShare the ZIP for the player's platform, or its complete platform folder.\nExtract ZIPs before launching. Players follow START_HERE.txt; no Rust installation is needed.",path.display())?;
         }
         Err(e) => writeln!(output, "Export failed:\n{e}")?,
     }

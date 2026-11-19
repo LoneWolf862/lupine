@@ -14,12 +14,14 @@ struct GameManifest<'a> {
     save_compatibility_version: u32,
 }
 
+mod archive;
 mod art_edit;
 mod binding_edit;
 mod content_edit;
 mod currency_edit;
 mod enemy_edit;
 pub mod export;
+mod export_workspace;
 mod fig_edit;
 mod files;
 mod interaction_edit;
