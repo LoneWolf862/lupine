@@ -1,16 +1,16 @@
-//! RORK save-file format v2: explicit conversion between mutable GameState and TOML.
+//! RORK save-file format v3: explicit conversion between mutable GameState and TOML.
 //!
 //! This module does not trigger any saving. Terminal commands, save directories,
 //! confirmations, and crash-safe disk writes are implemented by the terminal layer.
 
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{BTreeMap, HashSet};
 
 use serde::{Deserialize, Serialize};
 
-use crate::state::{GameState, ItemLocation};
+use crate::state::GameState;
 use crate::world::World;
 
-pub const SAVE_FORMAT_VERSION: u32 = 2;
+pub const SAVE_FORMAT_VERSION: u32 = 3;
 
 fn default_save_compatibility_version() -> u32 {
     1
@@ -30,7 +30,7 @@ struct SaveFile {
     save_name: String,
     current_room: String,
     flags: Vec<String>,
-    item_locations: BTreeMap<String, SavedLocation>,
+    objects: crate::objects::ObjectState,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     character: Option<crate::rpg::Character>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -47,24 +47,6 @@ struct SaveFile {
     completed_unique_encounters: Vec<String>,
     #[serde(default = "default_next_enemy_id")]
     next_enemy_id: u64,
-}
-
-// An explicit kind prevents a room ID named "inventory" from being confused
-// with the player's inventory. The optional room is checked below.
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-struct SavedLocation {
-    kind: LocationKind,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    room: Option<String>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-enum LocationKind {
-    Inventory,
-    Room,
-    Consumed,
 }
 
 /// Render a complete state snapshot as human-readable TOML for a future `.rork` file.
@@ -91,24 +73,6 @@ pub fn encode_save_with_compat(
     validate_metadata(game_id, save_name)?;
     validate_state(world, state)?;
 
-    let mut item_locations = BTreeMap::new();
-    for (item, location) in &state.item_locations {
-        let location = match location {
-            ItemLocation::Inventory => SavedLocation {
-                kind: LocationKind::Inventory,
-                room: None,
-            },
-            ItemLocation::Room(room) => SavedLocation {
-                kind: LocationKind::Room,
-                room: Some(room.clone()),
-            },
-            ItemLocation::Consumed => SavedLocation {
-                kind: LocationKind::Consumed,
-                room: None,
-            },
-        };
-        item_locations.insert(item.clone(), location);
-    }
     let mut flags = state.flags.iter().cloned().collect::<Vec<_>>();
     flags.sort();
     let file = SaveFile {
@@ -119,7 +83,7 @@ pub fn encode_save_with_compat(
         save_name: save_name.into(),
         current_room: state.current_room.clone(),
         flags,
-        item_locations,
+        objects: state.objects.clone(),
         character: state.character.clone(),
         learned_abilities: {
             let mut ids = state.learned_abilities.iter().cloned().collect::<Vec<_>>();
@@ -192,28 +156,6 @@ pub fn decode_save_with_compat(
             file.save_compatibility_version, compatibility_version
         ));
     }
-    let mut item_locations = HashMap::new();
-    for (item, location) in file.item_locations {
-        let value = match (location.kind, location.room) {
-            (LocationKind::Inventory, None) => ItemLocation::Inventory,
-            (LocationKind::Consumed, None) => ItemLocation::Consumed,
-            (LocationKind::Consumed, Some(_)) => {
-                return Err(format!(
-                    "Item '{item}': consumed location must not specify a room"
-                ))
-            }
-            (LocationKind::Room, Some(room)) => ItemLocation::Room(room),
-            (LocationKind::Inventory, Some(_)) => {
-                return Err(format!(
-                    "Item '{item}': inventory location must not specify a room"
-                ));
-            }
-            (LocationKind::Room, None) => {
-                return Err(format!("Item '{item}': room location requires a room ID"));
-            }
-        };
-        item_locations.insert(item, value);
-    }
     let flags: HashSet<String> = file.flags.iter().cloned().collect();
     if flags.len() != file.flags.len() {
         return Err("RORK save contains duplicate state flags".into());
@@ -230,7 +172,7 @@ pub fn decode_save_with_compat(
     let state = GameState {
         story: file.story,
         current_room: file.current_room,
-        item_locations,
+        objects: file.objects,
         flags,
         character: file.character,
         learned_abilities,
@@ -358,22 +300,6 @@ fn validate_state(world: &World, state: &GameState) -> Result<(), String> {
             state.current_room
         ));
     }
-    for item in &world.items {
-        if !state.item_locations.contains_key(&item.id) {
-            return Err(format!("Save is missing location for item '{}'", item.id));
-        }
-    }
-    for (item_id, location) in &state.item_locations {
-        if world.item(item_id).is_none() {
-            return Err(format!("Save references unknown item '{item_id}'"));
-        }
-        if let ItemLocation::Room(room) = location {
-            if world.room(room).is_none() {
-                return Err(format!(
-                    "Item '{item_id}' is located in unknown room '{room}'"
-                ));
-            }
-        }
-    }
+    crate::objects::validate_state(world, state)?;
     Ok(())
 }

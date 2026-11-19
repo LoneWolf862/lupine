@@ -92,8 +92,8 @@ a solvability proof. All warnings preserve author content and permit intentional
 offstage rooms. Migration M includes counters, declared flags, nested conditions and
 outcomes, preserving prose and RORK bytes. Renaming can invalidate saved state.
 
-RORK serialization is now version 2 because counters and visited rooms are persistent
-state. Only version 2 loads in this development engine; keep the matching old engine
+RORK serialization is now version 3: [object state](OBJECTS.md), counters and visited
+rooms are persistent. Only version 3 loads in this development engine; keep the matching old engine
 and game for older saves. No obsolete loader or automatic migration is introduced.
 Game save-compatibility revisions remain author-controlled and independent of Cargo.
 The published v0.9.0 engine/tag are unchanged. See [save policy](SAVE_FORMAT.md).

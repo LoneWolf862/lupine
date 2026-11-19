@@ -1,0 +1,6 @@
+[[actions]]
+id="search"
+commands=["search"]
+effects=[{reveal_item="note"}]
+success_text="You discover a note."
+failure_text="Nothing."

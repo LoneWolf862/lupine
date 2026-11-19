@@ -80,7 +80,23 @@ struct ItemData {
     #[serde(default)]
     descriptions: Vec<DescriptionData>,
     portable: bool,
+    #[serde(default)]
     starting_room: String,
+    #[serde(default)]
+    initial: Option<crate::state::ItemLocation>,
+    #[serde(default)]
+    hidden: bool,
+    #[serde(default)]
+    stackable: bool,
+    #[serde(default = "one_quantity")]
+    quantity: u32,
+    #[serde(default)]
+    container: Option<crate::objects::Container>,
+    #[serde(default)]
+    consumable: Option<toml::Value>,
+}
+fn one_quantity() -> u32 {
+    1
 }
 
 #[derive(Debug, Deserialize)]
@@ -364,11 +380,33 @@ pub fn load_game(directory: impl AsRef<Path>) -> Result<LoadedGame, String> {
         });
     }
     let mut items = Vec::new();
+    let mut object_defs = BTreeMap::new();
     let mut item_paths = Vec::new();
     for path in story_files(&directory.join("items"))? {
         let data: ItemData = read_toml(&path)?;
         let origin = path.display().to_string();
         item_paths.push(path.clone());
+        if data.initial.is_some() && !data.starting_room.is_empty() {
+            return Err(format!(
+                "{origin}: choose initial or starting_room, not both"
+            ));
+        }
+        object_defs.insert(
+            data.id.clone(),
+            crate::objects::Definition {
+                initial: data.initial,
+                hidden: data.hidden,
+                stackable: data.stackable,
+                quantity: data.quantity,
+                container: data.container,
+                consumable: data
+                    .consumable
+                    .as_ref()
+                    .map(crate::rules::decode)
+                    .transpose()
+                    .map_err(|e| format!("{origin}: {e}"))?,
+            },
+        );
         items.push(Item {
             id: data.id,
             name: data.name,
@@ -422,6 +460,7 @@ pub fn load_game(directory: impl AsRef<Path>) -> Result<LoadedGame, String> {
         });
     }
     let world = World {
+        object_defs,
         actions: crate::actions::load(directory)?,
         rules: crate::rules::StoryRules::load(directory)?,
         rooms,
@@ -508,7 +547,12 @@ fn validate_story_references(
         }
     }
     for (item, path) in world.items.iter().zip(item_paths) {
-        if !room_ids.contains_key(item.starting_room.as_str()) {
+        if world
+            .object_defs
+            .get(&item.id)
+            .is_none_or(|d| d.initial.is_none())
+            && !room_ids.contains_key(item.starting_room.as_str())
+        {
             errors.push(format!("{}: item '{}' starts in unknown room '{}'. Set starting_room to an existing room id.", path.display(), item.id, item.starting_room));
         }
     }

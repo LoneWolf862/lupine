@@ -132,7 +132,7 @@ pub fn physical_attack(
     };
     let weapon = &content.weapons[&id];
     let item = world.item(&id).expect("resolved weapon item");
-    if state.location(&weapon.item) != Some(ItemLocation::Inventory) {
+    if !state.is_carried(&weapon.item) {
         return CombatAction::free(format!("You must carry {} to attack with it.", item.name));
     }
     let index = match target_index(encounters, active, target) {
@@ -285,7 +285,7 @@ pub fn award_defeat(
         let Some(item) = world.item(&loot.item) else {
             continue;
         };
-        state.item_locations.insert(
+        state.set_location(
             loot.item.clone(),
             ItemLocation::Room(state.current_room.clone()),
         );

@@ -29,9 +29,7 @@ fn weapon_requires_inventory_and_scales_with_ap() {
     assert!(content
         .weapons(&game.world, &state)
         .contains("no usable weapons"));
-    state
-        .item_locations
-        .insert("brass_key".into(), ItemLocation::Inventory);
+    state.set_location("brass_key".into(), ItemLocation::Inventory);
     assert!(content
         .weapons(&game.world, &state)
         .contains("5 piercing damage"));
@@ -53,9 +51,7 @@ fn learn_scroll_cast_restore_and_save() {
     assert!(content
         .learn(&game.world, &mut state, "key")
         .contains("must carry"));
-    state
-        .item_locations
-        .insert("brass_key".into(), ItemLocation::Inventory);
+    state.set_location("brass_key".into(), ItemLocation::Inventory);
     assert!(content
         .learn(&game.world, &mut state, "key")
         .contains("learn Heal"));

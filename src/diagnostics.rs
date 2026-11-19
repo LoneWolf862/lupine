@@ -158,6 +158,18 @@ pub fn warnings(a: &Adventure) -> Vec<String> {
             out.push(format!("Action '{}' has shadowed outcomes", action.id));
         }
     }
+    for d in w.object_defs.values() {
+        if let Some(consumable) = &d.consumable {
+            for c in &consumable.requires {
+                condition(c, &mut read);
+            }
+            for e in &consumable.effects {
+                if let Effect::SetFlag(id) = e {
+                    written.insert(id.clone());
+                }
+            }
+        }
+    }
     for table in a.encounters.tables.values() {
         for entry in &table.enemies {
             for c in &entry.requires {

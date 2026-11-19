@@ -160,9 +160,7 @@ impl EncounterContent {
     pub fn prepare_loot(&self, state: &mut GameState) {
         for enemy in self.enemies.values() {
             for drop in &enemy.loot {
-                state
-                    .item_locations
-                    .insert(drop.item.clone(), ItemLocation::Consumed);
+                state.set_location(drop.item.clone(), ItemLocation::Consumed);
             }
         }
     }

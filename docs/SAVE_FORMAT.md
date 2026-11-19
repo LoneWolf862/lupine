@@ -1,10 +1,11 @@
 # RORK Save Format
 
-## Current development: version 2
+## Current development: version 3
 
-Engine expansion phase 2 introduces required `story` state: declared integer counters
-and visited-room IDs. Both round-trip on explicit manual save/load and validate against
-the current world. This is a deliberate structural revision, independent of Cargo
+Engine expansion phase 4 adds a canonical object ledger (quantities, typed placements,
+visibility and containers) alongside the counters and visited rooms introduced in
+phase 2. All round-trip on explicit manual save/load and validate against the current
+world. This is a deliberate structural revision, independent of Cargo
 version and game.toml save_compatibility_version. Older save formats are rejected with
 guidance to use their matching engine/game; no loader or automatic migration is added.
 Existing RORK files are never rewritten by authoring, migration, testing or export.
@@ -79,3 +80,10 @@ room = "cabin"
 - The writer stages a synced temporary sibling file, then atomically publishes it on supported local filesystems. A failed staging/rename attempt leaves an existing save untouched. A failed new-slot operation leaves no playable partial `.rork` file.
 - File safety is best-effort: crash/power-loss durability depends on the OS/filesystem; a crash may leave ignored `.tmp` files. No backups, migrators, or cryptographic integrity are implemented yet.
 - Saving remains strictly **manual-only**. The `save`, `load`, and `saves` terminal verbs remain reserved engine commands.
+
+Expansion phase 4 revises serialization to **3** for `objects.placements` (per-item
+lists of typed locations and positive quantities), `objects.hidden`, and
+`objects.containers`. Empty placement lists represent consumed/offstage items.
+Reject missing/unknown IDs, duplicate locations, zero/overflow quantities, duplicate
+hidden IDs, invalid containers, cycles, capacity violations and impossible lock states
+before replacing active play. No loader rewrites older saves.

@@ -1,6 +1,6 @@
 //! Optional, data-driven combat equipment and learned abilities.
 //! Stage B does not spawn enemies or inflict combat damage: that is Stage C.
-use crate::state::{GameState, ItemLocation};
+use crate::state::GameState;
 use crate::world::World;
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
@@ -187,17 +187,16 @@ impl RpgContent {
         let Some(item_id) = &ability.learn_from_item else {
             return "This ability cannot be learned from an item.".into();
         };
-        if state.location(item_id) != Some(ItemLocation::Inventory) {
+        if !state.is_carried(item_id) {
             return format!(
                 "You must carry the teaching item to learn {}.",
                 ability.name
             );
         }
+        if let Err(e) = state.consume_one(item_id) {
+            return e;
+        }
         state.learned_abilities.insert(ability.id.clone());
-        // Scroll consumed permanently, including after manual save/load.
-        state
-            .item_locations
-            .insert(item_id.clone(), ItemLocation::Consumed);
         format!("You learn {}. The teaching item is consumed.", ability.name)
     }
 
@@ -228,7 +227,7 @@ impl RpgContent {
         let mut weapons = self
             .weapons
             .values()
-            .filter(|w| state.location(&w.item) == Some(ItemLocation::Inventory))
+            .filter(|w| state.is_carried(&w.item))
             .collect::<Vec<_>>();
         weapons.sort_by(|a, b| a.item.cmp(&b.item));
         if weapons.is_empty() {

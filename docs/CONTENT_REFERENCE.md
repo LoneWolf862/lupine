@@ -17,7 +17,7 @@ baseline fields below with nested conditions, effects and ordered interaction ou
 |---|---|---|
 | game.toml | format_version=1, id, title, starting_room | save_compatibility_version=1; currency; currencies |
 | rooms/*.toml | id, title, description | exits={} mapping north/south/east/west/up/down to rooms; descriptions=[]; art or art_file; art_variants=[]; encounters |
-| items/*.toml | id, name, description, portable, starting_room | aliases=[]; descriptions=[] |
+| items/*.toml | id, name, description, portable; starting_room or initial | aliases=[]; descriptions=[]; hidden=false; stackable=false; quantity=1; container; consumable. See [object reference](OBJECTS.md) |
 | interactions.toml | none | interactions=[]; exit_rules=[] |
 | actions.toml | actions array; see [actions grammar](ACTIONS.md) | room, target/item bindings, shared rules/outcomes |
 | rules.toml | none | flags={} initial booleans; counters={} initial signed integers |

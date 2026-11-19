@@ -11,8 +11,8 @@ The baseline is main 451f409, including merged Phase 4 PRs #26â€“#30.
 |---|---|---|
 | 1 | Current format reference, mechanic examples, file-based scenario testing | Verified locally and in CI; draft PR #31 |
 | 2 | Shared nested conditions, typed effects, counters, ordered outcomes | Verified locally; draft PR #32 |
-| 3 | Authored actions/aliases, fixed-object use, player feedback | Verified locally; draft PR pending |
-| 4 | Hidden/starting inventory, containers, quantities, consumables | Approved, not implemented |
+| 3 | Authored actions/aliases, fixed-object use, player feedback | Verified locally; draft PR #33 |
+| 4 | Hidden/starting inventory, containers, quantities, consumables | Implemented candidate; verification in progress |
 | 5 | Events, timers, quests, journals, endings | Approved, not implemented |
 | 6 | NPCs, conditional dialogue, choices, transfers and movement | Approved, not implemented |
 | 7 | Independent economy, shared rewards, world abilities, equipment/status/combat configuration | Approved, not implemented |

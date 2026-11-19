@@ -472,6 +472,37 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
                 crate::actions::Prepared::Unhandled => (),
             }
         }
+        match crate::objects::prepare(&line, &world, &state, &mut input, &mut output)? {
+            crate::objects::Prepared::Unhandled => (),
+            crate::objects::Prepared::Canceled => continue,
+            crate::objects::Prepared::Action {
+                verb,
+                item,
+                target,
+                quantity,
+            } => {
+                let old_room = state.current_room.clone();
+                let text = crate::objects::manipulate(
+                    &world,
+                    &mut state,
+                    &verb,
+                    &item,
+                    target.as_deref(),
+                    quantity,
+                )
+                .unwrap_or_else(|e| e);
+                writeln!(output, "{text}\n")?;
+                sync_object_room(
+                    &old_room,
+                    &world,
+                    &mut state,
+                    &encounters,
+                    &mut rng,
+                    &mut output,
+                )?;
+                continue;
+            }
+        }
         let original_intent = parse_command(&line);
         let requested_bulk = matches!(&original_intent, Ok(crate::commands::Command::Take(target) | crate::commands::Command::Drop(target)) if target == "all");
         let Some(line) = crate::player_input::prepare(
@@ -630,6 +661,26 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
                 continue;
             }
         }
+        if verb.eq_ignore_ascii_case("use")
+            && world
+                .object_defs
+                .get(argument)
+                .is_some_and(|d| d.consumable.is_some())
+        {
+            let old_room = state.current_room.clone();
+            let text = crate::objects::manipulate(&world, &mut state, "consume", argument, None, 1)
+                .unwrap_or_else(|e| e);
+            writeln!(output, "{text}\n")?;
+            sync_object_room(
+                &old_room,
+                &world,
+                &mut state,
+                &encounters,
+                &mut rng,
+                &mut output,
+            )?;
+            continue;
+        }
         if verb.eq_ignore_ascii_case("shop") {
             writeln!(output, "{}\n", shops.describe(&state, &wallet, argument))?;
             continue;
@@ -666,15 +717,13 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
                 .items
                 .iter()
                 .filter(|item| {
-                    if taking {
-                        item.portable
-                            && state.location(&item.id)
-                                == Some(crate::state::ItemLocation::Room(
-                                    state.current_room.clone(),
-                                ))
-                    } else {
-                        state.location(&item.id) == Some(crate::state::ItemLocation::Inventory)
-                    }
+                    item.portable
+                        && state.is_accessible(&item.id)
+                        && if taking {
+                            state.available_source(&item.id, false).is_some()
+                        } else {
+                            state.count_at(&item.id, &crate::state::ItemLocation::Inventory) > 0
+                        }
                 })
                 .map(|item| item.id.clone())
                 .collect();
@@ -690,18 +739,30 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
                 )?;
             } else {
                 for id in targets {
-                    let item = world.item(&id).expect("item ID came from the world");
-                    if taking {
-                        state
-                            .item_locations
-                            .insert(id, crate::state::ItemLocation::Inventory);
-                        writeln!(output, "You take the {}.", item.name)?;
-                    } else {
-                        state.item_locations.insert(
-                            id,
-                            crate::state::ItemLocation::Room(state.current_room.clone()),
-                        );
-                        writeln!(output, "You drop the {}.", item.name)?;
+                    while let Some(from) = state.available_source(&id, !taking) {
+                        let quantity = state.count_at(&id, &from);
+                        let to = if taking {
+                            crate::state::ItemLocation::Inventory
+                        } else {
+                            crate::state::ItemLocation::Room(state.current_room.clone())
+                        };
+                        match state.transfer(&world, &id, &from, &to, quantity) {
+                            Ok(()) => writeln!(
+                                output,
+                                "You {} the {}{}.",
+                                if taking { "take" } else { "drop" },
+                                world.item(&id).unwrap().name,
+                                if crate::objects::definition(&world, &id).stackable {
+                                    format!(" ({quantity})")
+                                } else {
+                                    String::new()
+                                }
+                            )?,
+                            Err(e) => {
+                                writeln!(output, "{e}")?;
+                                break;
+                            }
+                        }
                     }
                 }
                 writeln!(output)?;
@@ -1041,6 +1102,25 @@ fn is_defeated(state: &GameState) -> bool {
 }
 
 // Lightweight command spelling suggestions. Never execute the suggestion.
+fn sync_object_room(
+    old_room: &str,
+    world: &World,
+    state: &mut GameState,
+    encounters: &EncounterContent,
+    rng: &mut EncounterRng,
+    output: &mut impl Write,
+) -> io::Result<()> {
+    if state.current_room != old_room {
+        encounters.leave_room(old_room, state);
+        let room = state.current_room.clone();
+        encounters.enter_room(&room, state, rng);
+        show_room(world, state, output)?;
+        if !state.active_enemies.is_empty() {
+            writeln!(output, "{}\n", encounters.describe(&state.active_enemies))?;
+        }
+    }
+    Ok(())
+}
 fn run_authored(
     index: usize,
     world: &World,
@@ -1111,6 +1191,14 @@ fn suggest_verb(command: &str) -> Option<String> {
         "hit",
         "strike",
         "inspect",
+        "open",
+        "close",
+        "unlock",
+        "lock",
+        "put",
+        "consume",
+        "eat",
+        "drink",
         "grab",
         "get",
     ];

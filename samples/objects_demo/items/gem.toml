@@ -1,0 +1,5 @@
+id="gem"
+name="gem"
+description="A demonstration gem."
+portable=true
+initial={kind="container",id="chest"}

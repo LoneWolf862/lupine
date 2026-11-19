@@ -73,6 +73,7 @@ pub struct Interaction {
 
 #[derive(Debug)]
 pub struct World {
+    pub object_defs: std::collections::BTreeMap<String, crate::objects::Definition>,
     pub actions: Vec<crate::actions::Action>,
     pub rules: crate::rules::StoryRules,
     pub rooms: Vec<Room>,
@@ -94,6 +95,9 @@ impl World {
     /// Validate an authored world before play; reports all detected problems.
     pub fn validate(&self) -> Result<(), Vec<String>> {
         let mut errors = crate::actions::validate(self);
+        if let Err(e) = crate::objects::validate(self) {
+            errors.push(e);
+        }
         if let Err(e) = self.rules.validate() {
             errors.push(e);
         }
@@ -137,7 +141,12 @@ impl World {
             }
         }
         for item in &self.items {
-            if !rooms.contains(item.starting_room.as_str()) {
+            if self
+                .object_defs
+                .get(&item.id)
+                .is_none_or(|d| d.initial.is_none())
+                && !rooms.contains(item.starting_room.as_str())
+            {
                 errors.push(format!(
                     "Item '{}' starts in missing room '{}'",
                     item.id, item.starting_room

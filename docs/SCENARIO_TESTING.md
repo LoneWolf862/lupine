@@ -38,3 +38,8 @@ Assertions cover prose, room, inventory and flags. Phase 2 additionally supports
 `counters = { attempts=1 }` and `visited = ["hall", "workshop"]`, each comparing the
 entire final collection when present. Normal play retains clock-derived randomness.
 RORK version 2 is introduced by phase 2 for new story state, not by scenario testing.
+
+Object scenarios can assert `hidden = ["note"]` (exact hidden set) and
+`quantities = [{ item = "ration", location = { kind = "inventory" }, quantity = 3 }]`.
+Each quantity assertion checks one location; unknown item IDs fail even for zero.
+See `samples/objects_demo/scenarios.toml` for container and split-stack assertions.

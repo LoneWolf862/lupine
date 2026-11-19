@@ -1,0 +1,8 @@
+id="ration"
+name="ration"
+description="A demonstration ration."
+portable=true
+initial={kind="inventory"}
+stackable=true
+quantity=5
+consumable={text="You eat one ration.",failure_text="Cannot eat.",effects=[{add_counter={id="meals",amount=1}}]}

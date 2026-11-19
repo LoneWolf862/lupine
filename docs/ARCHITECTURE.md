@@ -5,12 +5,13 @@ loads strict TOML test suites and invokes the real runner with an explicit rando
 seed, returning final in-memory state for assertions. Existing runner APIs preserve
 their signatures/default randomness. Scenarios never save implicitly.
 
-## Current development architecture (0.11.0-dev.2)
+## Current development architecture (0.11.0-dev.3)
 
 Lupine is an offline terminal engine. Immutable TOML content is separate from mutable
 GameState; supported FIG files hold configuration. Manual RORK persistence remains in
-save.rs/save_files.rs; expansion phase 2 uses serialization version 2 for counters
-and visited rooms. `rules.rs` owns typed nested conditions, atomic effect application,
+save.rs/save_files.rs; expansion phase 2 uses serialization version 3 for counters, visited rooms and the object ledger.
+`objects.rs` owns placements/quantities, container state, visibility and atomic transfers.
+There is one canonical mutable placement ledger; unique items are one-unit stacks. `rules.rs` owns typed nested conditions, atomic effect application,
 ordered outcomes and initial declarations from rules.toml. Existing interactions,
 prose/art and exit rules share the same conditions. `diagnostics.rs` supplies advisory
 checks without rejecting intentional offstage content. Nested references and declaration

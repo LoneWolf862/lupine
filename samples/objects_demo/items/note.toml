@@ -1,0 +1,6 @@
+id="note"
+name="note"
+description="A demonstration note."
+portable=true
+starting_room="workroom"
+hidden=true

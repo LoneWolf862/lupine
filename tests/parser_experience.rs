@@ -127,8 +127,7 @@ fn clarification_retries_cancels_and_resolves_both_use_targets() {
 fn role_relevance_and_suggestions_never_reveal_hidden_items_or_mutate() {
     let w = world();
     let mut s = GameState::new(&w);
-    s.item_locations
-        .insert("brass_key".into(), ItemLocation::Inventory);
+    s.set_location("brass_key".into(), ItemLocation::Inventory);
     assert_eq!(
         prep(
             "drop key",
@@ -192,11 +191,10 @@ fn combat_and_spell_aliases_resolve_instances_and_conserve_failed_state() {
             .unwrap(),
     );
     for id in a.rpg.weapons.keys() {
-        s.item_locations.insert(id.clone(), ItemLocation::Inventory);
+        s.set_location(id.clone(), ItemLocation::Inventory);
     }
     s.learned_abilities.insert("fireball".into());
-    s.item_locations
-        .insert("fireball_scroll".into(), ItemLocation::Consumed);
+    s.set_location("fireball_scroll".into(), ItemLocation::Consumed);
     s.current_room = "woods".into();
     s.active_enemies = vec![
         EnemyInstance {
@@ -341,8 +339,7 @@ fn word_prefixes_are_ordered_and_ambiguous_matches_stay_ambiguous() {
 fn omitted_weapon_requires_explicit_selection_and_can_cancel() {
     let a = Adventure::load(Path::new("samples/rpg_persistent")).unwrap();
     let mut s = GameState::new(&a.game.world);
-    s.item_locations
-        .insert("rusty_dagger".into(), ItemLocation::Inventory);
+    s.set_location("rusty_dagger".into(), ItemLocation::Inventory);
     s.active_enemies.push(EnemyInstance {
         instance_id: 1,
         enemy_id: "goblin".into(),
@@ -374,8 +371,7 @@ fn omitted_weapon_requires_explicit_selection_and_can_cancel() {
         Some("attack goblin #1 with rusty_dagger")
     );
     s.learned_abilities.insert("fireball".into());
-    s.item_locations
-        .insert("fireball_scroll".into(), ItemLocation::Consumed);
+    s.set_location("fireball_scroll".into(), ItemLocation::Consumed);
     for command in ["fireball", "fireball goblin"] {
         let (result, text) = prep(command, "", &a.game.world, &s, &a.rpg, &a.encounters);
         assert!(result.is_none());
