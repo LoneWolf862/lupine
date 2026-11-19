@@ -4,11 +4,11 @@ use std::{
     path::{Component, Path, PathBuf},
 };
 const DIRS: &[&str] = &[
-    "config", "rooms", "items", "spells", "weapons", "enemies", "shops", "art",
+    "config", "rooms", "items", "spells", "weapons", "NPCs", "enemies", "shops", "art",
 ];
 const FILES: &[&str] = &[
     "events.toml",
-    "dialogue.toml",
+    "dialogue.toml", // Obsolete content: retained only for explicit repair/deletion.
     "systems.toml",
     "actions.toml",
     "rules.toml",

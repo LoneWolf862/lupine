@@ -17,8 +17,10 @@ All three supported FIG files are included with comments beside every setting.
 RPG is disabled by default. Set enabled = true in config/character.fig to opt in,
 then validate and reload. Consider game.toml save_compatibility_version before
 incompatible changes to games with existing saves. Terminology edits only change labels.
-The `new` command creates all eight standard folders, including empty ones. Git does
+The `new` command creates all nine standard folders, including empty ones. Git does
 not store empty directories; when copying this template, create spells/, weapons/,
-enemies/, shops/ and art/ as needed. No placeholder content is required.
+NPCs/, enemies/, shops/ and art/ as needed. No placeholder content is required.
 
 Creator F edits and repairs complete multi-file drafts. G edits publication metadata. B browses rooms and related content; I inspects map/references. Definition selectors accept /text search and >/< paging. Exact previews and explicit confirmation precede publication. See docs/PROJECT_EDITOR.md and docs/CREATOR_NAVIGATION.md in the source repository.
+
+Put each NPC definition and its conversation in NPCs/ID.toml with a stable top-level id. See docs/DIALOGUE.md for fields, references and migration from the old dialogue.toml layout.

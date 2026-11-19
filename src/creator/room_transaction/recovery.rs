@@ -449,6 +449,57 @@ mod tests {
         f
     }
     #[test]
+    fn npc_file_move_recovers_both_directions_and_preserves_external_edits() {
+        let npc = "id='guide'\nname='Guide'\ndescription='Guide'\nroom='start'\nstart='hello'\n[nodes.hello]\ntext='Hello'\n";
+        for complete in [false, true] {
+            let f = super::super::tests::Fixture::new();
+            fs::write(f.0.join("NPCs/guide.toml"), npc).unwrap();
+            fs::write(f.0.join("personal.rork"), "unchanged").unwrap();
+            let snapshot = Snapshot::capture(&f.0).unwrap();
+            let changes = BTreeMap::from([
+                (PathBuf::from("NPCs/guide.toml"), None),
+                (PathBuf::from("NPCs/helper.toml"), Some(npc.to_owned())),
+            ]);
+            fs::write(f.0.join("NPCs/guide.toml"), format!("# external\n{npc}")).unwrap();
+            assert!(snapshot
+                .commit_changes(&changes)
+                .unwrap_err()
+                .contains("externally"));
+            assert!(fs::read_to_string(f.0.join("NPCs/guide.toml"))
+                .unwrap()
+                .starts_with("# external"));
+            fs::write(f.0.join("NPCs/guide.toml"), npc).unwrap();
+            let snapshot = Snapshot::capture(&f.0).unwrap();
+            assert!(
+                catch_unwind(AssertUnwindSafe(|| snapshot.stage(&changes, false, |n| {
+                    if n == 1 {
+                        panic!("power loss during NPC file move");
+                    }
+                    Ok(())
+                })))
+                .is_err()
+            );
+            inspect(&f.0).unwrap();
+            recover(&f.0, complete).unwrap();
+            let file = if complete {
+                "NPCs/helper.toml"
+            } else {
+                "NPCs/guide.toml"
+            };
+            assert_eq!(fs::read_to_string(f.0.join(file)).unwrap(), npc);
+            assert_eq!(f.0.join("NPCs/guide.toml").exists(), !complete);
+            assert_eq!(f.0.join("NPCs/helper.toml").exists(), complete);
+            let a = Adventure::load(&f.0).unwrap();
+            assert_eq!(a.game.world.dialogue.npcs.len(), 1);
+            assert!(a.game.world.dialogue.npcs.contains_key("guide"));
+            assert_eq!(
+                fs::read_to_string(f.0.join("personal.rork")).unwrap(),
+                "unchanged"
+            );
+            assert!(!f.0.join(LOCK).exists());
+        }
+    }
+    #[test]
     fn deletion_and_invalid_baseline_recover_without_guessing() {
         for complete in [false, true] {
             let f = super::super::tests::Fixture::new();

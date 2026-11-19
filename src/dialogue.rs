@@ -101,18 +101,109 @@ pub fn node(w: &World, npc: &str, id: &str) -> Result<(), String> {
         Err(format!("Unknown dialogue node '{npc}:{id}'"))
     }
 }
+fn linked(metadata: &std::fs::Metadata) -> bool {
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::MetadataExt;
+        if metadata.file_attributes() & 0x400 != 0 {
+            return true;
+        }
+    }
+    metadata.file_type().is_symlink()
+}
 impl Content {
     pub fn load(root: &Path) -> Result<Self, String> {
-        let p = root.join("dialogue.toml");
-        let text = match std::fs::read_to_string(&p) {
-            Ok(s) => s,
+        // This is a content-layout change only. Runtime IDs and saved progress stay unchanged.
+        if std::fs::symlink_metadata(root.join("dialogue.toml")).is_ok() {
+            return Err(format!("{}: dialogue.toml is no longer supported. Move each [npcs.ID] definition to NPCs/ID.toml, add id = \"ID\", and change [npcs.ID.nodes.*] to [nodes.*]. Remove dialogue.toml after reviewing the split. Do not edit RORK saves.", root.display()));
+        }
+        for entry in std::fs::read_dir(root).map_err(|e| format!("{}: {e}", root.display()))? {
+            let name = entry.map_err(|e| e.to_string())?.file_name();
+            if name
+                .to_str()
+                .is_some_and(|n| n.eq_ignore_ascii_case("npcs") && n != "NPCs")
+            {
+                return Err(format!(
+                    "{}: name the NPC directory exactly NPCs/ for Windows/Linux portability",
+                    root.join(name).display()
+                ));
+            }
+        }
+        let dir = root.join("NPCs");
+        let metadata = match std::fs::symlink_metadata(&dir) {
+            Ok(m) => m,
             Err(e) if e.kind() == io::ErrorKind::NotFound => return Ok(Self::default()),
-            Err(e) => return Err(format!("{}: {e}", p.display())),
+            Err(e) => return Err(format!("{}: {e}", dir.display())),
         };
-        let value: toml::Value =
-            toml::from_str(&text).map_err(|e| format!("{}: {e}", p.display()))?;
-        crate::rules::decode(&value).map_err(|e| format!("{}: {e}", p.display()))
+        if linked(&metadata) || !metadata.is_dir() {
+            return Err(format!(
+                "{}: expected a regular directory, not a link",
+                dir.display()
+            ));
+        }
+        let mut paths = Vec::new();
+        for entry in std::fs::read_dir(&dir).map_err(|e| format!("{}: {e}", dir.display()))? {
+            let path = entry.map_err(|e| e.to_string())?.path();
+            let meta =
+                std::fs::symlink_metadata(&path).map_err(|e| format!("{}: {e}", path.display()))?;
+            if linked(&meta) || !meta.is_file() {
+                return Err(format!(
+                    "{}: NPCs/ accepts regular files directly, without links or subdirectories",
+                    path.display()
+                ));
+            }
+            if path.extension().is_some_and(|e| e == "toml") {
+                if meta.len() > 8 * 1024 * 1024 {
+                    return Err(format!("{}: NPC definition exceeds 8 MiB", path.display()));
+                }
+                paths.push(path);
+                if paths.len() > 1024 {
+                    return Err(format!(
+                        "{}: at most 1024 NPC definitions are supported",
+                        dir.display()
+                    ));
+                }
+            }
+        }
+        paths.sort();
+        let mut content = Self::default();
+        let mut origins = BTreeMap::new();
+        let mut total = 0usize;
+        for path in paths {
+            let text =
+                std::fs::read_to_string(&path).map_err(|e| format!("{}: {e}", path.display()))?;
+            total += text.len();
+            if text.len() > 8 * 1024 * 1024 || total > 64 * 1024 * 1024 {
+                return Err(format!(
+                    "{}: NPC content exceeds size limits",
+                    path.display()
+                ));
+            }
+            let parsed = (|| -> Result<(String, Npc), String> {
+                let mut value: toml::Value = toml::from_str(&text).map_err(|e| e.to_string())?;
+                let id = value
+                    .as_table_mut()
+                    .and_then(|t| t.remove("id"))
+                    .and_then(|v| v.as_str().map(str::to_owned))
+                    .ok_or("NPC requires a string id")?;
+                crate::rules::valid_id(&id)?;
+                let npc = crate::rules::decode(&value)?;
+                Ok((id, npc))
+            })()
+            .map_err(|e| format!("{}: {e}", path.display()))?;
+            let (id, npc) = parsed;
+            if let Some(previous) = origins.insert(id.clone(), path.clone()) {
+                return Err(format!(
+                    "{}: duplicate NPC id '{id}' (also defined in {})",
+                    path.display(),
+                    previous.display()
+                ));
+            }
+            content.npcs.insert(id, npc);
+        }
+        Ok(content)
     }
+
     pub fn validate(&self, w: &World) -> Result<(), String> {
         if self.npcs.len() > 1024 {
             return Err("At most 1024 NPCs are supported".into());
@@ -175,7 +266,7 @@ impl Content {
     }
     pub fn validate_state(&self, s: &Progress, w: &World) -> Result<(), String> {
         if s.npcs.keys().ne(self.npcs.keys()) {
-            return Err("Saved NPC IDs differ from dialogue.toml".into());
+            return Err("Saved NPC IDs differ from NPCs/ definitions".into());
         }
         for (id, n) in &s.npcs {
             node(w, id, &n.node)?;

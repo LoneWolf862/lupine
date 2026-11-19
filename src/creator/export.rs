@@ -206,7 +206,6 @@ impl ExportPlan {
         let mut content = BTreeMap::new();
         for name in [
             "events.toml",
-            "dialogue.toml",
             "systems.toml",
             "actions.toml",
             "rules.toml",
@@ -222,7 +221,7 @@ impl ExportPlan {
             }
         }
         for name in [
-            "rooms", "items", "spells", "weapons", "enemies", "shops", "config", "art",
+            "rooms", "items", "spells", "weapons", "NPCs", "enemies", "shops", "config", "art",
         ] {
             if source.join(name).exists() {
                 collect(&source, Path::new(name), &mut content)?;
@@ -326,7 +325,8 @@ impl ExportPlan {
                 let adventure = package.join("adventure");
                 fs::create_dir(&adventure).map_err(|e| e.to_string())?;
                 for name in [
-                    "rooms", "items", "spells", "weapons", "enemies", "shops", "config", "art",
+                    "rooms", "items", "spells", "weapons", "NPCs", "enemies", "shops", "config",
+                    "art",
                 ] {
                     fs::create_dir(adventure.join(name)).map_err(|e| e.to_string())?;
                 }

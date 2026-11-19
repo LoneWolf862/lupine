@@ -30,8 +30,8 @@ Its parent must already exist. Remove deletes a key or array entry. Copy require
 a new destination and prompts for a new ID when copying a definition with an
 `id` field. Copying a whole definition file creates a new file and stable ID;
 references continue to point at the original. Review associated weapon/equipment
-definitions separately. Nested keyed definitions such as NPCs can be copied to a
-new key. Full validation detects collisions and broken references.
+definitions separately. NPCs live in individual `NPCs/*.toml` files. Their nested nodes can be
+copied to a new key (for example `/nodes/hello` to `/nodes/goodbye`). Full validation detects collisions and broken references.
 
 Structural edits reserialize that file, removing comments and normalizing layout;
 the preview shows this before publication. Use exact text replacement to retain

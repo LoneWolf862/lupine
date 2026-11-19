@@ -254,7 +254,7 @@ fn cli_play_validate_and_creator_commands_share_fig_loading() {
 fn generated_defaults_are_explicit_documented_and_narrative_until_enabled() {
     let p = Project::new();
     for dir in [
-        "config", "rooms", "items", "spells", "weapons", "enemies", "shops", "art",
+        "config", "rooms", "items", "spells", "weapons", "NPCs", "enemies", "shops", "art",
     ] {
         assert!(p.0.join(dir).is_dir(), "{dir}");
         if !matches!(dir, "config" | "rooms") {
