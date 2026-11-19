@@ -176,5 +176,10 @@ Review: [draft PR #40](https://github.com/LoneWolf862/lupine/pull/40) targets #3
 Player actions, rewards and event/timer consequences now share a rollback boundary,
 including GameState, session RNG and staged output. See TURN_TRANSACTIONS.md for
 scope, ordering and the deliberate reward API change. RORK remains 6. Integration
-coverage exercises cross-system failure paths through the real runner. Final full
-suite and release verification are pending; no CachyOS or wizard work is included.
+coverage exercises cross-system failure paths through the real runner. Local Windows
+verification passed: all 374 tests, cargo fmt --all -- --check, strict all-target
+Clippy, locked release build and native creator/manual-save/ZIP launcher acceptance
+(target/phase4-acceptance-6ddfb4ae). The 12 new integration tests include a live
+prompt/output probe. [Draft PR #41](https://github.com/LoneWolf862/lupine/pull/41)
+targets #40; final-head Windows/Ubuntu CI is recorded on the PR. Keep unmerged.
+No native CachyOS or human beginner acceptance is claimed; no wizard changes.
