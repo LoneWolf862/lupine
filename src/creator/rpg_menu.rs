@@ -25,7 +25,7 @@ pub(super) fn run<R: BufRead, W: Write>(
         super::ui::heading(output, "RPG CONTENT")?;
         writeln!(
             output,
-            "1. Manage enemies\n2. Manage weapons\n3. Manage shops\n4. Manage currencies\n5. Configure room encounters\n6. Manage prerequisite items\n7. Manage prerequisite spells\n0. Back"
+            "1. Manage enemies\n2. Manage weapons\n3. Manage shops\n4. Manage currencies\n5. Configure room encounters\n6. Manage prerequisite items\n7. Manage prerequisite spells\n8. Transaction Bindings\n0. Back"
         )?;
         super::ui::prompt(output, "Selection:")?;
         let mut s = String::new();
@@ -38,6 +38,7 @@ pub(super) fn run<R: BufRead, W: Write>(
             "5" => super::room_edit::run(root, input, output)?,
             "6" => super::content_edit::run_items(root, input, output)?,
             "7" => super::content_edit::run_spells(root, input, output)?,
+            "8" => super::binding_edit::run(root, input, output)?,
             "4" => super::currency_edit::run(root, input, output)?,
             "2" => super::weapon_edit::run(root, input, output)?,
             "3" => {
