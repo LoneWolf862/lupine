@@ -10,6 +10,28 @@ use crate::{
 };
 use std::io::{self, BufRead, Write};
 
+/// Prepared ordinary targets are stable IDs. Do not strip articles from IDs or
+/// reinterpret them as fresh natural-language input after clarification.
+pub(crate) fn prepared_command(line: &str) -> Result<Command, crate::parser::ParseError> {
+    if let Some((verb, target)) = line.split_once(' ') {
+        match verb {
+            "take" => return Ok(Command::Take(target.into())),
+            "drop" => return Ok(Command::Drop(target.into())),
+            "examine" => return Ok(Command::Examine(target.into())),
+            "use" => {
+                if let Some((item, target)) = target.split_once(" on ") {
+                    return Ok(Command::Use {
+                        item: item.into(),
+                        target: target.into(),
+                    });
+                }
+            }
+            _ => (),
+        }
+    }
+    parse_command(line)
+}
+
 fn choose(
     query: &str,
     candidates: &[Candidate],

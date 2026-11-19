@@ -322,3 +322,38 @@ fn direct_rpg_calls_reject_ambiguous_abilities_without_spending_mana() {
         None
     );
 }
+
+#[test]
+fn canonical_ids_never_turn_a_single_item_action_into_bulk_or_filler() {
+    let mut w = world();
+    for (id, name) in [("all", "small token"), ("a", "letter token")] {
+        w.items.push(lupine::world::Item {
+            id: id.into(),
+            name: name.into(),
+            aliases: vec![],
+            description: "A neutral parser fixture.".into(),
+            descriptions: vec![],
+            portable: true,
+            starting_room: w.starting_room.clone(),
+        });
+    }
+    let mut out = Vec::new();
+    let saves = std::env::temp_dir().join(format!("lupine-parser-ids-{}", std::process::id()));
+    lupine::runner::run_with_io_and_saves(
+        w,
+        "IDs",
+        "ids",
+        &saves,
+        Cursor::new(
+            "take small token\ntake letter token\ninventory\ndrop small token\nquit\nyes\n",
+        ),
+        &mut out,
+    )
+    .unwrap();
+    let text = String::from_utf8(out).unwrap();
+    assert!(text.contains("You take the small token"), "{text}");
+    assert!(text.contains("You take the letter token"), "{text}");
+    assert!(!text.contains("You take the brass key"), "{text}");
+    assert!(!text.contains("You drop the letter token"), "{text}");
+    assert!(!saves.exists());
+}

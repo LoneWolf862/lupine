@@ -1,31 +1,35 @@
 # Lupine architecture
 
-## RPG editor integration candidate
+## Current development architecture (0.10.0-dev.1)
 
-`enemy_edit`, `weapon_edit`, `shop_edit`, `currency_edit` and `rpg_menu` expose current runtime schemas. `rpg_fields` shares numeric/text/reference prompts. Snapshot allows enemy/weapon/shop TOML and game.toml targets using its existing validation/stale/rollback boundary. Room drafts can carry pending enemy documents, published with rooms; no nested independent save invalidates the room snapshot. Prerequisite managers run before a shop/weapon draft and save separately with explicit confirmation. No gameplay or RORK changes. See [review](RPG_AUTHORING_DEVELOPMENT.md).
+Lupine is an offline terminal engine. Immutable TOML content is separate from mutable
+GameState; supported FIG files hold configuration. Manual RORK persistence remains in
+save.rs/save_files.rs with serialization version 1 unchanged.
 
-Lupine is an unreleased, offline terminal engine. Justified pre-1.0 API/format changes are allowed; migrate bundled consumers rather than adding obsolete-format loaders. Preserve gameplay and keep the engine story-independent.
+- adventure.rs assembles story, FIG, RPG, encounter, wallet and shop validation for CLI,
+  startup, creator and export. Fresh play never silently loads a save.
+- startup.rs discovers local adventures and reuses existing creator sessions and gameplay.
+- terminal.rs wraps CLI stdin with memory-only terminal editing. Generic BufRead/Write
+  APIs and redirected input retain scripted operation.
+- parser.rs handles ordinary intent grammar. resolution.rs performs pure eligible
+  ID/name/alias matching and bounded advisory typo matching. player_input.rs clarifies
+  references using immutable state before runner/engine/combat/RPG validation and mutation.
+- render.rs and domain renderers produce output and configured terminology. No game prose
+  or puzzle logic is hardcoded in parser rules.
+- Creator editors preserve exact previews and explicit Save through Snapshot's stale
+  checks, staging, full validation and rollback/recovery. IDs remain stable.
+- creator/export.rs preflights immutable content/runtime bytes, validates copied adventures,
+  checks platform headers/build metadata/SHA-256 and publishes only to a new directory.
+  It excludes saves/development files and marks failed publication incomplete. It never
+  compiles, downloads or executes foreign runtimes. Metadata is not an authenticity signature.
 
-## Content, configuration and state
+See [Phase 3 review](PHASE_3_REVIEW.md) and [installation/export](INSTALLATION.md) for exact
+behavior and limitations. The portable workflow emits native Windows/Linux development
+artifacts; it never publishes a release. Content, configuration and manual saves remain separate.
 
-- `story_loader.rs` reads TOML content into validated immutable `World` definitions, with stable IDs, rooms, items, conditions/effects and artwork.
-- `config.rs` reads optional TOML-syntax `config/character.fig` and `config/terminology.fig` into per-game `GameConfig`. LoadedGame owns this alongside world/identity. Character progression is optional; missing terminology uses defaults. See CONFIG_FIG_SPEC.md.
-- `rpg_content.rs`, `encounters.rs`, `wallet.rs` and `shops.rs` load optional story definitions. Currency definitions remain in game.toml; individual spell/enemy/item mechanics remain content.
-- `state.rs` holds mutable location, inventory, flags, character, learned abilities, wallet, purchases and encounter progress. Configuration is not player state.
-- `parser.rs` parses ordinary commands; `engine.rs` resolves objects, checks rules and applies effects. RPG/reserved commands currently dispatch in `runner.rs` and domain modules. Parser unification is future work.
-- `render.rs` and domain output functions render results. Terminology is passed explicitly to relevant output; no global string replacement.
-- `runner.rs` provides terminal and scriptable entry points, and reads immutable config separately from GameState. Full entry points are `run_configured` and `run_configured_with_io`; convenience entry points supply default terminology. Rust-defined worlds remain supported.
-- `save.rs` validates/serializes RORK state; `save_files.rs` stages, syncs and publishes manual slots. The runner validates a complete load before replacement. Never autosave, save on quit or checkpoint automatically.
+## Historical implementation notes
 
-## Creator and distribution
-
-`new` (including the Phase 2A.1 beginner/advanced setup and optional exact previews), `add room`, `add item`, `add art`, `validate` and `play` exist. The generator uses editable content files; it does not generate unnecessary configuration or enable RPG implicitly. The full guided authoring journey is future work.
-
-A manually triggered Windows/Linux packaging workflow exists; successful source checks do not establish native Linux verification or a published release. Run formatting, tests, strict Clippy and platform-specific smoke checks and report actual results. Preserve CSE 310 evidence and README-template obligations.
-
-Creator foundation: `creator/wizard.rs` collects and validates input and previews serialized `DraftFile` values; `creator/files.rs` stages, syncs and exclusively publishes files. `creator.rs` assembles a minimal project and validates it with the story loader. TOML serialization also supports future FIG drafts without adding configuration editing today. Project rollback tracks created paths and never recursively removes a project directory.
-
-Phase 2A.1: `creator/setup.rs` owns the beginner/advanced step flow, local sibling-ID checks, review navigation and platform-quoted completion instructions. `wizard.rs` returns an optional answer (`None` means back); cancellation/EOF remain explanatory errors for library callers and friendly successful exits in the CLI. Gameplay starts only when separately requested with `play`.
+The following records earlier stage boundaries, not current missing features.
 
 ## Historical Phase 2B creator navigation
 
@@ -57,7 +61,7 @@ GameConfig reads character.fig as a TOML table, consumes the single boolean enab
 The two commented FIGs under templates/starter/config are included verbatim as DraftFile content by the generator. All eight standard folders are created/tracked by the existing exclusive writer and rollback path. Both preview and write consume the same text. Root-level supported FIG names report placement guidance; supported filenames and value schemas otherwise retain strict validation.
 
 
-## Current Phase 2D–2F editor architecture
+## Current Phase 2Dâ€“2F editor architecture
 
 `content_edit.rs` shares comment-preserving Document drafts, exact previews, object selection, confirmation and item/spell manager navigation. `spell_edit.rs`, `art_edit.rs`, `interaction_edit.rs`, `room_advanced.rs` and `fig_edit.rs` expose current runtime fields through Wizard prompts. `rules_ui.rs` edits existing table/inline-array collections and condition lists without a competing schema. Priority changes refresh TOML table positions so serialized order agrees with the draft.
 

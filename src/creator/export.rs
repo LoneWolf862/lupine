@@ -261,6 +261,10 @@ impl ExportPlan {
                     &package.join("LUPINE_LICENSE.txt"),
                     include_bytes!("../../LICENSE"),
                 )?;
+                write(
+                    &package.join("THIRD_PARTY_NOTICES.txt"),
+                    include_bytes!("../../THIRD_PARTY_NOTICES.txt"),
+                )?;
                 let instructions=format!("{}\nLupine {} - {}\n\nWindows: double-click Play.cmd, or open a terminal here and run .\\lupine.exe play adventure\nLinux: open a terminal here and run sh Play.sh\nLinux requires a compatible x86_64 Linux system and the runtime's system libraries (official builds use glibc).\nNo Rust, Cargo, account or internet is needed.\n\nThe executable alone opens Lupine's startup menu; choose Play and the included adventure.\nUse help in gameplay. Save only with save <name>; load <name> restores manually.\nPlayer saves live in your user-data directory, outside this package. Nothing autosaves.\n\nShare this complete platform folder, optionally zipped with your normal archive tool.\nDo not mix Windows and Linux executables. Include your own story license/credits as appropriate.\n",self.title,env!("CARGO_PKG_VERSION"),runtime.target.label());
                 write(&package.join("START_HERE.txt"), instructions.as_bytes())?;
             }

@@ -99,3 +99,52 @@ preservation, save exclusion and actual native packaged executable launch. Forei
 fixtures test structure only; they are explicitly not evidence of native execution.
 Self-review fixed missing required empty items/ and bounded reads against files growing
 after metadata inspection; Windows launchers disable delayed expansion for ! in paths.
+
+## 3E version, distribution and current documentation
+
+Version recommendation implemented: **0.10.0-dev.1**. This substantial post-v0.9 player,
+creator and export development warrants the next minor development version, not a claim
+that the old release contains new features. Cargo.toml/Cargo.lock, --version, fixture/help
+banners and runtime metadata agree. Portable artifact names derive from Cargo metadata.
+The published v0.9.0 tag stays at e11cc024fa45029bb0bf145b4e6e7a77812c3005; no tag was rewritten
+and no official release was created. RORK serialization remains version 1; no game save
+compatibility values were changed. Historical version references remain historical.
+
+README, AGENTS, architecture, roadmap/backlog, creator quickstart and parser status now
+distinguish current development from historical records. INSTALLATION.md documents players,
+creators, platforms, local runtime metadata, directory export, manual saves and limits.
+Some older files contained mixed Windows-1252/UTF-8 punctuation; touched guides normalize
+those bytes to UTF-8 without revising the historical milestone claims. CSE 310's instructor
+README-template/submission evidence obligation remains explicit and unclaimed.
+
+The portable workflow builds Windows Server 2022 and Ubuntu 22.04 native artifacts with
+versioned names, runtime metadata and dependency notices. It runs the scripted native
+export/ZIP/extract/play walkthrough. It does not publish a release. Notices are generated
+from the locked crate sources by scripts/update_notices.py; identical license texts are
+deduplicated. The clipboard-win crate omits its BSL license file, so the standard Boost
+license text is retained under scripts/licenses/ with its source URL in the notices.
+
+Final self-review caught a stable-ID reinterpretation hazard: resolving a named item to
+ID `all` could become a bulk action, and ID `a` could be stripped as filler. Prepared
+ordinary commands now preserve IDs; bulk requires an explicit original bulk intent.
+A regression checks both cases and original parse errors remain errors. Launch acceptance
+uses an empty unrelated working directory to prove discovery beside the packaged executable,
+not accidentally find the source adventure.
+
+### Acceptance procedure
+
+`cargo build --locked --release`, then `python scripts/phase3_acceptance.py`. It creates
+a disposable neutral fixture under ignored target/, never alters bundled/owner adventures,
+and retains transcripts, source hashes, isolated saves, exported files, ZIP, extracted
+package and summary.json. It drives the actual executable through no-argument startup,
+three rooms, alternative phrasing, ambiguity cancellation/selection, typo suggestion,
+manual save/load, return, creator navigation and export. A separate RPG transcript checks
+physical and spell-use aliases and manual saves. The extracted native executable is run
+from outside its package and directly against its packaged adventure. Every bundled
+adventure is validated. This is scripted agent testing, not a human beginner result.
+
+Live Windows PTY additionally recalled look with Up, navigated history boundaries and
+Down/Up, moved Left/Right, deleted inside the recalled line to submit `lok`, received the
+look suggestion, then recalled/inserted the missing letter and executed look. Quit returned
+normally. No history file or automatic save was created. Native CachyOS/human acceptance
+remains outstanding; exact CI and final checkpoint details follow below.

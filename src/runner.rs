@@ -417,6 +417,8 @@ pub fn run_configured_with_io<R: BufRead, W: Write>(
             )?;
             continue;
         }
+        let original_intent = parse_command(&line);
+        let requested_bulk = matches!(&original_intent, Ok(crate::commands::Command::Take(target) | crate::commands::Command::Drop(target)) if target == "all");
         let Some(line) = crate::player_input::prepare(
             &line,
             &world,
@@ -587,6 +589,7 @@ pub fn run_configured_with_io<R: BufRead, W: Write>(
         // scenery, consumed items or another room's objects.
         if (verb.eq_ignore_ascii_case("take") || verb.eq_ignore_ascii_case("drop"))
             && argument.eq_ignore_ascii_case("all")
+            && requested_bulk
         {
             let taking = verb.eq_ignore_ascii_case("take");
             let targets: Vec<_> = world
@@ -833,7 +836,12 @@ pub fn run_configured_with_io<R: BufRead, W: Write>(
             }
             continue;
         }
-        match parse_command(&line) {
+        let parsed = if original_intent.is_ok() {
+            crate::player_input::prepared_command(&line)
+        } else {
+            original_intent
+        };
+        match parsed {
             Ok(crate::commands::Command::Quit) if state != last_saved => {
                 match confirm(
                     &mut input,

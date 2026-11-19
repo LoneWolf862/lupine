@@ -1,4 +1,21 @@
-# Lupine Development Backlog
+# Lupine development backlog
+
+## Remaining work after Phase 3
+
+- Human Windows beginner walkthrough and native CachyOS terminal/export acceptance.
+- Transaction-object-binding authoring, stable-ID migrations and guided editor recovery.
+- Optional pronouns/chained commands with explicit validation and cancellation.
+- Optional built-in archives; export currently creates shareable platform directories.
+- More targeted history scope; current memory-only history spans a CLI invocation.
+- Human-reviewed official release readiness; never rewrite v0.9.0 automatically.
+
+Startup, terminal history, numbered player clarification, suggestions and offline export
+are implemented development candidates. See [verification](PHASE_3_REVIEW.md). Keep the
+runtime lightweight, offline, terminal-only and story-independent. Never autosave.
+
+## Historical roadmap/backlog entries
+
+Earlier planning record, not the current feature inventory:
 
 ## Phase 2I creator usability candidate (2026-11-18)
 
@@ -36,9 +53,9 @@ Keep the existing command-line interface for advanced users.
 - Never autosave; players control saving explicitly.
 - Implement these improvements in a future Codex development pass.
 
-## Creator follow-ups after Phases 2D–2F
+## Creator follow-ups after Phases 2Dâ€“2F
 
-The requested item, spell, art, puzzle, conditional-room and FIG menus are implemented candidates in PRs #8–#13. See CREATOR_COMPLETION_REVIEW.md for verified scope. Remaining work outside this delivered editor scope:
+The requested item, spell, art, puzzle, conditional-room and FIG menus are implemented candidates in PRs #8â€“#13. See CREATOR_COMPLETION_REVIEW.md for verified scope. Remaining work outside this delivered editor scope:
 
 - Human beginner usability testing and accessibility refinements based on observed feedback.
 - Stable-ID rename/deletion with cross-file and save-impact migrations.
