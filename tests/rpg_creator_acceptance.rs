@@ -21,7 +21,8 @@ fn wizard_authors_combat_economy_and_manual_saves() {
     let script = include_str!("fixtures/rpg_creator_acceptance.txt")
         .replace("\r\n", "\n")
         .replace("\n2\n1\nbuy healing", "\nt\nn\nsign\nsupplies\nmana\nsign\n2\nThe altar restores your mana.\n0\ns\nyes\n0\n2\n1\nbuy healing")
-        .replace("buy mana", "use sign")
+        .replace("\n2\n1\nbuy healing", "\nm\nitems\nsign\naltar\nyes\n0\n2\n1\nbuy healing")
+        .replace("buy mana", "use altar")
         .replace("{PROJECT}", &game.to_string_lossy());
     let mut child = Command::new(env!("CARGO_BIN_EXE_lupine"))
         .arg("new")
@@ -58,7 +59,8 @@ fn wizard_authors_combat_economy_and_manual_saves() {
     assert_eq!(a.rpg.weapons.len(), 2);
     assert_eq!(a.wallet.currencies.len(), 2);
     assert_eq!(a.shops.shops["supplies"].offers.len(), 6);
-    assert_eq!(a.shops.transaction_bindings["sign"].offer, "mana");
+    assert_eq!(a.shops.transaction_bindings["altar"].offer, "mana");
+    assert!(out.contains("Migration saved. Full validation PASSED."));
     assert!(out.contains("The altar restores your mana."));
     let saves = data
         .join(if cfg!(windows) {

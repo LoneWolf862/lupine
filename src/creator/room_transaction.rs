@@ -210,9 +210,20 @@ impl Snapshot {
     pub fn commit(&self, changes: &BTreeMap<PathBuf, String>) -> Result<(), String> {
         self.commit_with(changes, |_| Ok(()))
     }
+    pub fn validate(&self, changes: &BTreeMap<PathBuf, String>) -> Result<(), String> {
+        self.stage(changes, true, |_| Ok(()))
+    }
     fn commit_with(
         &self,
         changes: &BTreeMap<PathBuf, String>,
+        before_publish: impl FnMut(usize) -> Result<(), String>,
+    ) -> Result<(), String> {
+        self.stage(changes, false, before_publish)
+    }
+    fn stage(
+        &self,
+        changes: &BTreeMap<PathBuf, String>,
+        validate_only: bool,
         mut before_publish: impl FnMut(usize) -> Result<(), String>,
     ) -> Result<(), String> {
         self.check(changes)?;
@@ -297,6 +308,9 @@ impl Snapshot {
             Adventure::load(&staged)
                 .map_err(|e| format!("Proposed changes are invalid (nothing published): {e}"))?;
             self.check(changes)?;
+            if validate_only {
+                return Ok(());
+            }
             for (index, (relative, text)) in changes.iter().enumerate() {
                 before_publish(index)?;
                 let target = self.root.join(relative);
