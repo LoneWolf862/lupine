@@ -148,3 +148,92 @@ Down/Up, moved Left/Right, deleted inside the recalled line to submit `lok`, rec
 look suggestion, then recalled/inserted the missing letter and executed look. Quit returned
 normally. No history file or automatic save was created. Native CachyOS/human acceptance
 remains outstanding; exact CI and final checkpoint details follow below.
+
+## Verification and handoff (2026-11-19)
+
+Local host: LUPA-2, Windows 10 Pro build 19045, x64 MSVC toolchain, rustc 1.100.0
+(0ef1bc386), Cargo 1.100.0 (3acc79c0c). Final runtime code checkpoint: **4537333**.
+Checkpoint **455be00** adds only Linux PTY acceptance and its workflow step.
+
+- **241 tests passed locally**, preserving the 219-test baseline and adding 22 tests.
+  `cargo test --locked`, `cargo fmt --all --check`, and
+  `cargo clippy --locked --all-targets -- -D warnings` passed after the final ID fix.
+  RUST_TEST_THREADS=1 reduced filesystem contention on this host; no tests were skipped.
+- Final optimized local Windows executable: **4,511,232 bytes**. Ubuntu artifact:
+  **5,111,480 bytes**. Runtime has no networking or persistence-history features.
+- [Windows Server 2022 and Ubuntu 22.04 checks at 4537333](https://github.com/LoneWolf862/lupine/actions/runs/44476139615)
+  passed. [Both native build/package/ZIP-extraction walkthroughs](https://github.com/LoneWolf862/lupine/actions/runs/44476143554)
+  passed, producing development artifacts, not an official release.
+- At 455be00, [both platform checks](https://github.com/LoneWolf862/lupine/actions/runs/44476482350)
+  and [both native portable builds](https://github.com/LoneWolf862/lupine/actions/runs/44476475842)
+  passed, including all 241 tests and native exported-package acceptance. The Ubuntu job
+  additionally passed Linux PTY acceptance: Up/Down, navigation boundaries, cursor
+  movement, backspace, recalled edits and EOF.
+- Previous phase CI passed on both platforms: [3A](https://github.com/LoneWolf862/lupine/actions/runs/44471765037),
+  [3B](https://github.com/LoneWolf862/lupine/actions/runs/44472422212),
+  [3C](https://github.com/LoneWolf862/lupine/actions/runs/44473736553),
+  [3D](https://github.com/LoneWolf862/lupine/actions/runs/44474630106).
+- Local final walkthrough artifacts are in the 3E worktree under
+  `target/phase3-acceptance-1c725631/`: transcripts, summary.json, isolated manual saves,
+  Export-Test-windows-x64.zip and Extracted package with spaces/. The extracted Play.cmd
+  also ran successfully. Source adventure hashes stayed unchanged, and only the explicitly
+  requested checkpoint and combat user-data RORK slots were created.
+- A further `Both native platforms/` export used the real local Windows executable and
+  the downloaded Ubuntu CI runtime. Export completed; the packaged Linux SHA-256 equals
+  `53d74704f367ee4814b730e7e7637d8970f4e4e8db01fbeee662aa98417000d7`, matching the build
+  artifact and metadata. Linux execution was verified in Ubuntu CI, not on Windows.
+
+### Branches, worktrees and merge order
+
+All worktrees are under the owner's `.codex/worktrees/` directory, each ending in `/Lupine`.
+The primary checkout's tracked files, original HEAD aeb9e30 and preexisting untracked
+personal files/adventures were left unchanged. Work started from fetched main e976a88.
+
+| Order | Draft PR | Branch | Worktree folder | Target |
+|---|---|---|---|---|
+| 1 | [#20](https://github.com/LoneWolf862/lupine/pull/20) | codex/phase-3a-startup-menu | phase-3a-startup-menu | main |
+| 2 | [#21](https://github.com/LoneWolf862/lupine/pull/21) | codex/phase-3b-terminal-history | phase-3b-terminal-history | Phase 3A branch |
+| 3 | [#22](https://github.com/LoneWolf862/lupine/pull/22) | codex/phase-3c-parser-improvements | phase-3c-parser-improvements | Phase 3B branch |
+| 4 | [#23](https://github.com/LoneWolf862/lupine/pull/23) | codex/phase-3d-adventure-export | phase-3d-adventure-export | Phase 3C branch |
+| 5 | [#24](https://github.com/LoneWolf862/lupine/pull/24) | codex/phase-3e-release-documentation | phase-3e-release-documentation | Phase 3D branch |
+
+Review the complete stack, then merge in that order. After each predecessor is merged,
+retarget the next PR to main and review its diff/checks. The parser's final stable-ID safety
+regression is in 3E, so include 3E before treating the combined series as ready to distribute.
+All checkpoints were pushed normally; no force-push, self-merge or main push occurred.
+
+### Manual Windows review
+
+Use the 3E worktree and run `cargo run --release` (or its target/release/lupine.exe).
+
+1. Play: try invalid selection, B with an invalid path, back, then open an adventure.
+   Quit and confirm return to startup. Open Creator, leave it and confirm return.
+2. In a disposable fixture with two visible keys, try `take key`; cancel, retry and choose
+   a number. Try `pick up the brass key`, `exmain door` and a missing object. No failed
+   command should alter inventory or flags. Test Up/Down, cursor edits and empty history
+   after restarting the executable.
+3. Open samples/rpg_persistent. Take/learn the fireball scroll, take the dagger, travel
+   south and try attack/cast/use forms. Enemy HP stays approximate. Save and load manually;
+   quit with unsaved changes and decline once. Verify no implicit save appears.
+4. In Creator E, cancel/decline export, try a missing foreign binary, then export Windows
+   to a new sibling folder. ZIP, extract elsewhere and double-click Play.cmd. Launch the
+   included executable from an unrelated working directory and select its adventure.
+5. Inspect source files and exported inventory: no source changes, personal RORK saves,
+   Git or target/ files. Existing export destinations must be refused. Both-platform export
+   needs the matching local Linux runtime/metadata from the development artifact.
+
+### Remaining limits and next goals
+
+No required Phase 3 feature is intentionally deferred. Export produces directories;
+ZIP creation is external. Metadata verifies consistency, not authenticity. Failed export
+retains an incomplete folder; editor recovery remains manual. History spans all prompts
+in one invocation. Spell/enemy aliases are IDs/names because those schemas have no authored
+alias field. Pronouns, chaining, ID migrations and transaction-binding authoring remain
+separate work. Runtime files/config/save formats remain unchanged except the requested
+player behavior and development package metadata.
+
+Human beginner testing and native CachyOS testing are **not claimed**. Recommended next
+steps are human Windows review of this stack, native CachyOS history/export acceptance,
+then transaction-binding authoring, deliberate ID migration and guided recovery. An official
+release needs separate human approval; the CSE 310 template/time-log/video obligations
+remain separate and no submission evidence was invented.
