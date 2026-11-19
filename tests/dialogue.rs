@@ -22,7 +22,7 @@ impl Fixture {
             "rooms/hall.toml",
             "items/token.toml",
             "rules.toml",
-            "dialogue.toml",
+            "NPCs/guide.toml",
             "config/character.fig",
         ] {
             fs::copy(sample.join(file), root.join(file)).unwrap();
@@ -90,14 +90,12 @@ fn conditional_responses_reject_unlisted_ids_and_numeric_choice_is_explicit() {
 #[test]
 fn ambiguous_npcs_use_read_only_selection_and_hidden_npcs_are_unavailable() {
     let f = Fixture::new();
-    let p = f.0.join("dialogue.toml");
+    let p = f.0.join("NPCs/guide.toml");
     let s = fs::read_to_string(&p).unwrap();
     fs::write(
-        &p,
-        s.clone()
-            + &s.replace("npcs.guide", "npcs.other")
-                .replace("id=\"guide\"", "id=\"other\"")
-                .replace("npc=\"guide\"", "npc=\"other\""),
+        f.0.join("NPCs/other.toml"),
+        s.replace("id=\"guide\"", "id=\"other\"")
+            .replace("npc=\"guide\"", "npc=\"other\""),
     )
     .unwrap();
     let (s, t) = f.play("talk guide\nintroduce\ntalk helper\ncancel\n");
@@ -112,7 +110,7 @@ fn ambiguous_npcs_use_read_only_selection_and_hidden_npcs_are_unavailable() {
 #[test]
 fn failed_transfer_rolls_back_node_effects_and_output() {
     let f = Fixture::new();
-    let p = f.0.join("dialogue.toml");
+    let p = f.0.join("NPCs/guide.toml");
     let t = fs::read_to_string(&p)
         .unwrap()
         .replace("quantity=2}", "quantity=99}");
@@ -149,7 +147,7 @@ fn save_load_restores_npc_nodes_positions_and_owned_quantities() {
 #[test]
 fn invalid_definitions_locations_and_choice_targets_fail_validation() {
     let f = Fixture::new();
-    let p = f.0.join("dialogue.toml");
+    let p = f.0.join("NPCs/guide.toml");
     let t = fs::read_to_string(&p).unwrap();
     for bad in [
         t.replace("next=\"return\"", "next=\"missing\""),
@@ -218,6 +216,7 @@ fn shared_npc_effects_support_offstage_and_atomic_transition() {
 fn npc_and_scoped_node_migrations_preserve_typed_refs_and_save_bytes() {
     let f = Fixture::new();
     fs::write(f.0.join("personal.rork"), "untouched").unwrap();
+    fs::write(f.0.join("NPCs/other.toml"), "id='other'\nname='Other'\ndescription='Another NPC'\nroom='start'\nstart='hello'\n[nodes.hello]\ntext='Other greeting'\nchoices=[{id='stay',label='Stay',next='hello',requires=[{dialogue_node={npc='guide',node='hello'}}],effects=[{set_dialogue={npc='guide',node='hello'}}]}]\n").unwrap();
     fs::write(f.0.join("events.toml"),"[[events]]\nid='check'\non='turn'\nrequires=[{dialogue_node={npc='guide',node='hello'}}]\neffects=[{set_dialogue={npc='guide',node='hello'}}]\n").unwrap();
     let mut out = Vec::new();
     lupine::creator::session::open(
@@ -231,6 +230,14 @@ fn npc_and_scoped_node_migrations_preserve_typed_refs_and_save_bytes() {
     assert_eq!(t.matches("Migration saved.").count(), 2, "{t}");
     let a = Adventure::load(&f.0).unwrap();
     assert_eq!(a.game.world.dialogue.npcs["helper"].start, "intro");
+    let other = &a.game.world.dialogue.npcs["other"];
+    assert_eq!(other.start, "hello");
+    assert_eq!(
+        other.nodes["hello"].choices[0].next.as_deref(),
+        Some("hello")
+    );
+    let other_file = fs::read_to_string(f.0.join("NPCs/other.toml")).unwrap();
+    assert!(other_file.contains("helper") && other_file.contains("intro"));
     let (s, t) = f.play("talk helper\nintroduce\ntalk helper\nreceive\n");
     assert_eq!(s.carried_quantity("token"), 2, "{t}");
     assert_eq!(
@@ -253,4 +260,102 @@ fn authored_effect_batches_accept_the_documented_limit_and_reject_excess() {
             valid
         );
     }
+}
+
+#[test]
+fn filename_changes_preserve_ids_and_existing_save_bytes() {
+    let f = Fixture::new();
+    let (state, _) = f.play("talk guide\nintroduce\ntalk guide\nreceive\n");
+    let before = Adventure::load(&f.0).unwrap();
+    let saved =
+        lupine::save::encode_save(&before.game.world, &state, &before.game.id, "same").unwrap();
+    fs::write(f.0.join("existing.rork"), &saved).unwrap();
+    fs::rename(
+        f.0.join("NPCs/guide.toml"),
+        f.0.join("NPCs/a_friendly_person.toml"),
+    )
+    .unwrap();
+    let after = Adventure::load(&f.0).unwrap();
+    let restored = lupine::save::decode_save(&after.game.world, &after.game.id, &saved).unwrap();
+    assert_eq!(restored, state);
+    assert_eq!(
+        lupine::save::encode_save(&after.game.world, &restored, &after.game.id, "same").unwrap(),
+        saved
+    );
+    assert_eq!(
+        fs::read_to_string(f.0.join("existing.rork")).unwrap(),
+        saved
+    );
+}
+
+#[test]
+fn npc_files_report_bad_ids_duplicate_origins_and_unknown_fields() {
+    let f = Fixture::new();
+    let file = f.0.join("NPCs/guide.toml");
+    let original = fs::read_to_string(&file).unwrap();
+    for bad in [
+        original.replacen("id=\"guide\"", "", 1),
+        original.replacen("id=\"guide\"", "id='NOT VALID'", 1),
+        original.replacen("id=\"guide\"", "id=123", 1),
+        format!("unsupported=true\n{original}"),
+        "not TOML".into(),
+    ] {
+        fs::write(&file, bad).unwrap();
+        let error = dialogue::Content::load(&f.0).unwrap_err();
+        assert!(error.contains("guide.toml"), "{error}");
+    }
+    fs::write(&file, &original).unwrap();
+    fs::write(f.0.join("NPCs/duplicate.toml"), original).unwrap();
+    let error = dialogue::Content::load(&f.0).unwrap_err();
+    assert!(
+        error.contains("duplicate NPC id 'guide'")
+            && error.contains("guide.toml")
+            && error.contains("duplicate.toml"),
+        "{error}"
+    );
+}
+
+#[test]
+fn absent_empty_nested_wrong_case_and_old_layout_are_explicit() {
+    let f = Fixture::new();
+    fs::remove_file(f.0.join("NPCs/guide.toml")).unwrap();
+    assert!(dialogue::Content::load(&f.0).unwrap().npcs.is_empty());
+    fs::remove_dir(f.0.join("NPCs")).unwrap();
+    assert!(dialogue::Content::load(&f.0).unwrap().npcs.is_empty());
+    fs::create_dir(f.0.join("npcs")).unwrap();
+    assert!(dialogue::Content::load(&f.0)
+        .unwrap_err()
+        .contains("exactly NPCs/"));
+    fs::remove_dir(f.0.join("npcs")).unwrap();
+    fs::create_dir_all(f.0.join("NPCs/nested")).unwrap();
+    assert!(dialogue::Content::load(&f.0)
+        .unwrap_err()
+        .contains("subdirectories"));
+    fs::remove_dir(f.0.join("NPCs/nested")).unwrap();
+    fs::write(f.0.join("dialogue.toml"), "[npcs]").unwrap();
+    assert!(dialogue::Content::load(&f.0)
+        .unwrap_err()
+        .contains("Move each [npcs.ID]"));
+    assert_eq!(
+        fs::read_to_string(f.0.join("dialogue.toml")).unwrap(),
+        "[npcs]"
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn npc_file_and_directory_symlinks_are_rejected() {
+    use std::os::unix::fs::symlink;
+    let f = Fixture::new();
+    let path = f.0.join("NPCs/guide.toml");
+    fs::rename(&path, f.0.join("definition.toml")).unwrap();
+    symlink(f.0.join("definition.toml"), &path).unwrap();
+    assert!(dialogue::Content::load(&f.0).unwrap_err().contains("links"));
+    fs::remove_file(path).unwrap();
+    fs::remove_dir(f.0.join("NPCs")).unwrap();
+    fs::create_dir(f.0.join("elsewhere")).unwrap();
+    symlink(f.0.join("elsewhere"), f.0.join("NPCs")).unwrap();
+    assert!(dialogue::Content::load(&f.0)
+        .unwrap_err()
+        .contains("not a link"));
 }

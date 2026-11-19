@@ -11,11 +11,11 @@ use std::{
 const LOCK: &str = ".lupine-room-edit";
 pub(super) mod recovery;
 const DIRS: &[&str] = &[
-    "rooms", "items", "config", "art", "spells", "weapons", "enemies", "shops",
+    "rooms", "items", "config", "art", "spells", "weapons", "NPCs", "enemies", "shops",
 ];
 const FILES: &[&str] = &[
     "events.toml",
-    "dialogue.toml",
+    "dialogue.toml", // Obsolete content: retained only for explicit repair/deletion.
     "systems.toml",
     "actions.toml",
     "rules.toml",
@@ -43,7 +43,7 @@ pub(super) fn editable_path(path: &Path, existing: bool) -> bool {
                 | "transaction_interactions.toml"
         )
     ) || match category {
-        "rooms" | "items" | "spells" | "enemies" | "weapons" | "shops" => {
+        "rooms" | "items" | "spells" | "NPCs" | "enemies" | "weapons" | "shops" => {
             path.extension().is_some_and(|e| e == "toml")
         }
         "config" => matches!(

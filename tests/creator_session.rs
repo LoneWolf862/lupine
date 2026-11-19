@@ -603,12 +603,12 @@ fn raw_replacement_back_keeps_prior_batch_and_end_does_not_publish() {
 #[test]
 fn nested_definition_copy_delete_and_reference_repair_publish_as_one_batch() {
     let f = Fixture::new();
-    fs::write(f.game.join("dialogue.toml"),"[npcs.guide]\nname='Guide'\ndescription='A guide'\nroom='start'\nstart='entry'\n[npcs.guide.nodes.entry]\ntext='Welcome'\nchoices=[{id='one',label='One',text='Chosen'}]\n").unwrap();
-    let out=f.run("f\n1\ndialogue.toml\n4\n/npcs/guide/nodes/entry\n/npcs/guide/nodes/second\n3\n/npcs/guide/nodes/entry\n2\n/npcs/guide/start\n'second'\n4\n/npcs/guide/nodes/second/choices/0\n/npcs/guide/nodes/second/choices/-\ntwo\n0\ns\nyes\n0\n0\n");
+    fs::write(f.game.join("NPCs/guide.toml"),"id='guide'\nname='Guide'\ndescription='A guide'\nroom='start'\nstart='entry'\n[nodes.entry]\ntext='Welcome'\nchoices=[{id='one',label='One',text='Chosen'}]\n").unwrap();
+    let out=f.run("f\n1\nNPCs/guide.toml\n4\n/nodes/entry\n/nodes/second\n3\n/nodes/entry\n2\n/start\n'second'\n4\n/nodes/second/choices/0\n/nodes/second/choices/-\ntwo\n0\ns\nyes\n0\n0\n");
     assert!(out.contains("Published and validated"), "{out}");
-    let text = fs::read_to_string(f.game.join("dialogue.toml")).unwrap();
+    let text = fs::read_to_string(f.game.join("NPCs/guide.toml")).unwrap();
     let value: toml::Value = text.parse().unwrap();
-    let npc = &value["npcs"]["guide"];
+    let npc = &value;
     assert_eq!(npc["start"].as_str(), Some("second"));
     assert!(npc["nodes"].get("entry").is_none());
     assert_eq!(
@@ -616,4 +616,51 @@ fn nested_definition_copy_delete_and_reference_repair_publish_as_one_batch() {
         Some("two")
     );
     lupine::adventure::Adventure::load(&f.game).unwrap();
+}
+
+#[test]
+fn npc_file_creation_duplication_inspection_and_deletion_are_transactional() {
+    let f = Fixture::new();
+    let out = f.run("f\n1\nNPCs/guide.toml\n1\nid='guide'\nname='Guide'\ndescription='A guide'\nroom='start'\nstart='hello'\n[nodes.hello]\ntext='Hello'\n/end\n0\n2\nNPCs/guide.toml\nother\nv\ns\nyes\n0\ni\n0\n");
+    assert!(out.contains("Published and validated"), "{out}");
+    let a = lupine::adventure::Adventure::load(&f.game).unwrap();
+    assert_eq!(a.game.world.dialogue.npcs.len(), 2);
+    assert!(out.contains("npcs:other") && out.contains("NPCs"), "{out}");
+    let before = snapshot(&f.game);
+    f.run("f\n3\nNPCs/other.toml\n0\n0\n");
+    assert_eq!(snapshot(&f.game), before);
+    let out = f.run("f\n3\nNPCs/other.toml\ns\nyes\n0\n0\n");
+    assert!(out.contains("Published and validated"), "{out}");
+    assert!(!f.game.join("NPCs/other.toml").exists());
+    assert_eq!(
+        lupine::adventure::Adventure::load(&f.game)
+            .unwrap()
+            .game
+            .world
+            .dialogue
+            .npcs
+            .len(),
+        1
+    );
+}
+
+#[test]
+fn obsolete_dialogue_file_can_be_explicitly_split_and_removed_in_one_repair() {
+    let f = Fixture::new();
+    fs::write(f.game.join("dialogue.toml"), "[npcs.guide]\nname='Guide'\ndescription='A guide'\nroom='start'\nstart='hello'\n[npcs.guide.nodes.hello]\ntext='Hello'\n").unwrap();
+    fs::write(f.game.join("old.rork"), "untouched").unwrap();
+    let out = f.run("f\n1\nNPCs/guide.toml\n1\nid='guide'\nname='Guide'\ndescription='A guide'\nroom='start'\nstart='hello'\n[nodes.hello]\ntext='Hello'\n/end\n0\n3\ndialogue.toml\ns\nyes\n0\n0\n");
+    assert!(out.contains("Published and validated"), "{out}");
+    assert!(!f.game.join("dialogue.toml").exists());
+    assert!(lupine::adventure::Adventure::load(&f.game)
+        .unwrap()
+        .game
+        .world
+        .dialogue
+        .npcs
+        .contains_key("guide"));
+    assert_eq!(
+        fs::read_to_string(f.game.join("old.rork")).unwrap(),
+        "untouched"
+    );
 }

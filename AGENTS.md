@@ -9,7 +9,7 @@
 
 ## Current pre-release policy (2026-11-18)
 
-Lupine is pre-1.0. The published v0.9.0 standalone release remains unchanged; current development uses 0.11.0-dev.8. No known external games require development-version compatibility. Justified breaking API and format changes are allowed. Do not add obsolete-format loaders or unnecessary compatibility layers. Update bundled samples, templates, tests and current documentation together; preserve gameplay unless a change is intentional.
+Lupine is pre-1.0. The published v0.9.0 standalone release remains unchanged; current development uses 0.11.0-dev.9. No known external games require development-version compatibility. Justified breaking API and format changes are allowed. Do not add obsolete-format loaders or unnecessary compatibility layers. Update bundled samples, templates, tests and current documentation together; preserve gameplay unless a change is intentional.
 
 File responsibilities:
 
@@ -156,3 +156,5 @@ older, corrupt or externally changed evidence. Project Files F supplies complete
 structural/text editing, with exact previews and confirmed multi-file publication;
 ordinary guided forms retain stable IDs. Room navigation does not share hidden drafts.
 Keep runtime discovery bounded, offline and subject to target/version/digest checks.
+
+NPC file organization: NPCs/*.toml now holds one NPC per file with a top-level id. Preserve exact NPCs directory casing and stable IDs independent of filenames. Root dialogue.toml is rejected, not loaded; it remains an explicit editor repair/deletion target. Keep definitions separate from RORK 6 runtime progress. See docs/DIALOGUE.md.

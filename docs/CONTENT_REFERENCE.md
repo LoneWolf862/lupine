@@ -20,7 +20,7 @@ baseline fields below with nested conditions, effects and ordered interaction ou
 | items/*.toml | id, name, description, portable; starting_room or initial | aliases=[]; descriptions=[]; hidden=false; stackable=false; quantity=1; container; consumable. See [object reference](OBJECTS.md) |
 | interactions.toml | none | interactions=[]; exit_rules=[] |
 | actions.toml | actions array; see [actions grammar](ACTIONS.md) | room, target/item bindings, shared rules/outcomes |
-| dialogue.toml | none | npcs map, conditional nodes/choices and transfers; see [dialogue reference](DIALOGUE.md) |
+| NPCs/*.toml | id, name, description, start, nodes | One NPC per file; aliases=[], room omitted means offstage, requires=[]; conditional nodes/choices and transfers. See [dialogue reference](DIALOGUE.md) |
 | systems.toml | none | equipment and statuses maps; see [systems reference](SYSTEMS.md) |
 | config/combat.fig | none | minimum_damage=1, retaliation="combat"; implemented defaults |
 | events.toml | none | events, timers, quests, journal, endings; see [event reference](EVENTS.md) |

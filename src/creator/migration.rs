@@ -33,10 +33,10 @@ fn category(file: &Path, path: &[String], scope: &str) -> Option<String> {
         ],
         ("", "actions.toml") => vec!["actions.*.requires.*", "actions.*.outcomes.*.when.*"],
         ("", "events.toml") => vec!["events.*.requires.*"],
-        ("", "dialogue.toml") => vec![
-            "npcs.*.requires.*",
-            "npcs.*.nodes.*.variants.*.when.*",
-            "npcs.*.nodes.*.choices.*.requires.*",
+        ("NPCs", _) => vec![
+            "requires.*",
+            "nodes.*.variants.*.when.*",
+            "nodes.*.choices.*.requires.*",
         ],
         _ => vec![],
     };
@@ -46,17 +46,11 @@ fn category(file: &Path, path: &[String], scope: &str) -> Option<String> {
             return condition_reference(&path[len..], scope);
         }
     }
-    if parent.is_empty()
-        && matches!(
-            root,
-            "interactions.toml" | "actions.toml" | "events.toml" | "dialogue.toml"
-        )
-    {
+    if parent.is_empty() && matches!(root, "interactions.toml" | "actions.toml" | "events.toml") {
         for prefix in [
             "interactions.*.effects.*",
             "interactions.*.outcomes.*.effects.*",
             "events.*.effects.*",
-            "npcs.*.nodes.*.choices.*.effects.*",
             "actions.*.effects.*",
             "actions.*.outcomes.*.effects.*",
         ] {
@@ -67,6 +61,7 @@ fn category(file: &Path, path: &[String], scope: &str) -> Option<String> {
         }
     }
     for prefix in match parent {
+        "NPCs" => vec!["nodes.*.choices.*.effects.*"],
         "spells" => vec!["effects.*"],
         "enemies" => vec!["rewards.*"],
         "shops" => vec!["offers.*.effects.*"],
@@ -88,18 +83,17 @@ fn category(file: &Path, path: &[String], scope: &str) -> Option<String> {
     }
     if is("id") {
         return match parent {
+            "NPCs" => Some("npcs".into()),
             "rooms" | "items" | "spells" | "enemies" | "shops" => Some(parent.into()),
             _ => None,
         };
     }
-    if parent.is_empty()
-        && root == "dialogue.toml"
-        && (is("npcs.*.start") || is("npcs.*.nodes.*.choices.*.next"))
-    {
-        return Some(format!("nodes:{}", path[1]));
+    if parent == "NPCs" && (is("start") || is("nodes.*.choices.*.next")) {
+        return Some(format!("nodes:{scope}"));
     }
     let mut fields: Vec<(&str, &str)> = Vec::new();
     match parent {
+        "NPCs" => fields.push(("room", "rooms")),
         "rooms" => fields.extend([
             ("exits.*", "rooms"),
             ("encounters.enemies.*.enemy", "enemies"),
@@ -135,7 +129,6 @@ fn category(file: &Path, path: &[String], scope: &str) -> Option<String> {
             ]);
         }
         "" => match root {
-            "dialogue.toml" => fields.push(("npcs.*.room", "rooms")),
             "events.toml" => fields.extend([
                 ("events.*.id", "events"),
                 ("events.*.on.enter", "rooms"),
@@ -380,7 +373,9 @@ pub(super) fn references(s: &Snapshot) -> Result<Vec<String>, String> {
 }
 fn documents(s: &Snapshot) -> Result<Vec<Document>, String> {
     let mut paths = Vec::new();
-    for category in ["rooms", "items", "spells", "weapons", "enemies", "shops"] {
+    for category in [
+        "rooms", "items", "spells", "weapons", "NPCs", "enemies", "shops",
+    ] {
         paths.extend(
             s.sources(category)
                 .filter(|(p, _)| p.extension().is_some_and(|e| e == "toml"))
@@ -389,7 +384,6 @@ fn documents(s: &Snapshot) -> Result<Vec<Document>, String> {
     }
     for name in [
         "events.toml",
-        "dialogue.toml",
         "systems.toml",
         "actions.toml",
         "rules.toml",
@@ -525,16 +519,13 @@ pub(super) fn plan(
             || (d.path == Path::new("rules.toml") && matches!(kind, "flags" | "counters"))
             || (d.path == Path::new("events.toml")
                 && matches!(kind, "timers" | "quests" | "journal" | "endings"))
-            || (d.path == Path::new("dialogue.toml")
-                && (kind == "npcs" || kind.starts_with("nodes:")))
+            || (d.path.parent() == Some(Path::new("NPCs"))
+                && kind.strip_prefix("nodes:") == Some(d.text("id")))
         {
             let declaration = if d.path == Path::new("systems.toml") && kind == "items" {
                 d.doc.get_mut("equipment")
-            } else if let Some(npc) = kind.strip_prefix("nodes:") {
-                d.doc
-                    .get_mut("npcs")
-                    .and_then(|v| v.get_mut(npc))
-                    .and_then(|v| v.get_mut("nodes"))
+            } else if kind.starts_with("nodes:") {
+                d.doc.get_mut("nodes")
             } else {
                 d.doc.get_mut(kind)
             };

@@ -102,7 +102,7 @@ impl World {
             errors.push(format!("systems: {e}"));
         }
         if let Err(e) = self.dialogue.validate(self) {
-            errors.push(format!("dialogue.toml: {e}"));
+            errors.push(format!("NPCs/: {e}"));
         }
         if let Err(e) = self.events.validate(self) {
             errors.push(format!("events.toml: {e}"));

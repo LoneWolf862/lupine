@@ -84,6 +84,7 @@ fn native_package_is_valid_launchable_and_excludes_saves_and_development_files()
         "private.rork",
         "items/private.rork",
         "config/private.rork",
+        "NPCs/private.rork",
         "art/private.rork",
         "notes.rs",
     ] {
@@ -91,7 +92,7 @@ fn native_package_is_valid_launchable_and_excludes_saves_and_development_files()
     }
     fs::create_dir(f.game.join("target")).unwrap();
     fs::write(f.game.join("target/dev.txt"), "dev").unwrap();
-    fs::write(f.game.join("dialogue.toml"),"[npcs.guide]\nname='Guide'\ndescription='Packaged NPC.'\nroom='start'\nstart='hello'\n[npcs.guide.nodes.hello]\ntext='Packaged dialogue executed.'\n").unwrap();
+    fs::write(f.game.join("NPCs/guide.toml"),"id='guide'\nname='Guide'\ndescription='Packaged NPC.'\nroom='start'\nstart='hello'\n[nodes.hello]\ntext='Packaged dialogue executed.'\n").unwrap();
     fs::write(f.game.join("config/character.fig"), "enabled=true\n").unwrap();
     fs::write(
         f.game.join("config/combat.fig"),

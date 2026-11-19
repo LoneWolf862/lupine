@@ -162,3 +162,9 @@ suites, inspect room/reference output, open F to inspect/repair a disposable gam
 then try B room navigation and G publication metadata. Validate and export a new
 folder/ZIP; keep production adventures and saves on their matching engine build
 until the changes are reviewed. No merge or release action has been taken.
+
+## NPC organization follow-up (0.11.0-dev.9)
+
+Separate review branch on top of phase 9. NPCs/*.toml contains one complete NPC definition per file, with an explicit stable id and local nodes. Loader validation, Snapshot recovery/editing, duplication/deletion, migrations, inspection, room references and exports use the new folder. The bundled dialogue example and current authoring docs use this layout. Old dialogue.toml is rejected with split instructions; the project editor can explicitly repair it in a single confirmed batch. No automatic user-content conversion, new NPC behavior, RORK change or save-compatibility bump.
+
+Verification pending final checks; historical phase results above are unchanged.

@@ -1,11 +1,14 @@
 # NPCs and dialogue
 
-Author optional `dialogue.toml`. NPCs are distinct from items and combat enemies;
+Author one NPC per `NPCs/*.toml` file, for example `NPCs/guide.toml`.
+Use exactly **NPCs/**, including capitalization, on Windows and Linux. The folder
+may be absent or empty for games without NPCs; new adventures create it empty.
+NPCs are distinct from items and combat enemies;
 they have stable IDs, mutable locations and persistent conversation nodes. No RPG
 configuration is required. See `samples/dialogue_demo` and its three scenarios.
 
 ```toml
-[npcs.guide]
+id = "guide"
 name = "Guide"
 aliases = ["helper"] # optional
 description = "A neutral demonstration character."
@@ -13,12 +16,12 @@ room = "start" # omit to start offstage
 requires = [] # optional shared conditions for visibility and conversation
 start = "hello"
 
-[npcs.guide.nodes.hello]
+[nodes.hello]
 text = "Would you like an introduction?"
-[[npcs.guide.nodes.hello.variants]]
+[[nodes.hello.variants]]
 when = [{ flag_set="introduced" }]
 text = "We have already met."
-[[npcs.guide.nodes.hello.choices]]
+[[nodes.hello.choices]]
 id = "introduce"
 label = "Introduce yourself"
 requires = [{ flag_unset="introduced" }]
@@ -26,12 +29,18 @@ effects = [{ set_flag="introduced" }]
 next = "finished" # optional; otherwise stay at the same node
 text = "Introduction complete." # optional success output
 
-[npcs.guide.nodes.finished]
+[nodes.finished]
 text = "The introduction has finished."
 ```
 
-Define referenced flags in rules.toml if using declared flags. Each NPC requires a
-nonempty name, description, starting node and 1..128 nodes. At most 1024 NPCs are
+The explicit `id` identifies the NPC everywhere, independently of the filename.
+Renaming the file does not rename the NPC. IDs must be unique across the folder;
+node IDs are local to each NPC. Keep files directly in NPCs/, without nested
+folders or links. Regular non-TOML files are ignored. Definitions are loaded in
+sorted filename order; each file is limited to 8 MiB, all NPC files to 64 MiB.
+
+Define referenced flags in rules.toml if using declared flags. Each NPC requires
+an ID, nonempty name, description field, starting node and 1..128 nodes. At most 1024 NPCs are
 allowed; aliases, variants and choices are capped at 128. Node and choice IDs use
 the same stable-ID rules as other content. Choices need unique IDs within a node,
 nonempty labels, and valid conditions/effects/next-node references. Unknown fields
@@ -67,6 +76,7 @@ triggers effects. Use flags/conditions for once-only responses.
 | `{ move_npc={npc="guide",room="hall"} }` | Move NPC; omit room to send offstage |
 | `{ set_dialogue={npc="guide",node="hello"} }` | Change conversation node from any shared effect context |
 
+Item definitions stay in `items/`; do not duplicate their definitions inside an NPC.
 Items can start at `initial={kind="npc",id="guide"}`. NPC-held objects and their
 container contents are inaccessible to ordinary take/use/combat commands. Moving
 the NPC carries those objects with them. Use typed shared transfers to give or
@@ -99,7 +109,37 @@ the complete NPC state map; omit room for offstage NPCs. Existing quantity asser
 accept the NPC location type. Run `lupine test samples/dialogue_demo
 samples/dialogue_demo/scenarios.toml`.
 
-Snapshot and export include dialogue.toml. Migration M offers `npcs` and
+Snapshot, project-file search, room-reference browsing and export include NPCs/*.toml.
+Creator F can create/edit, duplicate or delete a whole NPC file, and copy/edit
+nodes and choices inside it. Duplication changes the new file's ID but leaves
+references pointing to their original targets; review explicit self-references
+and item ownership before publishing. Migration M offers `npcs` and
 `nodes:<npc_id>` categories, updating typed references and table keys while preserving
 prose and RORK bytes. Choice IDs are local input labels; no persistent state refers
-to them. Full guided dialogue editing belongs to expansion phase 8.
+to them. F is the complete-schema file/structural editor; no separate NPC form
+or automatic behavior generator is implied.
+
+## Moving an existing development adventure
+
+The root `dialogue.toml` layout is no longer loaded. Its presence produces an
+explicit migration error rather than silently dropping NPCs. To split it:
+
+1. Create `NPCs/` and one TOML file for each `[npcs.ID]` definition.
+2. Replace that outer table header with top-level `id = "ID"`.
+3. Remove the `npcs.ID.` prefix from all nested table and array-table headers:
+   `[npcs.ID.nodes.hello]` becomes `[nodes.hello]`, for example.
+4. Preserve NPC IDs, node IDs, fields, conditions/effects and external references.
+5. Remove the old root file after reviewing the split, then validate and run
+   your scenarios. In F, stage all new files and deletion of dialogue.toml in
+   one batch; validate, preview and explicitly confirm publication.
+
+No user adventure is converted automatically. This file-only move leaves the
+runtime model and RORK 6 schema unchanged, and needs no save-compatibility bump.
+Existing RORK 6 saves remain usable with otherwise identical content and IDs;
+changing NPC/node IDs or other gameplay definitions still needs a separate save
+compatibility decision. Never edit the saved progress to perform this split.
+
+All currently supported NPC-specific definition fields live in its file.
+Shared flags, events, quests, items and shops retain their own definitions and
+are referenced by ID. This layout does not add NPC combat, pathfinding, schedules,
+or a direct NPC-to-shop binding.

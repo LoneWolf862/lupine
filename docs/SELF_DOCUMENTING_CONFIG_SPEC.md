@@ -12,7 +12,7 @@ Every new adventure should be understandable by inspecting its generated files. 
 
 ## Default project structure
 
-New adventures should create these **directories** even when empty: `config/`, `rooms/`, `items/`, `spells/`, `weapons/`, `enemies/`, `shops/`, and `art/`. Create `game.toml`, `interactions.toml`, the starting room, the project README, and the **currently implemented** FIG configuration files. Do not create unsupported FIG filenames or pretend proposed knobs are implemented.
+New adventures should create these **directories** even when empty: `config/`, `rooms/`, `items/`, `spells/`, `weapons/`, `NPCs/`, `enemies/`, `shops/`, and `art/`. Create `game.toml`, `interactions.toml`, the starting room, the project README, and the **currently implemented** FIG configuration files. Do not create unsupported FIG filenames or pretend proposed knobs are implemented.
 
 Example (illustrative; actual room filenames depend on creator input):
 
@@ -30,6 +30,7 @@ my_adventure/
 |-- spells/
 |-- weapons/
 |-- enemies/
+|-- NPCs/
 |-- shops/
 `-- art/
 ```
