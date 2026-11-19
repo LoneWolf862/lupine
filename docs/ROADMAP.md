@@ -100,3 +100,5 @@ See [completion review](CREATOR_COMPLETION_REVIEW.md) for exact verification and
 Phase 2C.2 implements a self-documenting default directory tree and commented FIG defaults with explicit opt-in for RPG (`config/character.fig`), without generating unsupported FIG categories. See [`SELF_DOCUMENTING_CONFIG_SPEC.md`](SELF_DOCUMENTING_CONFIG_SPEC.md). This is a source/config behavior change, not just a tree-display tweak; use a separate Codex branch and PR. Historical roadmap entries above record earlier development decisions.
 
 Phase 2C.2 now generates commented supported defaults and explicitly disables RPG in new adventures; legacy missing-key behavior remains enabled. Validation results are recorded in CODEX_HANDOFF.md.
+
+Approved engine expansion Phase 8 candidate implements complete-schema project drafts, invalid-project repair, duplicate/delete, publication properties/export texts, combat FIG editing and author inspection/trace. Phase 9 remains the next usability pass. Verification is recorded in [ENGINE_EXPANSION.md](ENGINE_EXPANSION.md).

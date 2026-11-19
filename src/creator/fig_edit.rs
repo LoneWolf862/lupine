@@ -191,6 +191,67 @@ fn terminology<R: BufRead, W: Write>(
         }
     }
 }
+fn combat<R: BufRead, W: Write>(
+    snapshot: &Snapshot,
+    w: &mut Wizard<'_, R, W>,
+) -> Result<(), String> {
+    let template = include_str!("../../templates/starter/config/combat.fig");
+    let mut d = Document::load(snapshot, PathBuf::from("config/combat.fig"), template)?;
+    loop {
+        w.heading("COMBAT CONFIGURATION")?;
+        w.say(&format!(
+            "{}\n1. Minimum damage\n2. Retaliation\nP. Preview\nS. Save\n0. Discard and return",
+            d.doc
+        ))?;
+        match w.menu("Setting:")?.to_ascii_lowercase().as_str() {
+            "0" | "back" => return Ok(()),
+            "1" => {
+                w.say(&explanation(template, "minimum_damage"))?;
+                if let Some(n) = number(
+                    w,
+                    "Minimum damage",
+                    d.doc
+                        .get("minimum_damage")
+                        .and_then(Item::as_integer)
+                        .unwrap_or(1),
+                    0,
+                    1_000_000,
+                )? {
+                    d.set("minimum_damage", value(n));
+                }
+            }
+            "2" => {
+                w.say(&explanation(template, "retaliation"))?;
+                let current = d
+                    .doc
+                    .get("retaliation")
+                    .and_then(Item::as_str)
+                    .unwrap_or("combat");
+                if let Some(s) = w.ask(
+                    "Retaliation",
+                    current,
+                    "combat: attacks only; every_action: any successful turn; none: never",
+                    |s| {
+                        if ["combat", "every_action", "none"].contains(&s) {
+                            Ok(())
+                        } else {
+                            Err("Choose combat, every_action or none".into())
+                        }
+                    },
+                )? {
+                    d.set("retaliation", value(s));
+                }
+            }
+            "p" => d.preview(&snapshot.root, w.output)?,
+            "s" => {
+                if save(snapshot, &d, w)? {
+                    return Ok(());
+                }
+            }
+            _ => w.say("Choose 0-2, P or S.")?,
+        }
+    }
+}
 pub(super) fn run<R: BufRead, W: Write>(
     root: &Path,
     input: &mut R,
@@ -202,13 +263,14 @@ pub(super) fn run<R: BufRead, W: Write>(
             let snapshot = Snapshot::capture(root)?;
             Adventure::load(root)?;
             w.heading("ADVENTURE CONFIGURATION")?;
-            w.say("1. Character: RPG enablement, starting stats and progression\n2. Terminology: displayed collection labels\n0. Return to creator\nOnly these two FIG categories are implemented. Opening a category writes nothing.")?;
+            w.say("1. Character: RPG enablement, starting stats and progression\n2. Terminology: displayed collection labels\n3. Combat: damage and retaliation\n0. Return to creator\nThese three FIG categories are implemented. Opening a category writes nothing.")?;
             let result = match w.menu("Category:")?.trim() {
                 "0" | "back" => return Ok(()),
                 "1" => character(&snapshot, &mut w),
                 "2" => terminology(&snapshot, &mut w),
+                "3" => combat(&snapshot, &mut w),
                 _ => {
-                    w.say("Choose 0-2.")?;
+                    w.say("Choose 0-3.")?;
                     continue;
                 }
             };

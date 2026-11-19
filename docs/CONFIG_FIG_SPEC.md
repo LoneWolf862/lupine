@@ -84,3 +84,5 @@ deals zero. Retaliation supports combat, every_action or none. See [exact behavi
 status ordering and equipment](SYSTEMS.md). This FIG never enables RPG by itself.
 Guided editing follows in expansion phase 8. Currency remains game.toml content
 and no longer requires RPG.
+
+Current expansion: creator F provides complete-schema multi-file structural/text drafts, repair, duplicate/delete and validation. G edits publication properties; I inspects the room map and typed references. Combat FIG has a dedicated form at 3 > 3. See [PROJECT_EDITOR.md](PROJECT_EDITOR.md) for controls, formatting effects and recovery v2. Individual guided managers remain available.

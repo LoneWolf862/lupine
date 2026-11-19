@@ -19,7 +19,7 @@ fn answer(
     Ok(Some(line.trim().to_owned()))
 }
 fn error(output: &mut impl Write, detail: &str) -> io::Result<()> {
-    writeln!(output, "\nThis adventure is not ready yet:\n{detail}\nNothing was changed. Check the named file and field/reference, correct it\nin your text editor, then choose Validate again. Guided editing requires a valid\nadventure; the creator will reload your files each time.\n")
+    writeln!(output, "\nThis adventure is not ready yet:\n{detail}\nNothing was changed. Check the named file and field/reference, choose F to repair it in a multi-file draft, or correct it\nin your text editor. Individual guided editors require a valid adventure; the creator will reload your files each time.\n")
 }
 
 /// Create/open launcher. The same terminal streams survive setup and gameplay.
@@ -92,7 +92,7 @@ pub fn open<R: BufRead, W: Write>(
             )?;
         }
         super::ui::heading(output, "ADVENTURE CREATOR")?;
-        writeln!(output, "  0. Exit Creator\n  1. Play Your Adventure\n  2. Validate Your Adventure\n  3. Configure Adventure Settings\n  4. Create or Edit Items\n  5. Create or Edit Spells\n  6. Create or Edit Artwork\n  7. Create or Edit Rooms\n  8. Help\n  9. Interactions and puzzles\n  R. RPG Content\n  E. Export Your Adventure\n  T. Transaction Bindings\n  M. Rename Internal ID\n\nEnter refreshes the tree; ? gives help.")?;
+        writeln!(output, "  0. Exit Creator\n  1. Play Your Adventure\n  2. Validate Your Adventure\n  3. Configure Adventure Settings\n  4. Create or Edit Items\n  5. Create or Edit Spells\n  6. Create or Edit Artwork\n  7. Create or Edit Rooms\n  8. Help\n  9. Interactions and puzzles\n  R. RPG Content\n  E. Export Your Adventure\n  T. Transaction Bindings\n  M. Rename Internal ID\n  G. Project Properties\n  F. Project Files / Advanced Systems / Repair\n  I. Inspect Map and References\n\nEnter refreshes the tree; ? gives help.")?;
         let Some(choice) = answer(input, output, "Selection:")? else {
             writeln!(
                 output,
@@ -123,6 +123,9 @@ pub fn open<R: BufRead, W: Write>(
                     writeln!(output, "Returned to the creator. Player progress was not automatically saved.")?;
                 }
             }
+            "g" => super::properties::run(&root,input,output)?,
+            "f" => super::project_edit::run(&root, input, output)?,
+            "i" => if let Err(e) = super::inspect::run(&root, output) { writeln!(output,"Inspection failed: {e}")?; },
             "e" => super::export::run(&root, input, output)?,
             "t" => super::binding_edit::run(&root, input, output)?,
             "m" => super::migration::run(&root, input, output)?,
@@ -134,7 +137,7 @@ pub fn open<R: BufRead, W: Write>(
             "6" => super::art_edit::run(&root, input, output)?,
             "3" => super::fig_edit::run(&root, input, output)?,
             "8" | "?" | "help" => writeln!(output, "You are working in the adventure folder shown above.\nThe tree shows actual files; trailing / means a directory.\nTOML holds story content; optional config/*.fig holds engine settings.\n1 plays here and quit returns here. Each play starts fresh unless you\nexplicitly load a save. 2 checks all supported content and FIG settings.\nEnter refreshes the tree after external edits. 0/back/cancel leaves this\nadventure. Room edits require explicit Save confirmation; player saves remain manual.\n7 opens the Room Manager for guided names, descriptions and connections. 3 configures FIG settings; 4 edits items; 5 edits spells; 6 edits art. 9 opens puzzles and locked doors. Room Options > 7 edits conditional prose/encounters. R opens enemies, weapons, shops, currencies and encounters. Changes remain drafts until explicit confirmation.")?,
-            _ => writeln!(output, "\nPlease choose 0-9, R, E, or type help. Your adventure is still selected.\n")?,
+            _ => writeln!(output, "\nPlease choose 0-9, R, E, T, M, F, I, or type help. Your adventure is still selected.\n")?,
         }
     }
 }

@@ -129,3 +129,7 @@ locked routes, conditional prose/art and scenario assertions; `samples/rpg_spell
 shows learning/abilities; `samples/rpg_rewards/` shows loot/currency/shops;
 `samples/rpg_transactions/` shows bound services; `samples/rpg_persistent/` shows
 encounter persistence. These are engine fixtures, not HOWLBOUND story content.
+
+## Publication metadata and complete creator coverage
+
+Optional `game.toml [metadata]` supports `author`, `description`, `version`, `credits`, `license`, and `instructions` strings (64 KiB each, no terminal controls except newline/tab). Export includes authored publication texts. Creator F edits every current schema through multi-file structural/text drafts; G edits properties. See [PROJECT_EDITOR.md](PROJECT_EDITOR.md) for exact preview, duplicate/delete, repair and recovery contracts.

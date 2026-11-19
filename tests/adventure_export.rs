@@ -334,3 +334,38 @@ fn both_platform_preflight_and_package_structure_with_synthetic_foreign_header()
     }
     assert_eq!(fs::read_dir(zip_path).unwrap().count(), 2);
 }
+
+#[test]
+fn authored_publication_metadata_exports_without_changing_save_compatibility() {
+    let f = Fixture::new();
+    let p = f.game.join("game.toml");
+    let mut text = fs::read_to_string(&p).unwrap();
+    text.push_str("\n[metadata]\nauthor='Example Author'\nversion='Preview'\ndescription='Test description'\ncredits='Authored credits'\nlicense='Authored terms'\ninstructions='Authored instructions'\n");
+    fs::write(&p, &text).unwrap();
+    let before = snapshot(&f.game);
+    let out = f.plan("metadata").unwrap().publish().unwrap();
+    let package = out.join(Target::host().unwrap().label());
+    assert_eq!(
+        fs::read_to_string(package.join("GAME_LICENSE.txt")).unwrap(),
+        "Authored terms"
+    );
+    assert_eq!(
+        fs::read_to_string(package.join("GAME_CREDITS.txt")).unwrap(),
+        "Authored credits"
+    );
+    assert_eq!(
+        fs::read_to_string(package.join("GAME_INSTRUCTIONS.txt")).unwrap(),
+        "Authored instructions"
+    );
+    assert!(fs::read_to_string(package.join("ABOUT_GAME.txt"))
+        .unwrap()
+        .contains("Example Author"));
+    assert_eq!(snapshot(&f.game), before);
+    let a = Adventure::load(&package.join("adventure")).unwrap();
+    assert_eq!(a.game.save_compatibility_version, 1);
+    fs::write(p, text.replace("'Example Author'", "\"\\u001b[31m\"")).unwrap();
+    assert!(Adventure::load(&f.game)
+        .err()
+        .unwrap()
+        .contains("metadata.author"));
+}

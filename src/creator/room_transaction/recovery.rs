@@ -11,6 +11,7 @@ use std::{
 #[serde(deny_unknown_fields)]
 struct Journal {
     version: u32,
+    baseline_valid: bool,
     before: BTreeMap<PathBuf, String>,
     after: BTreeMap<PathBuf, String>,
     targets: Vec<PathBuf>,
@@ -22,7 +23,7 @@ fn hash(bytes: &[u8]) -> String {
 }
 pub(super) fn prepare(
     s: &Snapshot,
-    changes: &BTreeMap<PathBuf, String>,
+    changes: &BTreeMap<PathBuf, Option<String>>,
     lock: &Path,
     owned: &mut Owned,
 ) -> Result<(), String> {
@@ -45,7 +46,11 @@ pub(super) fn prepare(
         .collect::<BTreeMap<_, _>>();
     let mut after = before.clone();
     for (p, text) in changes {
-        after.insert(p.clone(), hash(text.as_bytes()));
+        if let Some(text) = text {
+            after.insert(p.clone(), hash(text.as_bytes()));
+        } else {
+            after.remove(p);
+        }
     }
     let notes = ["RECOVERY.txt", "CHANGES.txt"]
         .into_iter()
@@ -57,7 +62,8 @@ pub(super) fn prepare(
         })
         .collect::<Result<_, String>>()?;
     let journal = Journal {
-        version: 1,
+        version: 2,
+        baseline_valid: Adventure::load(&baseline).is_ok(),
         before,
         after,
         targets: changes.keys().cloned().collect(),
@@ -95,7 +101,7 @@ fn inspect(root: &Path) -> Result<Evidence, String> {
     let raw=Original::read(&lock.join("JOURNAL.toml")).map_err(|e|format!("No complete supported journal: {e}. Keep this folder and inspect RECOVERY.txt / CHANGES.txt with a developer; automatic recovery is unavailable."))?.bytes;
     let j: Journal = toml::from_str(std::str::from_utf8(&raw).map_err(|e| e.to_string())?)
         .map_err(|e| format!("Corrupt journal: {e}"))?;
-    if j.version != 1
+    if j.version != 2
         || j.targets.is_empty()
         || j.before.len() > 2048
         || j.after.len() > 2048
@@ -115,7 +121,9 @@ fn inspect(root: &Path) -> Result<Evidence, String> {
     }
     let targets = j.targets.iter().collect::<BTreeSet<_>>();
     if targets.len() != j.targets.len()
-        || j.targets.iter().any(|p| !j.after.contains_key(p))
+        || j.targets
+            .iter()
+            .any(|p| !j.after.contains_key(p) && !j.before.contains_key(p))
         || j.before
             .iter()
             .any(|(p, h)| !targets.contains(p) && j.after.get(p) != Some(h))
@@ -147,7 +155,9 @@ fn inspect(root: &Path) -> Result<Evidence, String> {
         }
     }
     if let Some(done) = outcome {
-        Adventure::load(root)?;
+        if done || j.baseline_valid {
+            Adventure::load(root)?;
+        }
         let expected = if done { &j.after } else { &j.before };
         if current.files.len() != expected.len()
             || expected
@@ -227,8 +237,10 @@ fn inspect(root: &Path) -> Result<Evidence, String> {
                 return Err("Missing proposed data; automatic recovery refused".into());
             }
         }
-        Adventure::load(&lock.join("baseline"))
-            .map_err(|e| format!("Baseline validation failed: {e}"))?;
+        if j.baseline_valid {
+            Adventure::load(&lock.join("baseline"))
+                .map_err(|e| format!("Baseline validation failed: {e}"))?;
+        }
         Adventure::load(&lock.join("proposed"))
             .map_err(|e| format!("Proposed validation failed: {e}"))?;
     }
@@ -320,7 +332,9 @@ fn recover(root: &Path, complete: bool) -> Result<(), String> {
                 fs::hard_link(source, &target).map_err(|e| e.to_string())?;
             }
         }
-        Adventure::load(root)?;
+        if complete || j.baseline_valid {
+            Adventure::load(root)?;
+        }
         let current = Snapshot::capture_inner(root, true)?;
         if current.files.len() != desired.len()
             || desired
@@ -393,7 +407,10 @@ pub(crate) fn run<R: BufRead, W: Write>(
             }
         };
         w.say(&format!("An interrupted content edit requires review. Stop any other creator process first.\nAffected files:\n{}\nNo recovery happens without confirmation.",evidence.journal.targets.iter().map(|p|p.display().to_string()).collect::<Vec<_>>().join("\n"))).map_err(io::Error::other)?;
-        w.say(if evidence.outcome.is_some(){"1. Inspect details\n2. Finish verified cleanup\n0. Exit without changes"}else{"1. Inspect details\n2. Restore previous valid state\n3. Complete validated pending operation\n4. Recovery help\n0. Exit without changes"}).map_err(io::Error::other)?;
+        w.say(if evidence.outcome.is_some(){"1. Inspect details\n2. Finish verified cleanup\n0. Exit without changes"}else{"1. Inspect details\n2. Restore recorded previous state\n3. Complete validated pending operation\n4. Recovery help\n0. Exit without changes"}).map_err(io::Error::other)?;
+        if !evidence.journal.baseline_valid {
+            w.say("The recorded baseline was invalid. Restore preserves its exact bytes but it will still need repair; Complete selects a validated proposal.").map_err(io::Error::other)?;
+        }
         let choice = match w.menu("Selection:") {
             Ok(c) => c,
             Err(_) => return Ok(false),
@@ -402,7 +419,7 @@ pub(crate) fn run<R: BufRead, W: Write>(
             "0"|"back"=>return Ok(false),
             "1"=>w.say(&format!("Journal version {}; {} original files; {} proposed files. Hashes, confined paths and full adventure validation are checked. Recovery metadata: {}",evidence.journal.version,evidence.journal.before.len(),evidence.journal.after.len(),root.join(LOCK).display())).map_err(io::Error::other)?,
             "2"|"3"=>{let complete=evidence.outcome.unwrap_or(choice.trim()=="3");if evidence.outcome.is_some()&&choice.trim()=="3"{continue;}
-                match crate::creator::content_edit::confirm(&mut w,"Confirm this recovery operation? (No player saves will change)"){Ok(true)=>match recover(root,complete){Ok(())=>{w.say("Recovery completed and adventure validated. RORK saves unchanged.").map_err(io::Error::other)?;return Ok(true);},Err(e)=>{w.say(&format!("Recovery stopped safely: {e}. Keep the remaining recovery files.")).map_err(io::Error::other)?;return Ok(false);}},Ok(false)=>(),Err(_)=>return Ok(false)}
+                match crate::creator::content_edit::confirm(&mut w,"Confirm this recovery operation? (No player saves will change)"){Ok(true)=>match recover(root,complete){Ok(())=>{w.say("Recovery completed; recorded content restored or validated proposal published. RORK saves unchanged.").map_err(io::Error::other)?;return Ok(true);},Err(e)=>{w.say(&format!("Recovery stopped safely: {e}. Keep the remaining recovery files.")).map_err(io::Error::other)?;return Ok(false);}},Ok(false)=>(),Err(_)=>return Ok(false)}
             },
             _=>w.say("Restore selects the recorded baseline; Complete selects the validated proposal. Neither guesses through external edits. Missing/corrupt or older text-only records need manual review. Never delete unknown files or RORK saves.").map_err(io::Error::other)?,
         }
@@ -430,6 +447,62 @@ mod tests {
         assert!(result.is_err());
         assert!(f.0.join(LOCK).exists());
         f
+    }
+    #[test]
+    fn deletion_and_invalid_baseline_recover_without_guessing() {
+        for complete in [false, true] {
+            let f = super::super::tests::Fixture::new();
+            fs::write(f.0.join("systems.toml"), "invalid syntax [").unwrap();
+            fs::write(f.0.join("personal.rork"), "unchanged").unwrap();
+            let snapshot = Snapshot::capture(&f.0).unwrap();
+            let changes = BTreeMap::from([(PathBuf::from("systems.toml"), None)]);
+            assert!(
+                catch_unwind(AssertUnwindSafe(|| snapshot.stage(&changes, false, |n| {
+                    if n == 1 {
+                        panic!("power loss after deletion");
+                    }
+                    Ok(())
+                })))
+                .is_err()
+            );
+            let evidence = inspect(&f.0).unwrap();
+            assert!(!evidence.journal.baseline_valid);
+            recover(&f.0, complete).unwrap();
+            assert_eq!(f.0.join("systems.toml").exists(), !complete);
+            assert_eq!(Adventure::load(&f.0).is_ok(), complete);
+            assert_eq!(
+                fs::read_to_string(f.0.join("personal.rork")).unwrap(),
+                "unchanged"
+            );
+            assert!(!f.0.join(LOCK).exists());
+        }
+    }
+    #[test]
+    fn deletion_failure_restores_original_and_external_changes_are_retained() {
+        let f = super::super::tests::Fixture::new();
+        fs::write(f.0.join("systems.toml"), "# original\n").unwrap();
+        let snapshot = Snapshot::capture(&f.0).unwrap();
+        let changes = BTreeMap::from([(PathBuf::from("systems.toml"), None)]);
+        assert!(snapshot
+            .stage(&changes, false, |n| if n == 1 {
+                Err("injected".into())
+            } else {
+                Ok(())
+            })
+            .is_err());
+        assert_eq!(
+            fs::read_to_string(f.0.join("systems.toml")).unwrap(),
+            "# original\n"
+        );
+        fs::write(f.0.join("systems.toml"), "# external\n").unwrap();
+        assert!(snapshot
+            .commit_changes(&changes)
+            .unwrap_err()
+            .contains("externally"));
+        assert_eq!(
+            fs::read_to_string(f.0.join("systems.toml")).unwrap(),
+            "# external\n"
+        );
     }
     #[test]
     fn interrupted_publication_restores_or_completes_at_each_stage() {

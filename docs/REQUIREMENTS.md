@@ -163,3 +163,7 @@ This section supersedes earlier descriptions of save/load as optional for Lupine
 - Load validation checks format/schema version, game identity, references, and compatibility **before mutating current state**.
 - Store per-game saves in user-data locations, independent of installation paths. The file contents must be portable across Windows/Linux when the same game version is compatible.
 - Protect against partial writes and report corrupt or incompatible saves without panics or accidental overwrites.
+
+### Implemented creator expansion (development candidate)
+
+Complete current-schema structural/text editing, multi-file repair, definition copying and validated deletion use explicit Snapshot publication. Dedicated combat FIG and publication-property forms are available. Author inspection and scenario trace never write progress. Publication credits/license/instructions accompany exports when authored. These features preserve manual-only RORK version 6 and do not promise human beginner or native CachyOS acceptance. Details: [PROJECT_EDITOR.md](PROJECT_EDITOR.md).
