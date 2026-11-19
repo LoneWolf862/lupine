@@ -71,7 +71,29 @@ fn references<R: BufRead, W: Write>(
         .iter()
         .find(|o| o.id == offer)
         .ok_or("Missing offer")?;
-    w.say(&format!("Offer: {}\nEffect: {}; amount: {:?}; item: {:?}; ability: {:?}; flag: {:?}\nPrice: {} {} (sell_item pays the player)\nStock: {:?} (None means unlimited)\nRequired flags: {:?}\nThe existing offer checks eligibility, charges resources and applies effects only during play. Failed transactions spend nothing. Creating a binding does not execute it.",o.name,o.kind,o.amount,o.item,o.ability,o.flag,o.price,o.currency,o.stock,o.requires_flags))?;
+    let effect = match o.kind.as_str() {
+        "restore_hp" => format!("Restore up to {} HP", o.amount.unwrap_or(0)),
+        "restore_mp" => format!("Restore up to {} MP", o.amount.unwrap_or(0)),
+        "item" => format!("Give the player item {}", o.item.as_deref().unwrap_or("")),
+        "sell_item" => format!(
+            "Buy the player's carried item {}",
+            o.item.as_deref().unwrap_or("")
+        ),
+        "learn_ability" => format!("Teach ability {}", o.ability.as_deref().unwrap_or("")),
+        "set_flag" => format!("Set story flag {}", o.flag.as_deref().unwrap_or("")),
+        _ => return Err("Unsupported offer type".into()),
+    };
+    let stock = o
+        .stock
+        .map(|n| n.to_string())
+        .unwrap_or_else(|| "Unlimited".into());
+    let requirements = if o.requires_flags.is_empty() {
+        "None".into()
+    } else {
+        o.requires_flags.join(", ")
+    };
+    let currency = &a.wallet.currencies[&o.currency].name;
+    w.say(&format!("Offer: {}\nEffect: {effect}\n{}: {} {currency}\nStock: {stock}\nRequired flags: {requirements}\nThe existing offer checks eligibility, exchanges resources and applies effects only during play. Failed transactions spend nothing. Creating a binding does not execute it.",o.name,if o.kind=="sell_item"{"Payment to player"}else{"Cost to player"},o.price))?;
     if let Some(i) = index {
         let t = rules_ui::entry_mut(&mut d.doc, "bindings", i)?;
         rules_ui::set(t, "item", value(item));
@@ -128,6 +150,7 @@ fn manage<R: BufRead, W: Write>(root: &Path, w: &mut Wizard<'_, R, W>) -> Result
         let s = Snapshot::capture(root)?;
         let a = Adventure::load(root)?;
         let mut d = Document::load(&s, "transaction_interactions.toml".into(), "")?;
+        let initial = d.contents();
         loop {
             w.heading("TRANSACTION BINDINGS")?;
             w.say("Connect a world object to an existing shop offer. Use I / H to save missing prerequisite items / shops separately before starting this draft. Canceling a binding never undoes those confirmed saves.")?;
@@ -176,7 +199,7 @@ fn manage<R: BufRead, W: Write>(root: &Path, w: &mut Wizard<'_, R, W>) -> Result
                     }
                 }
                 "i" | "h" => {
-                    if d.changed() && !bindings.bindings.is_empty() {
+                    if d.contents() != initial {
                         w.say("Save or discard the active binding draft before separately saving prerequisites. Your draft is retained.")?;
                         continue;
                     }

@@ -1,18 +1,21 @@
-Phase 4A: Creator T (or R > 8) now manages transaction bindings with exact previews and explicit validated Save. See [Phase 4 review](PHASE_4_REVIEW.md). Historical limitations below are superseded for bindings.
+Phase 4: Creator T (or R > 8) manages transaction bindings; M migrates supported IDs;
+opening interrupted edits offers evidence-based recovery; E exports ZIPs or folders.
+See [verification, limitations and human review](PHASE_4_REVIEW.md).
 
 # Lupine Adventure Creator
 
 Current source: 0.10.0-dev.1 development candidate. Creator work through Phase 2I is merged.
-Phase 3 adds startup, player input and export in draft PRs #20–#24; published v0.9.0 binaries
+Phase 3 startup, player input and export are merged; published v0.9.0 binaries
 do not include these changes. [Verification](PHASE_3_REVIEW.md).
 
 ## Export and share
 
-Choose E, select Windows x64 / Linux x64 / Both, choose compatible local runtimes and a
+Choose E, select Windows x64 / Linux x64 / Both, select ZIP or Folder, choose compatible local runtimes and a
 new destination outside the source adventure, review the files and explicitly confirm.
 Enter uses the running engine for its native OS. Other runtimes need matching
 lupine.runtime.toml metadata from the same trusted build. No runtime is downloaded.
-Share the complete platform folder, optionally zipped. Source files stay untouched;
+Share the platform ZIP (extract before launching) or complete platform folder. ZIP entries
+are stored without compression. Source files stay untouched;
 personal RORK saves and development files are excluded. Missing binaries/invalid content
 produce actionable errors. [Full installation/export instructions](INSTALLATION.md).
 
@@ -45,6 +48,8 @@ New setup explains the adventure title, destination folder, opening room and des
 | 9 | Interactions, conditional exits and the guided locked-door recipe. |
 | R | Enemies, weapons, shops, currencies and encounter settings. |
 | E | Validate, preview and export a Windows/Linux adventure package. |
+| T | Create/edit/remove transaction-object bindings (also R > 8). |
+| M | Deliberately rename supported internal IDs and their authored references. |
 | 0 | Exit the selected project; return to the launcher if opened through it. |
 
 The real nested ASCII file tree refreshes after completed operations and on returning to the creator. Enter refreshes after external edits. Existing empty directories are shown; absent files are not invented. Inspection is bounded to 2048 entries/eight nested levels; display shows at most 160 entries and abbreviates long names. Links/junctions are not followed. Inspection problems block play/validation/editing.
@@ -107,7 +112,11 @@ Authored content saves and player saves are separate. **Player progress is never
 
 Editors require a valid project. They snapshot content, reject unsafe paths/links, stage proposed changes privately, run the complete validator, compare original bytes/metadata to catch external edits, then publish complete files without truncation. Modified files retain permissions. Failed publication rolls back when safe. Failed ordinary form saves retain drafts for correction; stale-file/recovery conflicts require discarding/reopening after review.
 
-All editors share `.lupine-room-edit/` as the historical lock/recovery directory. If it remains, stop editing and read RECOVERY.txt and CHANGES.txt. `original/` retains displaced files; `proposed/` is the staged project. COMMITTED.txt means publication/validation completed but cleanup may not have. Preserve external changes, deliberately restore originals/remove only transaction-created files when appropriate, validate, and then remove the reviewed recovery directory. **Never delete recovery data blindly.** There is no automatic recovery command.
+All editors share `.lupine-room-edit/`. On opening the adventure, supported hashed recovery
+records offer inspection, confirmed restoration or confirmed completion. Stop any other
+creator process first. External edits, missing/corrupt records and unknown files are
+preserved and refused. Older text-only records need manual review of RECOVERY.txt,
+CHANGES.txt and retained files. **Never delete recovery data blindly.**
 
 Hard-link support is required. Publication is recoverable, not crash-atomic across multiple files. Limits are 8 MiB per snapshotted file and 64 MiB total, plus traversal bounds. Avoid concurrent editing/play while publishing. Checks do not defend against hostile concurrent filesystem replacement. No unrelated files or existing player saves are deleted.
 
@@ -115,4 +124,21 @@ Hard-link support is required. Publication is recoverable, not crash-atomic acro
 
 Follow the [review procedure](CREATOR_COMPLETION_REVIEW.md). The automated `tests/fixtures/creator_acceptance.txt` transcript builds a nontrivial neutral adventure entirely through the CLI and is exercised by `cargo test --test creator_acceptance`. It is a test fixture, not HOWLBOUND story content or a human usability result.
 
-Current limits: stable-ID rename/deletion migrations and guided crash recovery are not implemented; export creates directories, with archives left to the user's normal ZIP tool. Transaction-binding definition editing remains separate; enemy, weapon, shop and currency managers are now available under R. Unusual condition/effect representations that cannot be safely edited receive a limitation message. Full text-file authoring and direct add/validate/play commands remain available.
+Current limits: migration excludes game identity, filenames/art paths, runtime instances,
+definition deletion and RORK rewriting. Weapons share their item's ID. Offers are scoped
+to a shop; flags are discovered from authored references. No save compatibility is promised.
+Use M to select the definition, enter a new ID, review every reference and exact file,
+read the save warning, and confirm after staged validation. Filenames remain unchanged.
+Unusual representations that cannot be safely edited receive a limitation message.
+Full text-file authoring and direct add/validate/play commands remain available.
+
+## Transaction-bound objects
+
+Create an item and a shop offer in the same room first. T > N selects the object,
+shop and offer, and explains the cost, effect, stock and requirements. Select the binding
+to set success/failure text or restore the engine's default messages. P previews; S
+validates and confirms publication. D removes a binding from the draft. Players activate
+it with `use <object>`; creating it spends no resources. Failed transactions charge nothing.
+I/H open prerequisite item/shop managers before a binding draft; their saves are separate.
+Save/discard an active draft before separately saving prerequisites. Cancel never undoes
+earlier confirmed prerequisite saves or changes player progress.

@@ -79,22 +79,6 @@ fn safe(p: &Path) -> bool {
 fn content_path(p: &Path) -> bool {
     safe(p) && (FILES.iter().any(|n| p == Path::new(n)) || DIRS.iter().any(|n| p.starts_with(n)))
 }
-fn editable(p: &Path) -> bool {
-    safe(p)
-        && (matches!(
-            p.to_str(),
-            Some("game.toml" | "interactions.toml" | "transaction_interactions.toml")
-        ) || match p.parent().and_then(Path::to_str) {
-            Some("rooms" | "items" | "spells" | "weapons" | "enemies" | "shops") => {
-                p.extension().is_some_and(|e| e == "toml")
-            }
-            Some("config") => matches!(
-                p.file_name().and_then(|n| n.to_str()),
-                Some("character.fig" | "terminology.fig")
-            ),
-            _ => p.starts_with("art") && p.extension().is_some_and(|e| e == "txt"),
-        })
-}
 struct Evidence {
     journal: Journal,
     owned: BTreeMap<PathBuf, String>,
@@ -116,7 +100,9 @@ fn inspect(root: &Path) -> Result<Evidence, String> {
         || j.before.len() > 2048
         || j.after.len() > 2048
         || j.dirs.len() > 2048
-        || j.targets.iter().any(|p| !editable(p))
+        || j.targets
+            .iter()
+            .any(|p| !editable_path(p, j.before.contains_key(p)))
         || j.before
             .keys()
             .chain(j.after.keys())
@@ -312,19 +298,21 @@ fn recover(root: &Path, complete: bool) -> Result<(), String> {
             if current.as_ref() == expected {
                 continue;
             }
+            let source = lock
+                .join(if complete { "proposed" } else { "baseline" })
+                .join(p);
+            if let Some(expected) = expected {
+                if hash(&Original::read(&source)?.bytes) != *expected {
+                    return Err("Recovery source changed; target retained".into());
+                }
+            }
             if let Some(h) = &current {
                 if j.before.get(p) != Some(h) && j.after.get(p) != Some(h) {
                     return Err("External edit during recovery; evidence retained".into());
                 }
                 fs::remove_file(&target).map_err(|e| e.to_string())?;
             }
-            if let Some(expected) = expected {
-                let source = lock
-                    .join(if complete { "proposed" } else { "baseline" })
-                    .join(p);
-                if hash(&Original::read(&source)?.bytes) != *expected {
-                    return Err("Recovery source changed".into());
-                }
+            if expected.is_some() {
                 let parent = target.parent().unwrap();
                 if !parent.exists() {
                     fs::create_dir(parent).map_err(|e| e.to_string())?;
@@ -507,5 +495,36 @@ mod tests {
         recover(&f.0, true).unwrap();
         Adventure::load(&f.0).unwrap();
         assert!(!lock.exists());
+    }
+    #[test]
+    fn interrupted_id_migration_can_complete_with_all_references() {
+        let f = super::super::tests::Fixture::new();
+        let s = Snapshot::capture(&f.0).unwrap();
+        let (changes, _) = crate::creator::migration::plan(&s, "rooms", "start", "entry").unwrap();
+        assert!(
+            catch_unwind(AssertUnwindSafe(|| s.commit_with(&changes, |n| {
+                if n == 1 {
+                    panic!("interrupted migration");
+                }
+                Ok(())
+            })))
+            .is_err()
+        );
+        recover(&f.0, true).unwrap();
+        let a = Adventure::load(&f.0).unwrap();
+        assert_eq!(a.game.world.starting_room, "entry");
+        assert!(a.game.world.room("entry").is_some());
+    }
+    #[test]
+    fn unsafe_journal_paths_are_refused_before_any_recovery_write() {
+        let f = interrupt(1);
+        let p = f.0.join(LOCK).join("JOURNAL.toml");
+        let text = fs::read_to_string(&p).unwrap();
+        let mut j: Journal = toml::from_str(&text).unwrap();
+        j.targets.push("../escape.toml".into());
+        fs::write(p, toml::to_string(&j).unwrap()).unwrap();
+        let original = fs::read(f.0.join("rooms/start.toml")).unwrap();
+        assert!(recover(&f.0, false).is_err());
+        assert_eq!(fs::read(f.0.join("rooms/start.toml")).unwrap(), original);
     }
 }

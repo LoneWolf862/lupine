@@ -35,7 +35,7 @@ Character/progression and terminology FIGs, the guided creator and Phase 3 parse
 - Work in small, reviewable increments. Add tests for parser ambiguity, missing objects, invalid worlds, and state transitions as features arrive.
 - Before a milestone is marked verified, run `cargo test`, `cargo fmt --all -- --check`, and `cargo clippy --all-targets -- -D warnings` on an available Rust toolchain.
 - Update documentation and record what is **implemented**, **proposed**, or **not verified**; do not claim features exist until tested.
-- This Phase 3 task explicitly authorizes autonomous implementation/test/refinement. Use isolated worktrees under the user's Codex worktrees directory, one feature branch per major phase, frequent checkpoint pushes and draft PRs targeting their immediate dependency. Never modify the owner's primary checkout, push to main, force-push published history, self-merge, or publish a release without human approval.
+- Phase 4 authorizes autonomous implementation/test/refinement. Use isolated worktrees under the user's Codex worktrees directory, one feature branch per major phase, checkpoint pushes and draft PRs targeting their immediate dependency. Never modify the owner's primary checkout, push to main, force-push published history, self-merge, or publish a release without human approval.
 - Protect CSE 310 requirements and the instructor README-template obligation; do not invent time logs or submission evidence.
 
 ## Current creator and player boundaries
@@ -44,8 +44,10 @@ Creator work through Phase 2I (PRs #8–#19) is merged. Preserve Snapshot public
 exact authored previews, stable IDs and explicit confirmation. Related-manager prerequisite
 saves remain separate. Enemies, weapons, shops and currencies have guided editors;
 currencies remain in game.toml. Pending enemies publish with room drafts. Do not rename
-IDs or weapon associations, rewrite saves or introduce autosaving. Transaction bindings,
-ID migration and guided editor recovery remain separate work.
+IDs or weapon associations through ordinary forms, rewrite saves or introduce autosaving.
+Phase 4 T manages transaction bindings; M deliberately migrates supported IDs and weapon
+associations through schema-aware previews and confirmed Snapshot publication. Preserve
+RORK bytes and compatibility revisions; never promise automatic save compatibility.
 
 Phase 3 startup, history, deterministic resolution and offline export are merged in
 PRs #20–#24. Read docs/PHASE_3_REVIEW.md for their original verification.
@@ -65,6 +67,12 @@ target/version/digest checks and the incomplete-export marker. Keep dependency n
 exported engines; regenerate them from Cargo.lock after dependency changes. Version metadata
 comes from Cargo; keep the published v0.9.0 tag immutable. Official release publication is
 separate from development CI artifacts.
+
+Phase 4 remains an unmerged development stack; read docs/PHASE_4_REVIEW.md for verification.
+Recovery extends .lupine-room-edit with hashed baseline/proposal evidence. Never overwrite
+external edits or guess through missing/corrupt/older records. Export supports stored ZIPs
+and folders, private staging and an incomplete publication marker. Cleanup may delete only
+a recorded, unchanged inventory. Preserve path/size limits, runtime checks and notices.
 
 ## Historical milestones -- not current instructions
 

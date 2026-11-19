@@ -199,19 +199,42 @@ fn inventory(s: &Snapshot) -> Result<BTreeMap<String, BTreeSet<String>>, String>
         let file = d.path.clone();
         visit(&mut d, &mut |p, scope, v| {
             if let (Some(c), Some(id)) = (category(&file, p, scope), v.as_str()) {
-                all.entry(c).or_default().insert(id.into());
+                if c == "flags" {
+                    all.entry(c).or_default().insert(id.into());
+                }
             }
         });
     }
-    // Currency IDs may be implicitly gold in both primary and additional tables.
-    for id in Adventure::load(&s.root)?.wallet.currencies.keys() {
-        all.entry("currencies".into())
-            .or_default()
-            .insert(id.clone());
+    // Select actual definitions, never ignored optional references to nonexistent IDs.
+    let a = Adventure::load(&s.root)?;
+    all.insert(
+        "rooms".into(),
+        a.game.world.rooms.iter().map(|r| r.id.clone()).collect(),
+    );
+    all.insert(
+        "items".into(),
+        a.game.world.items.iter().map(|i| i.id.clone()).collect(),
+    );
+    all.insert("spells".into(), a.rpg.abilities.keys().cloned().collect());
+    all.insert(
+        "enemies".into(),
+        a.encounters.enemies.keys().cloned().collect(),
+    );
+    all.insert("shops".into(), a.shops.shops.keys().cloned().collect());
+    all.insert(
+        "currencies".into(),
+        a.wallet.currencies.keys().cloned().collect(),
+    );
+    for shop in a.shops.shops.values() {
+        all.insert(
+            format!("offers:{}", shop.id),
+            shop.offers.iter().map(|o| o.id.clone()).collect(),
+        );
     }
+    all.retain(|_, ids| !ids.is_empty());
     Ok(all)
 }
-fn plan(
+pub(super) fn plan(
     s: &Snapshot,
     kind: &str,
     old: &str,
@@ -281,7 +304,7 @@ fn plan(
 fn manage<R: BufRead, W: Write>(root: &Path, w: &mut Wizard<'_, R, W>) -> Result<(), String> {
     loop {
         let s = Snapshot::capture(root)?;
-        Adventure::load(root)?;
+        let adventure = Adventure::load(root)?;
         w.heading("RENAME INTERNAL ID")?;
         w.say("Weapons share their physical item's ID: choose items to update that association. Offers are scoped to their shop. Interactions and bindings have no independent IDs. Game identity, filenames, artwork paths, enemy instance IDs and player saves are not migration targets.")?;
         let all = inventory(&s)?;
@@ -294,7 +317,29 @@ fn manage<R: BufRead, W: Write>(root: &Path, w: &mut Wizard<'_, R, W>) -> Result
         };
         let ids = all[&kind]
             .iter()
-            .map(|id| (id.clone(), id.clone()))
+            .map(|id| {
+                let name = match kind.as_str() {
+                    "rooms" => adventure.game.world.room(id).map(|r| r.title.as_str()),
+                    "items" => adventure.game.world.item(id).map(|i| i.name.as_str()),
+                    "spells" => adventure.rpg.abilities.get(id).map(|a| a.name.as_str()),
+                    "enemies" => adventure
+                        .encounters
+                        .enemies
+                        .get(id)
+                        .map(|e| e.name.as_str()),
+                    "shops" => adventure.shops.shops.get(id).map(|s| s.name.as_str()),
+                    "currencies" => adventure.wallet.currencies.get(id).map(|c| c.name.as_str()),
+                    k if k.starts_with("offers:") => adventure
+                        .shops
+                        .shops
+                        .get(&k[7..])
+                        .and_then(|s| s.offers.iter().find(|o| o.id == *id))
+                        .map(|o| o.name.as_str()),
+                    _ => None,
+                }
+                .unwrap_or(id);
+                (id.clone(), name.to_owned())
+            })
             .collect::<Vec<_>>();
         let Some(old) = choose(w, "Current internal ID", &ids)? else {
             continue;
@@ -505,5 +550,19 @@ mod tests {
                 .as_deref(),
             Some("mana")
         );
+    }
+    #[test]
+    fn migration_selector_excludes_ignored_optional_nondefinitions() {
+        let f = Fixture::new("samples/rpg_transactions");
+        let p = f.0.join("shops/healer.toml");
+        let text = fs::read_to_string(&p).unwrap().replace(
+            "type = \"restore_mp\"",
+            "type = \"restore_mp\"\nitem = \"not_a_definition\"",
+        );
+        fs::write(p, text).unwrap();
+        let s = Snapshot::capture(&f.0).unwrap();
+        let all = inventory(&s).unwrap();
+        assert!(!all["items"].contains("not_a_definition"));
+        assert!(plan(&s, "items", "not_a_definition", "replacement").is_err());
     }
 }

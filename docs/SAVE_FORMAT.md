@@ -1,5 +1,13 @@
 # RORK Save Format — v0.6.0-A Working Specification
 
+Phase 4 creator ID migration changes authored content only. It never searches for or
+rewrites player RORK files, changes game identity, or increments compatibility revisions.
+Room/item/ability/enemy/currency/shop/offer renames may invalidate old saved references;
+renamed flags may remain loadable but change behavior. Authors must deliberately decide
+when to increment game.toml save_compatibility_version to reject old saves. No automatic
+compatibility is promised. Creator features do not change RORK serialization.
+See [migration safety and verification](PHASE_4_REVIEW.md).
+
 Current command behavior (2026-11-19): saving remains exclusively player-initiated.
 Bare `save` offers to overwrite the last successfully saved/loaded slot in this session;
 no asks `Save name:`. Fresh sessions ask for a name immediately. Explicit `save NAME`

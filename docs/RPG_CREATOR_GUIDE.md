@@ -1,6 +1,8 @@
-Phase 4A: Creator T (or R > 8) now manages transaction bindings with exact previews and explicit validated Save. See [Phase 4 review](PHASE_4_REVIEW.md). Historical limitations below are superseded for bindings.
+Phase 4: Creator T (or R > 8) manages transaction bindings; M migrates supported IDs;
+guided recovery and ZIP export are available. See [Phase 4 review](PHASE_4_REVIEW.md).
+Historical milestone claims below remain historical.
 
-# Lupine v0.8.4 — RPG creator guide
+# Lupine — RPG creator guide
 
 ## Phase 2I creator usability candidate (2026-11-18)
 
@@ -8,7 +10,7 @@ Draft [PR #19](https://github.com/LoneWolf862/lupine/pull/19) targets `codex/pha
 
 ## Guided RPG authoring candidate
 
-Enemies, weapons, shops and currencies now have guided managers under main menu R. Configure existing character/progression fields in 3; use Rooms > Advanced > Encounters to select or create enemies. All six shop offer types are exposed. The [RPG authoring review](RPG_AUTHORING_DEVELOPMENT.md) documents field semantics, multi-currency rewards, safe draft publication and a real-CLI demonstration authored without manual TOML/FIG editing. PRs #14-#18 remain draft; #8-#13 are merged. Transaction-object bindings below still require text authoring.
+Enemies, weapons, shops and currencies now have guided managers under main menu R. Configure existing character/progression fields in 3; use Rooms > Advanced > Encounters to select or create enemies. All six shop offer types are exposed. The [RPG authoring review](RPG_AUTHORING_DEVELOPMENT.md) documents field semantics, multi-currency rewards, safe draft publication and a real-CLI demonstration authored without manual TOML/FIG editing. PRs #14-#18 remain draft; #8-#13 are merged. Transaction-object bindings now have guided authoring under T / R > 8.
 
 
 This document is a **practical entry point** for authors. The sample games contain working, validated TOML syntax; use them as the source of truth for individual fields instead of guessing field names. You do **not** need to write Rust to create a story.
@@ -59,7 +61,10 @@ See `samples/rpg_rewards/game.toml` for currency definitions and `samples/rpg_re
 
 ## 5. Attach an offer to an object
 
-Author a stationary item in the appropriate room, define an offer in a shop in that room, and add `transaction_interactions.toml`:
+Create a fixed item in Item Manager and an offer in Shop Manager in the same room.
+Open T > N, select the object, shop and offer, then optionally configure outcome text.
+P previews and S explicitly validates/saves. I/H prerequisite managers save separately.
+The same supported representation remains available to text authors in `transaction_interactions.toml`:
 
 ```toml
 [[bindings]]
@@ -70,6 +75,16 @@ success_text = "The altar hums as it replenishes your mana."
 ```
 
 Then a player can `use altar` without entering the shop menu. See `samples/rpg_transactions/` for the complete example. This binding system currently uses `use <object>` and the referenced shop's room; it is not a general-purpose scripting engine.
+
+Creating the definition does not execute it. Insufficient funds, exhausted stock,
+unmet requirements or an unusable effect spend nothing. Default failure text describes
+the actual failure; custom failure text replaces that explanation. T also edits/removes
+bindings without replacing unrelated interactions.
+
+Creator M can rename items (including weapon associations), rooms, abilities, enemies,
+shops, shop-scoped offers, currencies and referenced flags. Review the save-impact warning:
+RORK saves and compatibility revisions are never changed automatically. Filenames stay
+unchanged. Game identity, runtime instances and automatic save migration are excluded.
 
 ## 6. Dynamic prose and ASCII art
 

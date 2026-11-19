@@ -1,6 +1,6 @@
 # Lupine development roadmap
 
-## Current development: Phase 3
+## Current development: Phase 4
 
 Creator work through Phase 2I and Phase 3 PRs #20–#24 are merged.
 The human-feedback follow-up addresses disappearing prompts, save naming and practical
@@ -8,8 +8,10 @@ parser phrases; see [follow-up scope and verification](PLAYER_FEEDBACK_FOLLOWUP.
 Version 0.10.0-dev.1 identifies current
 development; v0.9.0 remains unchanged. [Actual verification](PHASE_3_REVIEW.md).
 
-Next: retest with the original player, native CachyOS acceptance, transaction-binding authoring,
-stable-ID migration, guided editor recovery and optional pronouns/chained commands.
+Phase 4 adds transaction bindings, supported ID migration, guided editor recovery and
+ZIP export in five unmerged draft PRs. See [Phase 4 review](PHASE_4_REVIEW.md) for the
+dependency order, actual checks and limitations. Next: human beginner review, retest with
+the original player, native CachyOS acceptance and optional pronouns/chained commands.
 
 ## Historical roadmap/backlog entries
 

@@ -31,6 +31,7 @@ def run(args, script, label, cwd=root):
 script = (repo / 'tests/fixtures/rpg_creator_acceptance.txt').read_text(encoding='utf-8')
 script = script.replace('\n2\n1\nbuy healing', '\nt\nn\nsign\nsupplies\nmana\nsign\n2\nThe altar restores your mana.\n0\ns\nyes\n0\nm\nitems\nsign\naltar\nyes\n0\n2\n1\nbuy healing')
 script = script.replace('buy mana', 'use altar').replace('{PROJECT}', str(story))
+script = script.replace('Test Sign\n', 'Mana Altar\n')
 text = run([exe, 'new'], script, 'creator-gameplay')
 for unexpected in ['Save needs attention', 'manager stopped', 'Migration stopped', 'Migration refused']:
     assert unexpected not in text, unexpected
@@ -47,6 +48,14 @@ assert 'altar' in saved['item_locations'] and 'sign' not in saved['item_location
 save_hashes = {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in saves}
 text = run([exe, 'play', story], 'load final\nwallet\nlook\nquit\n', 'restart-manual-load')
 assert 'Loaded: final' in text
+assert save_hashes == {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in data.rglob('*.rork')}
+
+# Exercise insufficient funds through the same guided offer and binding, then restore
+# its original price. Definition changes do not execute transactions or save progress.
+failure_script = 'r\n3\nsupplies\n4\nmana\n4\n100\n0\ns\nyes\n0\n0\n1\nuse altar\nwallet\nquit\nr\n3\nsupplies\n4\nmana\n4\n1\n0\ns\nyes\n0\n0\n0\n'
+failure = run([exe, 'creator', story], failure_script, 'binding-insufficient-funds')
+assert 'Insufficient tokens' in failure and 'Tokens: 2' in failure
+assert 'Save needs attention' not in failure
 assert save_hashes == {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in data.rglob('*.rork')}
 
 def snapshot(path):

@@ -17,9 +17,16 @@ save.rs/save_files.rs with serialization version 1 unchanged.
 - render.rs and domain renderers produce output and configured terminology. No game prose
   or puzzle logic is hardcoded in parser rules.
 - Creator editors preserve exact previews and explicit Save through Snapshot's stale
-  checks, staging, full validation and rollback/recovery. IDs remain stable.
+  checks, staging, full validation and rollback/recovery. Ordinary edits keep IDs stable;
+  creator/migration.rs uses explicit schema paths for deliberate cross-file renames.
+  creator/binding_edit.rs authors existing shop bindings without duplicating transactions.
+- room_transaction/recovery.rs extends Snapshot with a versioned hashed journal and
+  retained baseline. Confirmed recovery validates complete inventories before restoring
+  or completing; older/corrupt/missing evidence and external changes are refused.
 - creator/export.rs preflights immutable content/runtime bytes, validates copied adventures,
   checks platform headers/build metadata/SHA-256 and publishes only to a new directory.
+  archive.rs writes bounded stored ZIP entries; export_workspace.rs permits cleanup
+  only of recorded unchanged staging files. Both folders and ZIPs stage before publication.
   It excludes saves/development files and marks failed publication incomplete. It never
   compiles, downloads or executes foreign runtimes. Metadata is not an authenticity signature.
 

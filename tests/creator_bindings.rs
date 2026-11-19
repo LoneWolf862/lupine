@@ -93,3 +93,12 @@ fn binding_draft_does_not_offer_duplicate_objects_or_save_on_eof() {
     assert!(out.contains("No matching choice"), "{out}");
     assert_eq!(fs::read(p).unwrap(), before);
 }
+#[test]
+fn removing_the_last_binding_retains_the_draft_when_prerequisites_are_requested() {
+    let f = Scratch::new();
+    let p = f.0.join("transaction_interactions.toml");
+    let before = fs::read(&p).unwrap();
+    let out = f.run("t\nd\nmana_altar\nyes\nh\n0\n0\n");
+    assert!(out.contains("Your draft is retained"), "{out}");
+    assert_eq!(fs::read(p).unwrap(), before);
+}
