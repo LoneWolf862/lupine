@@ -1,8 +1,9 @@
 # RORK Save Format
 
-## Current development: version 5
+## Current development: version 6
 
-Engine expansion phase 6 adds NPC locations, conversation nodes and NPC object ownership
+Engine expansion phase 7 adds equipped slots, player statuses and per-enemy statuses
+(see [SYSTEMS.md](SYSTEMS.md)). Phase 6 added NPC locations, conversation nodes and NPC object ownership
 (see [DIALOGUE.md](DIALOGUE.md)). Phase 5 added persistent event/turn/timer/quest/journal/ending progress
 (see [EVENTS.md](EVENTS.md)). Phase 4 added a canonical object ledger (quantities, typed placements,
 visibility and containers) alongside the counters and visited rooms introduced in

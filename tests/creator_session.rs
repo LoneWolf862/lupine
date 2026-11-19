@@ -107,7 +107,7 @@ fn tree_reflects_actual_recognized_paths_and_empty_directories() {
         "items/",
         "art/",
         "spells/",
-        "+-- config/\n|   +-- character.fig\n|   +-- terminology.fig",
+        "+-- config/\n|   +-- character.fig\n|   +-- combat.fig\n|   +-- terminology.fig",
         "+-- art/\n    +-- nested/\n        +-- sketch.txt",
         "interactions.toml",
     ] {

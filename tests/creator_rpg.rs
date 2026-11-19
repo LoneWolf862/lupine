@@ -119,14 +119,22 @@ fn authored_shop_failed_transactions_stock_and_manual_roundtrip() {
     );
     state.wallet = a.wallet.initial_balances();
     let before = state.clone();
-    assert!(a.shops.transact(&mut state, &a.wallet, "heal", "").is_err());
+    assert!(a
+        .shops
+        .transact(&a.game.world, &mut state, &a.wallet, "heal", "")
+        .is_err());
     assert_eq!(state, before);
     state.character.as_mut().unwrap().hp = 50;
-    a.shops.transact(&mut state, &a.wallet, "heal", "").unwrap();
+    a.shops
+        .transact(&a.game.world, &mut state, &a.wallet, "heal", "")
+        .unwrap();
     assert_eq!(state.wallet["gold"], 2);
     assert_eq!(state.character.as_ref().unwrap().hp, 60);
     let before = state.clone();
-    assert!(a.shops.transact(&mut state, &a.wallet, "heal", "").is_err());
+    assert!(a
+        .shops
+        .transact(&a.game.world, &mut state, &a.wallet, "heal", "")
+        .is_err());
     assert_eq!(state, before);
     let serialized = lupine::save::encode_save(&a.game.world, &state, &a.game.id, "shop").unwrap();
     let restored = lupine::save::decode_save(&a.game.world, &a.game.id, &serialized).unwrap();

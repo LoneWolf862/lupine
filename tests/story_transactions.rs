@@ -29,7 +29,7 @@ fn fixture() -> (
             .create_character()
             .unwrap(),
     );
-    shops.prepare_inventory(&mut state);
+    shops.prepare_inventory(&game.world, &mut state);
     (game, wallet, shops, rpg, state)
 }
 

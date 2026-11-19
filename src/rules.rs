@@ -58,6 +58,22 @@ impl Compare {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case", deny_unknown_fields)]
 pub enum Condition {
+    Balance {
+        currency: String,
+        op: Compare,
+        value: u64,
+    },
+    KnowsAbility(String),
+    Hp {
+        op: Compare,
+        value: u32,
+    },
+    Mp {
+        op: Compare,
+        value: u32,
+    },
+    Equipped(String),
+    StatusActive(String),
     NpcInRoom {
         npc: String,
         room: String,
@@ -107,6 +123,22 @@ pub enum Condition {
 impl Condition {
     pub fn met(&self, state: &GameState) -> bool {
         match self {
+            Self::Balance {
+                currency,
+                op,
+                value,
+            } => op.met(state.wallet.get(currency).copied().unwrap_or(0), *value),
+            Self::KnowsAbility(id) => state.learned_abilities.contains(id),
+            Self::Hp { op, value } => state
+                .character
+                .as_ref()
+                .is_some_and(|c| op.met(c.hp, *value)),
+            Self::Mp { op, value } => state
+                .character
+                .as_ref()
+                .is_some_and(|c| op.met(c.mp, *value)),
+            Self::Equipped(id) => state.systems.equipped.values().any(|v| v == id),
+            Self::StatusActive(id) => state.systems.statuses.contains_key(id),
             Self::NpcInRoom { npc, room } => state
                 .dialogue
                 .npcs
@@ -163,6 +195,13 @@ impl Condition {
             return Err("Conditions exceed 16 nesting levels".into());
         }
         match self {
+            Self::Balance { currency, .. } => {
+                known(&world.systems.wallet.currencies, currency, "currency")
+            }
+            Self::KnowsAbility(id) => ability(world, id),
+            Self::Hp { .. } | Self::Mp { .. } => character(world),
+            Self::Equipped(id) => known(&world.systems.equipment, id, "equipment"),
+            Self::StatusActive(id) => world.systems.status(id),
             Self::NpcInRoom { npc, room: id } => {
                 known(&world.dialogue.npcs, npc, "NPC")?;
                 room(world, id)
@@ -209,6 +248,33 @@ impl Condition {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case", deny_unknown_fields)]
 pub enum Effect {
+    SpawnItem {
+        item: String,
+        quantity: u32,
+        location: ItemLocation,
+    },
+    Credit {
+        currency: String,
+        amount: u64,
+    },
+    Debit {
+        currency: String,
+        amount: u64,
+    },
+    AwardXp(u64),
+    RestoreHp(u32),
+    RestoreMp(u32),
+    SpendMp(u32),
+    DamagePlayer {
+        amount: u32,
+        #[serde(default = "crate::systems::physical")]
+        damage_type: String,
+    },
+    TeachAbility(String),
+    ApplyStatus(String),
+    ClearStatus(String),
+    Equip(String),
+    Unequip(String),
     MoveNpc {
         npc: String,
         #[serde(default)]
@@ -271,6 +337,37 @@ pub enum Effect {
 impl Effect {
     pub fn validate(&self, world: &World) -> Result<(), String> {
         match self {
+            Self::SpawnItem {
+                item: id,
+                quantity,
+                location,
+            } => {
+                item(world, id)?;
+                if *quantity == 0 || *quantity > 1_000_000 {
+                    return Err("Spawn quantity must be 1..1000000".into());
+                }
+                crate::objects::validate_location(world, location)
+            }
+            Self::Credit { currency, .. } | Self::Debit { currency, .. } => {
+                known(&world.systems.wallet.currencies, currency, "currency")
+            }
+            Self::AwardXp(_) | Self::RestoreHp(_) | Self::RestoreMp(_) | Self::SpendMp(_) => {
+                character(world)
+            }
+            Self::DamagePlayer { damage_type, .. } => {
+                character(world)?;
+                valid_id(damage_type)
+            }
+            Self::TeachAbility(id) => ability(world, id),
+            Self::ApplyStatus(id) | Self::ClearStatus(id) => world.systems.status(id),
+            Self::Equip(id) => known(&world.systems.equipment, id, "equipment"),
+            Self::Unequip(slot) => {
+                if world.systems.equipment.values().any(|e| &e.slot == slot) {
+                    Ok(())
+                } else {
+                    Err(format!("Unknown equipment slot '{slot}'"))
+                }
+            }
             Self::MoveNpc { npc, room: id } => {
                 known(&world.dialogue.npcs, npc, "NPC")?;
                 if let Some(id) = id {
@@ -349,6 +446,86 @@ impl Effect {
         output: &mut Vec<String>,
     ) -> Result<(), String> {
         match self {
+            Self::SpawnItem {
+                item,
+                quantity,
+                location,
+            } => crate::objects::add(world, state, item, location, *quantity)?,
+            Self::Credit { currency, amount } => {
+                world.systems.wallet.credit(state, currency, *amount)?
+            }
+            Self::Debit { currency, amount } => {
+                world.systems.wallet.debit(state, currency, *amount)?
+            }
+            Self::AwardXp(amount) => {
+                let c = state.character.as_mut().ok_or("No character")?;
+                let levels = world
+                    .systems
+                    .progression
+                    .as_ref()
+                    .ok_or("No progression")?
+                    .award_xp(c, *amount);
+                output.push(format!("You gain {amount} XP."));
+                if levels > 0 {
+                    output.push(format!(
+                        "Level up! Now level {}. HP and MP restored.",
+                        c.level
+                    ));
+                }
+            }
+            Self::RestoreHp(amount) => state
+                .character
+                .as_mut()
+                .ok_or("No character")?
+                .heal(*amount),
+            Self::RestoreMp(amount) => state
+                .character
+                .as_mut()
+                .ok_or("No character")?
+                .restore_mana(*amount),
+            Self::SpendMp(amount) => {
+                if !state
+                    .character
+                    .as_mut()
+                    .ok_or("No character")?
+                    .spend_mana(*amount)
+                {
+                    return Err("Not enough MP".into());
+                }
+            }
+            Self::DamagePlayer {
+                amount,
+                damage_type,
+            } => {
+                let (defense, resistance) = crate::systems::defense(world, state, damage_type);
+                let dealt = crate::systems::damage(
+                    *amount,
+                    defense,
+                    resistance,
+                    world.systems.combat.minimum_damage,
+                );
+                let c = state.character.as_mut().ok_or("No character")?;
+                c.hp = c.hp.saturating_sub(dealt);
+            }
+            Self::TeachAbility(id) => {
+                state.learned_abilities.insert(id.clone());
+            }
+            Self::ApplyStatus(id) => {
+                if state.character.is_none() {
+                    return Err("No character".into());
+                }
+                state
+                    .systems
+                    .statuses
+                    .insert(id.clone(), world.systems.statuses[id].turns);
+            }
+            Self::ClearStatus(id) => {
+                state.systems.statuses.remove(id);
+            }
+            Self::Equip(id) => crate::systems::equip(world, state, id)?,
+            Self::Unequip(slot) => {
+                state.systems.equipped.remove(slot);
+            }
             Self::MoveNpc { npc, room } => {
                 state
                     .dialogue
@@ -520,7 +697,9 @@ pub fn apply(
         effect.validate(world)?;
         effect.apply(world, &mut draft, &mut text)?;
     }
+    crate::systems::prune_equipment(&mut draft);
     crate::objects::validate_state(world, &draft)?;
+    world.systems.validate_state(&draft)?;
     world.dialogue.validate_state(&draft.dialogue, world)?;
     world.events.validate_state(&draft.events)?;
     *state = draft;
@@ -648,4 +827,19 @@ pub fn decode<T: serde::de::DeserializeOwned>(value: &toml::Value) -> Result<T, 
         .clone()
         .try_into()
         .map_err(|e| format!("Invalid rule: {e}"))
+}
+
+fn character(world: &World) -> Result<(), String> {
+    if world.systems.progression.is_some() {
+        Ok(())
+    } else {
+        Err("This rule requires enabled character progression".into())
+    }
+}
+fn ability(world: &World, id: &str) -> Result<(), String> {
+    if world.systems.rpg.abilities.contains_key(id) {
+        Ok(())
+    } else {
+        Err(format!("Unknown ability '{id}'"))
+    }
 }

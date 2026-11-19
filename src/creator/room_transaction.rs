@@ -16,6 +16,7 @@ const DIRS: &[&str] = &[
 const FILES: &[&str] = &[
     "events.toml",
     "dialogue.toml",
+    "systems.toml",
     "actions.toml",
     "rules.toml",
     "game.toml",
@@ -35,6 +36,7 @@ fn editable_path(path: &Path, existing: bool) -> bool {
             "game.toml"
                 | "events.toml"
                 | "dialogue.toml"
+                | "systems.toml"
                 | "actions.toml"
                 | "rules.toml"
                 | "interactions.toml"
@@ -46,7 +48,7 @@ fn editable_path(path: &Path, existing: bool) -> bool {
         }
         "config" => matches!(
             path.file_name().and_then(|s| s.to_str()),
-            Some("character.fig" | "terminology.fig")
+            Some("character.fig" | "terminology.fig" | "combat.fig")
         ),
         "art" => path.extension().is_some_and(|e| e == "txt"),
         _ => existing && path.starts_with("art") && path.extension().is_some_and(|e| e == "txt"),
@@ -603,7 +605,7 @@ mod tests {
         let snapshot = Snapshot::capture(&f.0).unwrap();
         assert!(snapshot
             .commit(&BTreeMap::from([(
-                PathBuf::from("config/combat.fig"),
+                PathBuf::from("config/parser.fig"),
                 String::new()
             )]))
             .is_err());

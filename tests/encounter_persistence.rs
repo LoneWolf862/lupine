@@ -38,11 +38,13 @@ fn wounded_group_roundtrips_with_distinct_ids_and_next_id() {
     state.next_enemy_id = 14;
     state.active_enemies = vec![
         EnemyInstance {
+            statuses: Default::default(),
             instance_id: 11,
             enemy_id: "goblin".into(),
             current_hp: 3,
         },
         EnemyInstance {
+            statuses: Default::default(),
             instance_id: 13,
             enemy_id: "wolf".into(),
             current_hp: 5,
@@ -73,6 +75,7 @@ fn duplicate_dead_or_future_instance_ids_are_rejected() {
     let (game, _, mut state) = fixture();
     state.next_enemy_id = 4;
     state.active_enemies = vec![EnemyInstance {
+        statuses: Default::default(),
         instance_id: 2,
         enemy_id: "goblin".into(),
         current_hp: 5,
@@ -92,6 +95,7 @@ fn defeated_enemy_is_not_resurrected_by_save_roundtrip() {
     let (game, _, mut state) = fixture();
     state.next_enemy_id = 3;
     state.active_enemies = vec![EnemyInstance {
+        statuses: Default::default(),
         instance_id: 2,
         enemy_id: "goblin".into(),
         current_hp: 1,

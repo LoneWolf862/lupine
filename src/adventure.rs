@@ -22,7 +22,7 @@ impl Adventure {
     pub fn load(path: &Path) -> Result<Self, String> {
         let game = story_loader::load_game(path)?;
         let enabled = game.config.character.is_some();
-        let rpg = RpgContent::load(path, &game.world, enabled)?;
+        let rpg = game.world.systems.rpg.clone();
         let rooms = game
             .world
             .rooms
@@ -42,7 +42,7 @@ impl Adventure {
             }
         }
 
-        let wallet = WalletContent::load(path, enabled)?;
+        let wallet = game.world.systems.wallet.clone();
         wallet.validate_encounters(&encounters)?;
         let shops = ShopContent::load(path, &game.world, &wallet, &rpg)?;
         for action in &game.world.actions {

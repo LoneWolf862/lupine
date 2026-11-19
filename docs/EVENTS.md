@@ -107,9 +107,12 @@ Stages have author-defined meaning; there is no implicit reward or completion ru
 Endings permit reading, help, manual saves, loading and quitting. Loading a prior
 unended save resumes gameplay. Endings never save, reset or delete anything.
 
-Phase 5 introduced the event schema; current RORK format **5** also includes
+Phase 5 introduced the event schema; current RORK format **6** also includes
 [NPC progress](DIALOGUE.md). The event schema persists turn count, completed once events, active timers and their
 restart generations, quest stages, journal order and ending ID. Full validation runs
 before a load replaces live progress. Older formats require their matching build;
 no automatic migration or rewriting occurs. Export includes events.toml; Snapshot
 and ID migration cover these definitions and shared references.
+
+Shared resource rewards and statuses are implemented in [SYSTEMS.md](SYSTEMS.md).
+Status ticks and configured retaliation precede event hooks for a successful action.

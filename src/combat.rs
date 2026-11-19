@@ -1,5 +1,4 @@
-//! v0.8.0-C2: voluntary physical and offensive spell combat. No XP or loot yet.
-//! Enemies remain transient in C2 and are intentionally excluded from RORK saves.
+//! Deterministic physical/spell combat, typed damage and atomic shared rewards.
 use crate::encounters::{EncounterContent, EnemyInstance, RandomSource};
 use crate::rpg::Progression;
 use crate::rpg_content::{AbilityKind, RpgContent};
@@ -82,6 +81,8 @@ fn target_index(
 }
 
 fn hit(
+    world: &World,
+    damage_type: &str,
     encounters: &EncounterContent,
     active: &mut Vec<EnemyInstance>,
     index: usize,
@@ -91,7 +92,16 @@ fn hit(
     let Some(definition) = encounters.enemies.get(&active[index].enemy_id) else {
         return CombatAction::free("Unknown enemy definition.");
     };
-    let damage = raw.saturating_sub(definition.defense).max(1);
+    let damage = crate::systems::damage(
+        raw,
+        definition.defense,
+        definition
+            .resistances
+            .get(damage_type)
+            .copied()
+            .unwrap_or(0),
+        world.systems.combat.minimum_damage,
+    );
     active[index].current_hp = active[index].current_hp.saturating_sub(damage);
     let name = format!("{} #{}", definition.name, active[index].instance_id);
     let mut msg = format!("{label} {name} for {damage} damage.");
@@ -146,11 +156,24 @@ pub fn physical_attack(
         .character
         .as_ref()
         .map_or(0, |c| c.weapon_damage(weapon.damage));
-    hit(encounters, active, index, raw, "You strike")
+    if crate::systems::stunned(world, &state.systems.statuses) {
+        return CombatAction::spent("You are stunned and cannot attack.");
+    }
+    let raw = crate::systems::modified_attack(world, &state.systems.statuses, raw);
+    hit(
+        world,
+        &weapon.damage_type,
+        encounters,
+        active,
+        index,
+        raw,
+        "You strike",
+    )
 }
 
 /// `cast <damage spell> on <enemy>`; unsuccessful casts consume no mana or turn.
 pub fn offensive_spell(
+    world: &World,
     content: &RpgContent,
     encounters: &EncounterContent,
     state: &mut GameState,
@@ -184,27 +207,38 @@ pub fn offensive_spell(
         Ok(i) => i,
         Err(m) => return CombatAction::free(m),
     };
+    if crate::systems::stunned(world, &state.systems.statuses) {
+        return CombatAction::spent("You are stunned and cannot cast.");
+    }
+    if let Some(id) = &ability.on_hit_status {
+        if let Some(status) = world.systems.statuses.get(id) {
+            active[index].statuses.insert(id.clone(), status.turns);
+        }
+    }
     let _ = state
         .character
         .as_mut()
         .is_some_and(|c| c.spend_mana(ability.mana_cost));
     hit(
+        world,
+        &ability.damage_type,
         encounters,
         active,
         index,
-        ability.power,
+        crate::systems::modified_attack(world, &state.systems.statuses, ability.power),
         &format!("You cast {} on", ability.name),
     )
 }
 
 /// Every living enemy gets one weighted attack after a valid offensive player turn.
 pub fn retaliate(
+    world: &World,
     encounters: &EncounterContent,
     state: &mut GameState,
     active: &[EnemyInstance],
     rng: &mut impl RandomSource,
 ) -> String {
-    let Some(character) = state.character.as_mut() else {
+    let Some(character) = state.character.as_ref() else {
         return String::new();
     };
     if character.hp == 0 {
@@ -212,8 +246,11 @@ pub fn retaliate(
     }
     let mut lines = Vec::new();
     for instance in active {
-        if character.hp == 0 {
+        if state.character.as_ref().is_none_or(|c| c.hp == 0) {
             break;
+        }
+        if crate::systems::stunned(world, &instance.statuses) {
+            continue;
         }
         let Some(enemy) = encounters.enemies.get(&instance.enemy_id) else {
             continue;
@@ -233,19 +270,24 @@ pub fn retaliate(
         }
         let damage = ((u64::from(chosen.damage) * u64::from(enemy.attack_power) + 50) / 100)
             .min(u64::from(u32::MAX)) as u32;
-        character.hp = character.hp.saturating_sub(damage.max(1));
+        let raw = crate::systems::modified_attack(world, &instance.statuses, damage);
+        let (armor, resistance) = crate::systems::defense(world, state, &chosen.damage_type);
+        let damage =
+            crate::systems::damage(raw, armor, resistance, world.systems.combat.minimum_damage);
+        let character = state.character.as_mut().unwrap();
+        character.hp = character.hp.saturating_sub(damage);
         lines.push(format!(
             "{} #{} uses {}. You take {} damage. HP: {}/{}",
-            enemy.name,
-            instance.instance_id,
-            chosen.name,
-            damage.max(1),
-            character.hp,
-            character.max_hp
+            enemy.name, instance.instance_id, chosen.name, damage, character.hp, character.max_hp
         ));
         if character.hp == 0 {
             break;
         } // The runner displays the single defeat screen.
+        if let Some(id) = &chosen.status {
+            if let Some(status) = world.systems.statuses.get(id) {
+                state.systems.statuses.insert(id.clone(), status.turns);
+            }
+        }
     }
     lines.join("\n")
 }
@@ -266,35 +308,58 @@ pub fn award_defeat(
         return String::new();
     };
     let mut messages = Vec::new();
-    if let (Some(progression), Some(character)) = (progression, state.character.as_mut()) {
-        if enemy.experience > 0 {
-            let levels = progression.award_xp(character, enemy.experience);
-            messages.push(format!("You gain {} XP.", enemy.experience));
-            if levels > 0 {
-                messages.push(format!(
-                    "Level up! Now level {}. HP and MP restored.",
-                    character.level
-                ));
-            }
-        }
+    let mut effects = Vec::new();
+    if progression.is_some()
+        && state.character.as_ref().is_some_and(|c| c.hp > 0)
+        && enemy.experience > 0
+    {
+        effects.push(crate::rules::Effect::AwardXp(enemy.experience));
     }
     for loot in &enemy.loot {
         if rng.below(100) >= loot.chance {
             continue;
         }
-        if state.location(&loot.item) != Some(ItemLocation::Consumed) {
+        if !crate::objects::definition(world, &loot.item).stackable
+            && state.location(&loot.item) != Some(ItemLocation::Consumed)
+        {
             continue;
         }
         let Some(item) = world.item(&loot.item) else {
             continue;
         };
-        state.set_location(
-            loot.item.clone(),
-            ItemLocation::Room(state.current_room.clone()),
-        );
+        effects.push(crate::rules::Effect::SpawnItem {
+            item: loot.item.clone(),
+            quantity: loot.quantity,
+            location: ItemLocation::Room(state.current_room.clone()),
+        });
         messages.push(format!("{} drops {}.", enemy.name, item.name));
     }
-    messages.join("\n")
+    for reward in &enemy.currency_rewards {
+        if rng.below(100) >= reward.chance {
+            continue;
+        }
+        let amount = reward.min + u64::from(rng.below((reward.max - reward.min + 1) as u32));
+        if amount == 0 {
+            continue;
+        }
+        effects.push(crate::rules::Effect::Credit {
+            currency: reward.currency.clone(),
+            amount,
+        });
+        if let Some(c) = world.systems.wallet.currencies.get(&reward.currency) {
+            messages.push(format!("You collect {amount} {}.", c.name));
+        }
+    }
+    effects.extend(enemy.rewards.clone());
+    match crate::rules::apply(world, state, &effects) {
+        Ok(mut lines) => {
+            lines.extend(messages);
+            lines.join("\n")
+        }
+        Err(e) => {
+            format!("Defeat rewards could not complete: {e}. All reward changes were rolled back.")
+        }
+    }
 }
 
 #[cfg(test)]
@@ -304,6 +369,7 @@ mod tests {
     use std::collections::HashMap;
     fn fixture() -> (EncounterContent, Vec<EnemyInstance>) {
         let monster = Enemy {
+            resistances: Default::default(),
             id: "goblin".into(),
             name: "Goblin".into(),
             description: String::new(),
@@ -312,9 +378,12 @@ mod tests {
             attack_power: 100,
             defense: 2,
             experience: 0,
+            rewards: vec![],
             loot: vec![],
             currency_rewards: vec![],
             attacks: vec![EnemyAttack {
+                damage_type: "physical".into(),
+                status: None,
                 name: "Stab".into(),
                 damage: 4,
                 weight: 1,
@@ -326,11 +395,13 @@ mod tests {
         };
         let active = vec![
             EnemyInstance {
+                statuses: Default::default(),
                 instance_id: 1,
                 enemy_id: "goblin".into(),
                 current_hp: 20,
             },
             EnemyInstance {
+                statuses: Default::default(),
                 instance_id: 2,
                 enemy_id: "goblin".into(),
                 current_hp: 20,
@@ -367,10 +438,30 @@ mod tests {
     #[test]
     fn damage_respects_defense_and_removes_defeated_enemy() {
         let (content, mut active) = fixture();
-        let result = hit(&content, &mut active, 0, 10, "You strike");
+        let result = hit(
+            &crate::story_loader::load_game(std::path::Path::new("story_example"))
+                .unwrap()
+                .world,
+            "physical",
+            &content,
+            &mut active,
+            0,
+            10,
+            "You strike",
+        );
         assert!(result.turn_spent);
         assert_eq!(active[0].current_hp, 12);
-        let result = hit(&content, &mut active, 0, 14, "You strike");
+        let result = hit(
+            &crate::story_loader::load_game(std::path::Path::new("story_example"))
+                .unwrap()
+                .world,
+            "physical",
+            &content,
+            &mut active,
+            0,
+            14,
+            "You strike",
+        );
         assert!(result.message.contains("defeated"));
         assert_eq!(active.len(), 1);
     }

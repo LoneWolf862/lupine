@@ -41,11 +41,13 @@ fn weapon_requires_inventory_and_scales_with_ap() {
 }
 #[test]
 fn learn_scroll_cast_restore_and_save() {
-    let game = load_game("story_example").unwrap();
+    let mut game = load_game("story_example").unwrap();
     let root = temp();
     fs::create_dir(root.join("spells")).unwrap();
     fs::write(root.join("spells/heal.toml"), "id = 'heal'\nname = 'Heal'\nmana_cost = 8\nkind = 'heal'\npower = 20\nlearn_from_item = 'brass_key'\n").unwrap();
     let content = RpgContent::load(&root, &game.world, true).unwrap();
+    game.world.systems.rpg = content.clone();
+    game.world.systems.progression = Some(Progression::default());
     let mut state = GameState::new(&game.world);
     state.character = Some(Progression::default().create_character().unwrap());
     assert!(content

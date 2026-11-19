@@ -21,9 +21,11 @@ baseline fields below with nested conditions, effects and ordered interaction ou
 | interactions.toml | none | interactions=[]; exit_rules=[] |
 | actions.toml | actions array; see [actions grammar](ACTIONS.md) | room, target/item bindings, shared rules/outcomes |
 | dialogue.toml | none | npcs map, conditional nodes/choices and transfers; see [dialogue reference](DIALOGUE.md) |
+| systems.toml | none | equipment and statuses maps; see [systems reference](SYSTEMS.md) |
+| config/combat.fig | none | minimum_damage=1, retaliation="combat"; implemented defaults |
 | events.toml | none | events, timers, quests, journal, endings; see [event reference](EVENTS.md) |
 | rules.toml | none | flags={} initial booleans; counters={} initial signed integers |
-| weapons/*.toml | item, damage (positive integer) | damage_type="physical" (descriptive only, no resistance behavior) |
+| weapons/*.toml | item, damage (positive integer) | damage_type="physical" (used for resistance) |
 | spells/*.toml | id, name, mana_cost (nonnegative), kind, power (positive) | description=""; learn_from_item (portable teaching item) |
 | enemies/*.toml | id, name, description, level, max_hp (positive) | attack_power=100; defense=0; experience=0; attacks=[]; loot=[]; currency_rewards=[] |
 | shops/*.toml | id, name, room, offers | no implicit shop or offers |
@@ -34,7 +36,8 @@ baseline fields below with nested conditions, effects and ordered interaction ou
 
 Spells use kind="damage", "heal", or "restore_mana". Damage targets enemies;
 restoration targets the player. Defining an ability does not teach it. Teaching
-consumes the linked item. Weapons and abilities require RPG enablement.
+consumes the linked item. Weapons and non-world abilities require RPG enablement. Zero-mana world abilities
+work without a character; see [systems](SYSTEMS.md).
 
 ## Rooms, objects and puzzles
 
@@ -100,7 +103,7 @@ drops. Exact enemy HP is private; the runtime shows coarse bars.
 
 In game.toml, `[currency]` defines the primary currency and `[[currencies]]` adds
 others: name required; id="gold", symbol="", starting_amount=0 defaults.
-Currency currently requires RPG enabled. Amounts/prices are nonnegative integers.
+Currency works independently of RPG. Amounts/prices are nonnegative integers.
 
 Each `[[offers]]` needs id, name, type, currency, price. Types and target fields:
 item/sell_item => item; restore_hp/restore_mp => positive amount;

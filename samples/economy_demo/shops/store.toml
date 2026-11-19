@@ -1,0 +1,20 @@
+id='store'
+name='Store'
+room='start'
+[[offers]]
+id='tokens'
+name='Tokens'
+type='item'
+item='token'
+quantity=3
+currency='coins'
+price=2
+stock=2
+[[offers]]
+id='sell'
+name='Sell tokens'
+type='sell_item'
+item='token'
+quantity=2
+currency='coins'
+price=1

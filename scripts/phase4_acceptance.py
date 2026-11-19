@@ -44,7 +44,7 @@ saves = list(data.rglob('*.rork'))
 assert len(saves) == 8, 'Only explicitly requested save slots should exist'
 final_path = next(p for p in saves if p.name.startswith('final.'))
 saved = tomllib.loads(final_path.read_text(encoding='utf-8'))
-assert saved['save_format_version'] == 5
+assert saved['save_format_version'] == 6
 assert 'altar' in saved['objects']['placements'] and 'sign' not in saved['objects']['placements']
 save_hashes = {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in saves}
 text = run([exe, 'play', story], 'load final\nwallet\nlook\nquit\n', 'restart-manual-load')

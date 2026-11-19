@@ -13,6 +13,12 @@ use std::path::Path;
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Offer {
+    #[serde(default = "quantity_one")]
+    pub quantity: u32,
+    #[serde(default)]
+    pub requires: Vec<crate::rules::Condition>,
+    #[serde(default)]
+    pub effects: Vec<crate::rules::Effect>,
     pub id: String,
     pub name: String,
     /// item, sell_item, restore_hp, restore_mp, learn_ability, or set_flag.
@@ -69,6 +75,9 @@ pub struct ShopContent {
     pub transaction_bindings: HashMap<String, TransactionBinding>,
 }
 
+fn quantity_one() -> u32 {
+    1
+}
 fn valid_id(s: &str) -> bool {
     !s.is_empty()
         && s.len() <= 80
@@ -134,8 +143,39 @@ impl ShopContent {
                         path.display()
                     ));
                 }
+                if offer.quantity == 0 || offer.quantity > 1_000_000 {
+                    return Err(format!(
+                        "{}: offer quantity must be 1..1000000",
+                        path.display()
+                    ));
+                }
+                for c in &offer.requires {
+                    c.validate(world)?;
+                }
+                for e in &offer.effects {
+                    e.validate(world)?;
+                }
+                if matches!(offer.kind.as_str(), "restore_hp" | "restore_mp")
+                    && world.systems.progression.is_none()
+                {
+                    return Err(format!(
+                        "{}: restoration services require a character",
+                        path.display()
+                    ));
+                }
                 match offer.kind.as_str() {
                     "item" | "sell_item" => {
+                        if offer
+                            .item
+                            .as_ref()
+                            .is_some_and(|id| !crate::objects::definition(world, id).stackable)
+                            && offer.quantity != 1
+                        {
+                            return Err(format!(
+                                "{}: unique item offers require quantity=1",
+                                path.display()
+                            ));
+                        }
                         if !offer
                             .item
                             .as_ref()
@@ -146,6 +186,11 @@ impl ShopContent {
                                 path.display(),
                                 offer.id
                             ));
+                        }
+                    }
+                    "effects" => {
+                        if offer.effects.is_empty() {
+                            return Err("An effects offer needs at least one effect".into());
                         }
                     }
                     "restore_hp" | "restore_mp" => {
@@ -188,6 +233,11 @@ impl ShopContent {
         for shop in result.shops.values() {
             for offer in &shop.offers {
                 if offer.kind == "item"
+                    && !crate::objects::definition(
+                        world,
+                        offer.item.as_ref().expect("validated item"),
+                    )
+                    .stackable
                     && !reserved.insert(offer.item.as_ref().expect("validated item"))
                 {
                     return Err(format!(
@@ -304,7 +354,7 @@ impl ShopContent {
             [binding] => *binding,
             _ => return Some(Err(format!("Which '{query}' do you mean?"))),
         };
-        match self.transact(state, wallet, &binding.offer, &binding.shop) {
+        match self.transact(world, state, wallet, &binding.offer, &binding.shop) {
             Ok(result) => Some(Ok(binding.success_text.clone().unwrap_or(result))),
             Err(error) => Some(Err(binding.failure_text.clone().unwrap_or(error))),
         }
@@ -312,10 +362,22 @@ impl ShopContent {
 
     /// Reserve stock merchandise: not freely obtainable as a normal room pickup.
     /// Call only for a brand-new session, never after loading a RORK save.
-    pub fn prepare_inventory(&self, state: &mut GameState) {
+    pub fn prepare_inventory(&self, world: &World, state: &mut GameState) {
         for shop in self.shops.values() {
             for offer in &shop.offers {
-                if offer.kind == "item" {
+                if offer.kind == "item"
+                    && !crate::objects::definition(
+                        world,
+                        offer.item.as_ref().expect("validated item"),
+                    )
+                    .stackable
+                    && crate::objects::definition(
+                        world,
+                        offer.item.as_ref().expect("validated item"),
+                    )
+                    .initial
+                    .is_none()
+                {
                     state.set_location(
                         offer.item.as_ref().expect("validated item").clone(),
                         ItemLocation::Consumed,
@@ -360,6 +422,7 @@ impl ShopContent {
     }
     pub fn transact(
         &self,
+        world: &World,
         state: &mut GameState,
         wallet: &WalletContent,
         offer_query: &str,
@@ -382,10 +445,11 @@ impl ShopContent {
         {
             return Err("That offer is sold out.".into());
         }
-        if offer
-            .requires_flags
-            .iter()
-            .any(|flag| !state.flags.contains(flag))
+        if !offer.requires.iter().all(|c| c.met(state))
+            || offer
+                .requires_flags
+                .iter()
+                .any(|flag| !state.flags.contains(flag))
         {
             return Err("You do not meet the requirements.".into());
         }
@@ -397,22 +461,38 @@ impl ShopContent {
             if !draft.is_carried(id) {
                 return Err("You do not carry the required item.".into());
             }
-            draft.set_location(id.clone(), ItemLocation::Consumed);
+            crate::rules::apply(
+                world,
+                &mut draft,
+                &[crate::rules::Effect::RemoveQuantity {
+                    item: id.clone(),
+                    quantity: offer.quantity,
+                }],
+            )?;
             wallet.credit(&mut draft, &offer.currency, offer.price)?;
         } else {
             wallet.debit(&mut draft, &offer.currency, offer.price)?;
             match offer.kind.as_str() {
                 "item" => {
                     let id = offer.item.as_ref().expect("validated item offer");
-                    if draft.is_carried(id) {
+                    if !crate::objects::definition(world, id).stackable && draft.is_carried(id) {
                         return Err("You already own that item.".into());
                     }
                     // Items are reserved by ShopContent::prepare_inventory; only these
                     // (or previously consumed items) can be purchased.
-                    if draft.location(id) != Some(ItemLocation::Consumed) {
+                    if !crate::objects::definition(world, id).stackable
+                        && draft.location(id) != Some(ItemLocation::Consumed)
+                    {
                         return Err("That item is not available for purchase.".into());
                     }
-                    draft.set_location(id.clone(), ItemLocation::Inventory);
+                    crate::rules::apply(
+                        world,
+                        &mut draft,
+                        &[crate::rules::Effect::AddItem {
+                            item: id.clone(),
+                            quantity: offer.quantity,
+                        }],
+                    )?;
                 }
                 "restore_hp" => {
                     let player = draft
@@ -456,9 +536,11 @@ impl ShopContent {
                         return Err("That is already unlocked.".into());
                     }
                 }
+                "effects" => (),
                 _ => return Err("Unsupported offer.".into()),
             }
         }
+        let extra = crate::rules::apply(world, &mut draft, &offer.effects)?;
         if offer.stock.is_some() {
             let next = draft
                 .shop_purchases
@@ -471,8 +553,15 @@ impl ShopContent {
         }
         *state = draft;
         Ok(format!(
-            "Transaction complete: {} ({} {}).",
-            offer.name, offer.price, wallet.currencies[&offer.currency].name
+            "Transaction complete: {} ({} {}).{}",
+            offer.name,
+            offer.price,
+            wallet.currencies[&offer.currency].name,
+            if extra.is_empty() {
+                String::new()
+            } else {
+                format!("\n{}", extra.join("\n"))
+            }
         ))
     }
     pub fn validate_saved(&self, state: &GameState) -> Result<(), String> {

@@ -206,6 +206,7 @@ impl ExportPlan {
         for name in [
             "events.toml",
             "dialogue.toml",
+            "systems.toml",
             "actions.toml",
             "rules.toml",
             "game.toml",
@@ -410,7 +411,7 @@ fn collect(
         } else if relative == Path::new("config") {
             matches!(
                 path.file_name().and_then(|n| n.to_str()),
-                Some("character.fig" | "terminology.fig")
+                Some("character.fig" | "terminology.fig" | "combat.fig")
             )
         } else {
             ext == Some("toml")

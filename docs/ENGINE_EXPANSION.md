@@ -15,7 +15,7 @@ The baseline is main 451f409, including merged Phase 4 PRs #26â€“#30.
 | 4 | Hidden/starting inventory, containers, quantities, consumables | Verified locally and in CI; draft PR #34 |
 | 5 | Events, timers, quests, journals, endings | Verified locally; draft PR #35 |
 | 6 | NPCs, conditional dialogue, choices, transfers and movement | Verified locally; draft PR #36 |
-| 7 | Independent economy, shared rewards, world abilities, equipment/status/combat configuration | Approved, not implemented |
+| 7 | Independent economy, shared rewards, world abilities, equipment/status/combat configuration | Implemented; verification in progress |
 | 8 | Wizard coverage, project properties, repair, duplicate/delete/reference migration | Approved, not implemented |
 | 9 | Consistent controls, draft visibility, search and room-centered navigation | Approved, not implemented |
 
@@ -109,3 +109,5 @@ bytes or compatibility revisions are rewritten. The shared decoder now accepts t
 documented 256 effects while retaining bounded condition/choice arrays.
 [Draft PR #36](https://github.com/LoneWolf862/lupine/pull/36) targets phase 5.
 CI, native CachyOS and human beginner acceptance are not yet claimed.
+
+Phase 6 Windows/Ubuntu CI passed at 81e5b76, Actions run 44605273082.

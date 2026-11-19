@@ -24,6 +24,8 @@ fn category(file: &Path, path: &[String], scope: &str) -> Option<String> {
     let condition_roots = match (parent, root) {
         ("rooms", _) => vec!["descriptions.*.when.*", "art_variants.*.when.*"],
         ("items", _) => vec!["descriptions.*.when.*", "consumable.requires.*"],
+        ("spells", _) => vec!["requires.*"],
+        ("shops", _) => vec!["offers.*.requires.*"],
         ("", "interactions.toml") => vec![
             "interactions.*.requires.*",
             "exit_rules.*.requires.*",
@@ -64,6 +66,17 @@ fn category(file: &Path, path: &[String], scope: &str) -> Option<String> {
             }
         }
     }
+    for prefix in match parent {
+        "spells" => vec!["effects.*"],
+        "enemies" => vec!["rewards.*"],
+        "shops" => vec!["offers.*.effects.*"],
+        _ => vec![],
+    } {
+        let len = prefix.split('.').count();
+        if path.len() > len && matches(&path[..len], prefix) {
+            return effect_reference(&path[len..], scope);
+        }
+    }
     if parent == "items" {
         if is("initial.id") {
             return location_category(scope).map(str::to_owned);
@@ -97,10 +110,15 @@ fn category(file: &Path, path: &[String], scope: &str) -> Option<String> {
             ("art_variants.*.when.*.flag_unset", "flags"),
         ]),
         "items" => fields.extend([("starting_room", "rooms"), ("container.key", "items")]),
-        "spells" => fields.push(("learn_from_item", "items")),
+        "spells" => fields.extend([
+            ("learn_from_item", "items"),
+            ("target", "items"),
+            ("on_hit_status", "statuses"),
+        ]),
         "weapons" => fields.push(("item", "items")),
         "enemies" => fields.extend([
             ("loot.*.item", "items"),
+            ("attacks.*.status", "statuses"),
             ("currency_rewards.*.currency", "currencies"),
         ]),
         "shops" => {
@@ -191,6 +209,10 @@ fn condition_reference(path: &[String], scope: &str) -> Option<String> {
         ["journal_has"] => Some("journal".into()),
         ["timer_running"] => Some("timers".into()),
         ["counter", "id"] => Some("counters".into()),
+        ["balance", "currency"] => Some("currencies".into()),
+        ["knows_ability"] => Some("spells".into()),
+        ["equipped"] => Some("items".into()),
+        ["status_active"] => Some("statuses".into()),
         ["item_count", "location", "id"] => location_category(scope).map(str::to_owned),
         _ => None,
     }
@@ -201,6 +223,12 @@ fn effect_reference(path: &[String], scope: &str) -> Option<String> {
         ["move_npc" | "set_dialogue", "npc"] => Some("npcs".into()),
         ["move_npc", "room"] => Some("rooms".into()),
         ["set_dialogue", "node"] => Some(format!("nodes:{scope}")),
+        ["credit" | "debit", "currency"] => Some("currencies".into()),
+        ["teach_ability"] => Some("spells".into()),
+        ["equip"] => Some("items".into()),
+        ["apply_status" | "clear_status"] => Some("statuses".into()),
+        ["spawn_item", "item"] => Some("items".into()),
+        ["spawn_item", "location", "id"] => location_category(scope).map(str::to_owned),
         ["start_timer" | "cancel_timer"] => Some("timers".into()),
         ["set_quest_stage", "quest"] => Some("quests".into()),
         ["add_journal"] => Some("journal".into()),
@@ -311,6 +339,7 @@ fn documents(s: &Snapshot) -> Result<Vec<Document>, String> {
     for name in [
         "events.toml",
         "dialogue.toml",
+        "systems.toml",
         "actions.toml",
         "rules.toml",
         "game.toml",
@@ -346,6 +375,10 @@ fn inventory(s: &Snapshot) -> Result<BTreeMap<String, BTreeSet<String>>, String>
     }
     // Select actual definitions, never ignored optional references to nonexistent IDs.
     let a = Adventure::load(&s.root)?;
+    all.insert(
+        "statuses".into(),
+        a.game.world.systems.statuses.keys().cloned().collect(),
+    );
     all.entry("flags".into())
         .or_default()
         .extend(a.game.world.rules.flags.keys().cloned());
@@ -437,13 +470,16 @@ pub(super) fn plan(
     let mut changes = BTreeMap::new();
     let mut refs = Vec::new();
     for mut d in documents(s)? {
-        if (d.path == Path::new("rules.toml") && matches!(kind, "flags" | "counters"))
+        if (d.path == Path::new("systems.toml") && matches!(kind, "statuses" | "items"))
+            || (d.path == Path::new("rules.toml") && matches!(kind, "flags" | "counters"))
             || (d.path == Path::new("events.toml")
                 && matches!(kind, "timers" | "quests" | "journal" | "endings"))
             || (d.path == Path::new("dialogue.toml")
                 && (kind == "npcs" || kind.starts_with("nodes:")))
         {
-            let declaration = if let Some(npc) = kind.strip_prefix("nodes:") {
+            let declaration = if d.path == Path::new("systems.toml") && kind == "items" {
+                d.doc.get_mut("equipment")
+            } else if let Some(npc) = kind.strip_prefix("nodes:") {
                 d.doc
                     .get_mut("npcs")
                     .and_then(|v| v.get_mut(npc))

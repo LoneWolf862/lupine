@@ -564,6 +564,7 @@ impl GameState {
             }
         }
         stacks.sort_by(|a, b| a.location.cmp(&b.location));
+        crate::systems::prune_equipment(&mut draft);
         validate_state(world, &draft)?;
         *self = draft;
         Ok(())
@@ -734,4 +735,34 @@ pub fn manipulate(
         }
         _ => Err("Unknown object action".into()),
     }
+}
+
+/// Create units at one typed location, preserving existing stacks and validating atomically.
+pub fn add(
+    world: &World,
+    state: &mut GameState,
+    id: &str,
+    location: &ItemLocation,
+    quantity: u32,
+) -> Result<(), String> {
+    if quantity == 0 || *location == ItemLocation::Consumed {
+        return Err("Use a positive quantity and an available destination".into());
+    }
+    let mut draft = state.clone();
+    let stacks = draft.objects.placements.get_mut(id).ok_or("Unknown item")?;
+    if let Some(s) = stacks.iter_mut().find(|s| &s.location == location) {
+        s.quantity = s
+            .quantity
+            .checked_add(quantity)
+            .ok_or("Quantity overflow")?;
+    } else {
+        stacks.push(Stack {
+            location: location.clone(),
+            quantity,
+        });
+    }
+    stacks.sort_by(|a, b| a.location.cmp(&b.location));
+    validate_state(world, &draft)?;
+    *state = draft;
+    Ok(())
 }

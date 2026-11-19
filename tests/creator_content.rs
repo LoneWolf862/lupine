@@ -283,6 +283,7 @@ fn fig_absence_cancel_legacy_enablement_and_inline_labels_are_preserved() {
     let f = Fixture::new();
     fs::remove_file(f.game.join("config/character.fig")).unwrap();
     fs::remove_file(f.game.join("config/terminology.fig")).unwrap();
+    fs::remove_file(f.game.join("config/combat.fig")).unwrap();
     fs::remove_dir(f.game.join("config")).unwrap();
     f.run("3\n1\n0\n2\ncancel\n0\n0\n");
     assert!(!f.game.join("config").exists());

@@ -88,7 +88,8 @@ through the same effects. No separate dialogue scripting language is introduced.
 
 ## Persistence, tests and author tools
 
-RORK **5** persists exact NPC IDs, locations and node IDs, plus NPC object placements.
+RORK **6** retains NPC progress and adds [combat/equipment progress](SYSTEMS.md).
+The NPC schema persists exact NPC IDs, locations and node IDs, plus NPC object placements.
 Unknown/missing NPCs, nodes and rooms are rejected before replacing live progress.
 Offstage locations round-trip. Saving remains exclusively manual; loading does not
 replay dialogue. Older saves need their matching engine/game build and are not rewritten.

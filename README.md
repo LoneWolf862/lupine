@@ -5,7 +5,7 @@ RPG engine. Authors build adventures with editable TOML content, FIG configurati
 the guided Adventure Creator. HOWLBOUND is only the tentative name of a future original
 adventure; no original story is prescribed by this engine.
 
-**Development version: 0.11.0-dev.5.** Creator work through Phase 2I and Phase 3
+**Development version: 0.11.0-dev.6.** Creator work through Phase 2I and Phase 3
 startup, history, parser and export improvements (#20–#24) are merged.
 They are not a published release. The existing
 [v0.9.0 standalone release](https://github.com/LoneWolf862/lupine/releases/tag/v0.9.0)
@@ -17,7 +17,8 @@ and atomic effects. [Authored actions](docs/ACTIONS.md) add custom commands and 
 [Containers, quantities, hidden items and consumables](docs/OBJECTS.md) are implemented.
 [Events, timers, quests, journals and endings](docs/EVENTS.md) are implemented.
 [NPCs and conditional dialogue](docs/DIALOGUE.md) support choices, transfers and movement.
-This development build writes RORK format 5 for object, story and event progress;
+[Independent economy, world abilities, equipment and statuses](docs/SYSTEMS.md) are implemented.
+This development build writes RORK format 6 for object, story and event progress;
 older saves need their matching engine/game build and are never rewritten automatically.
 
 ## Players: start here
@@ -101,7 +102,7 @@ ZIPs use stored entries without compression. Export **C** offers verified stagin
 See [Creator Quickstart](docs/CREATOR_QUICKSTART.md) and [RPG Creator Guide](docs/RPG_CREATOR_GUIDE.md).
 
 Content uses `.toml`; game-wide implemented configuration uses TOML-syntax `.fig` files.
-New games include commented `config/character.fig` and `config/terminology.fig`; RPG is
+New games include commented `config/character.fig`, `config/combat.fig` and `config/terminology.fig`; RPG is
 disabled until `enabled = true`. Existing FIGs without enabled keep their prior enabled
 behavior. Currencies stay in game.toml. Mutable manual player saves use `.rork`.
 

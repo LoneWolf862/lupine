@@ -11,6 +11,7 @@ use crate::rpg::Progression;
 #[derive(Debug, Clone, Default)]
 pub struct GameConfig {
     pub character: Option<Progression>,
+    pub combat: crate::systems::CombatConfig,
     pub terminology: Terminology,
 }
 
@@ -38,7 +39,7 @@ impl Default for DisplayTerms {
 
 impl GameConfig {
     pub fn load(root: &Path) -> Result<Self, String> {
-        for name in ["character.fig", "terminology.fig"] {
+        for name in ["character.fig", "terminology.fig", "combat.fig"] {
             if fs::symlink_metadata(root.join(name)).is_ok() {
                 return Err(format!(
                     "{}: misplaced configuration; move it to config/{name}",
@@ -83,10 +84,10 @@ impl GameConfig {
                         .is_some_and(|ext| ext.eq_ignore_ascii_case("fig"))
                         && !matches!(
                             path.file_name().and_then(|s| s.to_str()),
-                            Some("character.fig" | "terminology.fig")
+                            Some("character.fig" | "terminology.fig" | "combat.fig")
                         )
                     {
-                        return Err(format!("{}: unknown configuration file; expected character.fig or terminology.fig", path.display()));
+                        return Err(format!("{}: unknown configuration file; expected character.fig, terminology.fig or combat.fig", path.display()));
                     }
                 }
             }
@@ -141,7 +142,13 @@ impl GameConfig {
                 return Err(format!("{}: {key} must contain 1–80 characters, not be blank, and contain no control characters", terminology_path.display()));
             }
         }
+        let combat: crate::systems::CombatConfig =
+            read_optional(root, &directory.join("combat.fig"))?.unwrap_or_default();
+        if combat.minimum_damage > 1_000_000 {
+            return Err("combat.fig minimum_damage must be 0..1000000".into());
+        }
         Ok(Self {
+            combat,
             character: character.and_then(|(enabled, progression)| enabled.then_some(progression)),
             terminology,
         })

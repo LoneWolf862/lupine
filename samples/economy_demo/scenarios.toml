@@ -1,0 +1,21 @@
+format_version=1
+[[scenario]]
+name="narrative resources need no RPG"
+commands=["wallet","spellbook"]
+turn=0
+wallet={coins=10}
+learned_abilities=["light"]
+quantities=[{item="token",location={kind="inventory"},quantity=2}]
+[[scenario]]
+name="stack purchases preserve starting quantities"
+commands=["buy tokens","sell sell"]
+turn=2
+wallet={coins=9}
+quantities=[{item="token",location={kind="inventory"},quantity=3}]
+[[scenario]]
+name="world ability costs apply atomically"
+commands=["cast light on lamp","cast light on lamp"]
+turn=1
+wallet={coins=9}
+flags=["lit"]
+contains=["The lamp lights.","requirements are not met"]

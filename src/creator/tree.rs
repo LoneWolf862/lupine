@@ -9,6 +9,7 @@ const DIRS: &[&str] = &[
 const FILES: &[&str] = &[
     "events.toml",
     "dialogue.toml",
+    "systems.toml",
     "actions.toml",
     "rules.toml",
     "game.toml",

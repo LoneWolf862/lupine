@@ -5,11 +5,17 @@ loads strict TOML test suites and invokes the real runner with an explicit rando
 seed, returning final in-memory state for assertions. Existing runner APIs preserve
 their signatures/default randomness. Scenarios never save implicitly.
 
-## Current development architecture (0.11.0-dev.5)
+## Current development architecture (0.11.0-dev.6)
 
 Lupine is an offline terminal engine. Immutable TOML content is separate from mutable
 GameState; supported FIG files hold configuration. Manual RORK persistence remains in
-save.rs/save_files.rs; expansion phase 5 uses serialization version 5 for objects, story and event progress.
+save.rs/save_files.rs; expansion phase 7 uses serialization version 6 for objects, story, NPCs and combat progress.
+`systems.rs` assembles resource definitions, equipment/status content and combat settings.
+World owns the immutable rule context (RPG definitions, wallet and progression) so shared
+effects validate across modules. story_loader loads it before world validation; Adventure
+reuses it. Rust callers supplying optional content to the runner have it installed in
+that context before validation. Direct save/rule callers must populate world.systems
+with their definitions too; no player state is used as an implicit content registry.
 `dialogue.rs` loads NPC definitions, resolves visible characters and applies one atomic
 choice at a time. NPC placements and conversation nodes are saved separately from content.
 `events.rs` owns deterministic bounded hooks, action turns, timers, quests and endings.
