@@ -1,5 +1,10 @@
 # Lupine Creator Vision — Nontechnical Game Authoring
 
+Current direction (2026-11-19): direct TOML/FIG authoring is the primary development
+workflow. Engine capability takes priority over wizard coverage, which takes priority
+over wizard convenience. See [current reference](CONTENT_REFERENCE.md) and
+[approved expansion](ENGINE_EXPANSION.md). The final accessibility goal remains.
+
 > Historical design/stage record: feature-status and compatibility claims below describe earlier development. Current policy and file paths are in [NEXT_PHASE_REQUIREMENTS.md](NEXT_PHASE_REQUIREMENTS.md) and [CONFIG_FIG_SPEC.md](CONFIG_FIG_SPEC.md). Character configuration now belongs in `config/character.fig`.
 
 **Status:** Final-release product goal; design direction, **not implemented** and **not an MVP/course acceptance gate**.  

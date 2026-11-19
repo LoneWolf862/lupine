@@ -1,5 +1,12 @@
 # Lupine development roadmap
 
+## Approved engine expansion (2026-11-19)
+
+Current work follows [ENGINE_EXPANSION.md](ENGINE_EXPANSION.md): engine/file authoring
+first, wizard coverage second, wizard usability third. That document tracks the
+nine approved phases and verification. Phase 4 below is now merged through PR #30;
+its original review records are historical, not current merge status.
+
 ## Current development: Phase 4
 
 Creator work through Phase 2I and Phase 3 PRs #20–#24 are merged.

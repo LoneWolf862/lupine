@@ -67,6 +67,13 @@ questions appear above the editable input line so terminal redraws cannot erase 
 
 ## Creators
 
+Primary workflow: author TOML content and FIG settings directly in your game folder.
+Start with the [current file-format reference](docs/CONTENT_REFERENCE.md) and
+[repeatable scenario tests](docs/SCENARIO_TESTING.md). The approved
+[engine expansion](docs/ENGINE_EXPANSION.md) prioritizes engine capability, then wizard
+coverage, then wizard usability. `lupine test PATH SCENARIOS.toml` runs read-only
+playtests through the actual player command path with a repeatable random seed.
+
 Choose Create or Edit at startup, or `lupine creator [PATH]`. Guided menus cover rooms,
 connections, items, spells, artwork, interactions, locked doors, conditional descriptions,
 encounters, enemies, weapons, shops, currencies and implemented FIG settings. Changes stay
@@ -124,7 +131,7 @@ testing remain separate from scripted or agent-driven terminal verification.
 
 Architecture, requirements, creator vision and historical milestones are in `docs/`.
 Historical stage reports retain their original versions and verification claims.
-[Phase 4 review](docs/PHASE_4_REVIEW.md) records the five unmerged development PRs,
+[Phase 4 review](docs/PHASE_4_REVIEW.md) records the five subsequently merged development PRs,
 verified behavior and conservative migration/recovery limits. Human beginner testing,
 native CachyOS testing, pronouns and command chaining remain future work.
 The instructor-provided CSE 310 README template, honest time log and submission

@@ -6,6 +6,12 @@ fn main() -> std::io::Result<()> {
     let args: Vec<String> = std::env::args().collect();
     let mut input = lupine::terminal::stdin()?;
     match args.as_slice() {
+        [_, command, adventure, scenarios] if command == "test" => lupine::scenario::run(
+            std::path::Path::new(adventure),
+            std::path::Path::new(scenarios),
+            &mut std::io::stdout().lock(),
+        )
+        .map_err(std::io::Error::other),
         [_, command] if matches!(command.as_str(), "--version" | "version" | "-V") => {
             println!("Lupine {}", env!("CARGO_PKG_VERSION"));
             Ok(())
@@ -133,6 +139,9 @@ fn main() -> std::io::Result<()> {
             println!("  lupine add item <directory> <item-id>");
             println!("  lupine add art <directory> <art-id> [--dynamic]");
             println!("  lupine validate <directory>");
+            println!(
+                "  lupine test <directory> <scenarios.toml>  (read-only repeatable playtests)"
+            );
             println!("  lupine play <directory>");
             println!("  lupine --version");
             println!("  lupine runtime-manifest          (build metadata for offline export)");
