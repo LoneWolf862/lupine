@@ -51,11 +51,11 @@ Self-review corrections beyond the initial key fix: teaching selector numbering 
 
 ## Verification
 
-Local environment: Lupa-2, Windows 10 Pro build 19045, Rust/Cargo 1.100.0, MSVC toolchain. Required checks and final CI results are recorded below after the final run.
+Local environment: Lupa-2, Windows 10 Pro build 19045, Rust/Cargo 1.100.0, MSVC toolchain. **219 tests passed** with `cargo test --locked`; `cargo fmt --all --check` and `cargo clippy --locked --all-targets -- -D warnings` passed. Final code checkpoint: `8175484`. **CI at `8175484`: Windows Server 2022 and Ubuntu 22.04 both passed all 219 tests, formatting and strict Clippy.** [Verified Actions run](https://github.com/LoneWolf862/lupine/actions/runs/44452065317). Later documentation-only commits record these results without changing code.
 
 Regression coverage includes existing Bronze Key selection by number, exact ID and display name; ambiguous duplicate names; invalid/empty/help input; explicit 0/back/cancel; unchanged files after cancellation; declined save and retained revision; reopening; initially blocked exit, taking the key, using it and successful travel; shared placement and teaching selection; description-order runtime priority; artwork line recovery. Existing tests exercise snapshot failures, stale files, rollback, RPG and manual save behavior.
 
-A separate actual executable walkthrough (outside the test harness) consumed `tests/fixtures/rpg_creator_acceptance.txt` and retained the resulting adventure at `target/usability-walkthrough/Adventure`, output at `target/usability-walkthrough/walkthrough.txt` and isolated saves at `target/usability-walkthrough/userdata`. It covers new setup, connected rooms, items, a locked door, artwork/variants, FIG enablement, teaching item/spell, two enemies and weapons, encounter configuration, two currencies, shop offers, validation, gameplay and explicitly named saves. Reviewed output contained the expected saved/validated and gameplay messages and no save/manager errors. A live PTY session additionally reopened it and exercised exact-ID item/teaching selection, blank/invalid/help room selection, discard and validation.
+A separate actual executable walkthrough (outside the test harness) consumed `tests/fixtures/rpg_creator_acceptance.txt` and retained the resulting adventure at `target/usability-final/Adventure`, output at `target/usability-final/walkthrough.txt` and isolated saves at `target/usability-final/userdata`. It covers new setup, connected rooms, items, a locked door, artwork/variants, FIG enablement, teaching item/spell, two enemies and weapons, encounter configuration, two currencies, shop offers, validation, gameplay and explicitly named saves. Reviewed output contained the expected saved/validated and gameplay messages and no save/manager errors. An additional reopen selected enemy, weapon, shop offer and currencies by ID and discarded all drafts; SHA-256 comparison confirmed every authored file and player save remained byte-identical. A live PTY session additionally reopened the earlier walkthrough and exercised exact-ID item/teaching selection, blank/invalid/help room selection, discard and validation.
 
 ## Remaining limits
 
@@ -83,3 +83,12 @@ cargo run -- new
 6. Create and attach artwork. Enter a bad control character in a disposable draft; verify accepted lines remain. Add/reorder description and artwork variants. Validate and play. Try help, blank and back in each manager and report any unclear discard boundary.
 
 Review the open draft PR; do not merge automatically.
+
+## Git handoff
+
+- Worktree: `C:\Users\Rex\.codex\worktrees\creator-usability\Lupine`.
+- Branch: `codex/phase-2i-creator-usability`.
+- Base fetched at `8455c8c885c9191fabac2d06a81e8f70b6edb366` from `origin/codex/phase-2h-rpg-integration`.
+- [Draft PR #19](https://github.com/LoneWolf862/lupine/pull/19) targets that integration branch. No merge.
+- Checkpoints: `44bf163` shared selection; `2a7d75c` review/recovery and audit; `8175484` remaining guidance and pending-enemy regression. All pushed.
+- Owner's primary checkout tracked files and preexisting untracked projects remain untouched. Disposable walkthroughs/logs are under ignored `target/` in this worktree.
