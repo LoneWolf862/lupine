@@ -27,6 +27,7 @@ mod rpg_menu;
 mod rules_ui;
 pub mod session;
 mod setup;
+mod shop_edit;
 mod spell_edit;
 mod tree;
 mod ui;
