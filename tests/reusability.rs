@@ -41,6 +41,7 @@ fn fixture_dynamic_descriptions_and_unlock() {
 /// A completely unrelated adventure uses the same engine APIs and parser.
 fn alternate_world() -> World {
     World {
+        rules: Default::default(),
         starting_room: "pier".into(),
         rooms: vec![Room {
             id: "pier".into(),
@@ -75,6 +76,7 @@ fn alternate_world() -> World {
             },
         ],
         interactions: vec![Interaction {
+            outcomes: Vec::new(),
             item: "match".into(),
             target: "lamp".into(),
             requires: vec![Condition::FlagUnset("lamp_lit".into())],

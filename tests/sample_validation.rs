@@ -5,6 +5,7 @@ use std::path::Path;
 fn bundled_story_samples_pass_all_content_validators() {
     for name in [
         "rpg_spellbook",
+        "rules_demo",
         "rpg_rewards",
         "rpg_transactions",
         "rpg_persistent",

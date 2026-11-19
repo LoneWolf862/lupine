@@ -1,7 +1,7 @@
 use crate::commands::Command;
 use crate::render::{describe_room, help};
 use crate::state::{GameState, ItemLocation};
-use crate::world::{select_description, Effect, Item, World};
+use crate::world::{select_description, Item, World};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ActionOutcome {
@@ -20,22 +20,6 @@ fn resolve<'a>(world: &'a World, state: &GameState, text: &str) -> Result<&'a It
 
 fn message(text: impl Into<String>) -> ActionOutcome {
     ActionOutcome::Message(text.into())
-}
-
-fn apply_effect(effect: &Effect, state: &mut GameState) {
-    match effect {
-        Effect::SetFlag(flag) => {
-            state.flags.insert(flag.clone());
-        }
-        Effect::ClearFlag(flag) => {
-            state.flags.remove(flag);
-        }
-        Effect::MoveItemToRoom { item, room } => {
-            state
-                .item_locations
-                .insert(item.clone(), ItemLocation::Room(room.clone()));
-        }
-    }
 }
 
 pub fn execute_command(world: &World, state: &mut GameState, command: Command) -> ActionOutcome {
@@ -65,6 +49,7 @@ pub fn execute_command(world: &World, state: &mut GameState, command: Command) -
             }
             if let Some(next_room) = world.room(destination) {
                 state.current_room = next_room.id.clone();
+                state.story.visited.insert(next_room.id.clone());
                 message(describe_room(world, state, next_room))
             } else {
                 message("That exit leads to an unknown room.")
@@ -142,10 +127,21 @@ pub fn execute_command(world: &World, state: &mut GameState, command: Command) -
                     message(&rule.failure_text)
                 }
                 Some(rule) => {
-                    for effect in &rule.effects {
-                        apply_effect(effect, state);
+                    let outcome = rule
+                        .outcomes
+                        .iter()
+                        .find(|o| o.when.iter().all(|c| c.met(state)));
+                    let (effects, text) = outcome
+                        .map_or((&rule.effects, rule.success_text.as_str()), |o| {
+                            (&o.effects, o.text.as_str())
+                        });
+                    match crate::rules::apply(world, state, effects) {
+                        Ok(mut lines) => {
+                            lines.insert(0, text.to_owned());
+                            message(lines.join("\n"))
+                        }
+                        Err(e) => message(format!("Action could not complete: {e}")),
                     }
-                    message(&rule.success_text)
                 }
             }
         }

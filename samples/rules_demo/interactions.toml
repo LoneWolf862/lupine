@@ -1,0 +1,13 @@
+[[interactions]]
+item = "brass_key"
+target = "workshop_door"
+requires = [{ all = [{ has_item = "brass_key" }, { not = { flag_set = "door_open" } }] }]
+effects = [{ set_flag = "door_open" }, { add_counter = { id = "unlocks", amount = 1 } }]
+success_text = "The key turns; the door unlocks."
+failure_text = "The door cannot be unlocked again."
+
+[[exit_rules]]
+from = "foyer"
+direction = "north"
+requires = [{ flag_set = "door_open" }]
+blocked_text = "The workshop door is locked."

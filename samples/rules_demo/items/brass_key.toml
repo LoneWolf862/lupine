@@ -1,0 +1,6 @@
+id = "brass_key"
+name = "brass key"
+aliases = ["key", "brass key"]
+description = "A small brass key, worn smooth."
+portable = true
+starting_room = "foyer"

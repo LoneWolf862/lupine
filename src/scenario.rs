@@ -34,6 +34,8 @@ struct Scenario {
     /// When present, assert the entire inventory, not merely a subset.
     inventory: Option<Vec<String>>,
     flags: Option<Vec<String>>,
+    counters: Option<std::collections::BTreeMap<String, i64>>,
+    visited: Option<Vec<String>>,
 }
 
 fn validate_lines(lines: &[String]) -> Result<(), String> {
@@ -137,6 +139,22 @@ pub fn run(root: &Path, path: &Path, output: &mut impl Write) -> Result<(), Stri
         if let Some(flags) = &case.flags {
             if state.flags != flags.iter().cloned().collect() {
                 errors.push(format!("expected flags {flags:?}, got {:?}", state.flags));
+            }
+        }
+        if let Some(counters) = &case.counters {
+            if state.story.counters != *counters {
+                errors.push(format!(
+                    "expected counters {counters:?}, got {:?}",
+                    state.story.counters
+                ));
+            }
+        }
+        if let Some(visited) = &case.visited {
+            if state.story.visited != visited.iter().cloned().collect() {
+                errors.push(format!(
+                    "expected visited rooms {visited:?}, got {:?}",
+                    state.story.visited
+                ));
             }
         }
         if errors.is_empty() {

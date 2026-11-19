@@ -34,6 +34,27 @@ impl Adventure {
         let wallet = WalletContent::load(path, enabled)?;
         wallet.validate_encounters(&encounters)?;
         let shops = ShopContent::load(path, &game.world, &wallet, &rpg)?;
+        for table in encounters.tables.values() {
+            for entry in &table.enemies {
+                for condition in &entry.requires {
+                    for id in condition.flag_set.iter().chain(&condition.flag_unset) {
+                        crate::rules::flag(&game.world, id)?;
+                    }
+                }
+            }
+        }
+        for shop in shops.shops.values() {
+            for offer in &shop.offers {
+                for id in &offer.requires_flags {
+                    crate::rules::flag(&game.world, id)?;
+                }
+                if offer.kind == "set_flag" {
+                    if let Some(id) = &offer.flag {
+                        crate::rules::flag(&game.world, id)?;
+                    }
+                }
+            }
+        }
         Ok(Self {
             game,
             rpg,
@@ -43,6 +64,9 @@ impl Adventure {
         })
     }
     pub fn summary(&self, output: &mut impl Write) -> io::Result<()> {
+        for warning in crate::diagnostics::warnings(self) {
+            writeln!(output, "Warning: {warning}")?;
+        }
         writeln!(output, "Valid story: {} ({})\n{} rooms, {} items, {} interactions, {} exit rules\n{} weapon definitions, {} abilities\n{} enemy definitions, {} encounter tables\n{} configured currencies, {} configured shops",
             self.game.title, self.game.id, self.game.world.rooms.len(), self.game.world.items.len(), self.game.world.interactions.len(), self.game.world.exit_rules.len(), self.rpg.weapons.len(), self.rpg.abilities.len(), self.encounters.enemies.len(), self.encounters.tables.len(), self.wallet.currencies.len(), self.shops.shops.len())
     }

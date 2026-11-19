@@ -21,6 +21,33 @@ fn category(file: &Path, path: &[String], scope: &str) -> Option<String> {
     let parent = file.parent().and_then(Path::to_str).unwrap_or("");
     let root = file.file_name().and_then(|s| s.to_str()).unwrap_or("");
     let is = |p| matches(path, p);
+    let condition_roots = match (parent, root) {
+        ("rooms", _) => vec!["descriptions.*.when.*", "art_variants.*.when.*"],
+        ("items", _) => vec!["descriptions.*.when.*"],
+        ("", "interactions.toml") => vec![
+            "interactions.*.requires.*",
+            "exit_rules.*.requires.*",
+            "interactions.*.outcomes.*.when.*",
+        ],
+        _ => vec![],
+    };
+    for prefix in condition_roots {
+        let len = prefix.split('.').count();
+        if path.len() > len && matches(&path[..len], prefix) {
+            return condition_reference(&path[len..]).map(str::to_owned);
+        }
+    }
+    if parent.is_empty() && root == "interactions.toml" {
+        for prefix in [
+            "interactions.*.effects.*",
+            "interactions.*.outcomes.*.effects.*",
+        ] {
+            let len = prefix.split('.').count();
+            if path.len() > len && matches(&path[..len], prefix) {
+                return effect_reference(&path[len..]).map(str::to_owned);
+            }
+        }
+    }
     if is("id") {
         return match parent {
             "rooms" | "items" | "spells" | "enemies" | "shops" => Some(parent.into()),
@@ -101,6 +128,28 @@ fn category(file: &Path, path: &[String], scope: &str) -> Option<String> {
         .find(|(p, _)| is(p))
         .map(|(_, c)| c.into())
 }
+fn condition_reference(path: &[String]) -> Option<&'static str> {
+    let words = path.iter().map(String::as_str).collect::<Vec<_>>();
+    match words.as_slice() {
+        ["all" | "any", _, ..] => condition_reference(&path[2..]),
+        ["not", ..] => condition_reference(&path[1..]),
+        ["has_item"] | ["item_in_room", "item"] => Some("items"),
+        ["flag_set" | "flag_unset"] => Some("flags"),
+        ["in_room" | "visited"] | ["item_in_room", "room"] => Some("rooms"),
+        ["counter", "id"] => Some("counters"),
+        _ => None,
+    }
+}
+fn effect_reference(path: &[String]) -> Option<&'static str> {
+    let words = path.iter().map(String::as_str).collect::<Vec<_>>();
+    match words.as_slice() {
+        ["set_flag" | "clear_flag"] => Some("flags"),
+        ["give_item" | "remove_item"] | ["move_item_to_room", "item"] => Some("items"),
+        ["move_player"] | ["move_item_to_room", "room"] => Some("rooms"),
+        ["set_counter" | "add_counter", "id"] => Some("counters"),
+        _ => None,
+    }
+}
 fn walk(
     item: &mut Item,
     path: &mut Vec<String>,
@@ -174,6 +223,7 @@ fn documents(s: &Snapshot) -> Result<Vec<Document>, String> {
         );
     }
     for name in [
+        "rules.toml",
         "game.toml",
         "interactions.toml",
         "transaction_interactions.toml",
@@ -207,6 +257,13 @@ fn inventory(s: &Snapshot) -> Result<BTreeMap<String, BTreeSet<String>>, String>
     }
     // Select actual definitions, never ignored optional references to nonexistent IDs.
     let a = Adventure::load(&s.root)?;
+    all.entry("flags".into())
+        .or_default()
+        .extend(a.game.world.rules.flags.keys().cloned());
+    all.insert(
+        "counters".into(),
+        a.game.world.rules.counters.keys().cloned().collect(),
+    );
     all.insert(
         "rooms".into(),
         a.game.world.rooms.iter().map(|r| r.id.clone()).collect(),
@@ -254,6 +311,36 @@ pub(super) fn plan(
     let mut changes = BTreeMap::new();
     let mut refs = Vec::new();
     for mut d in documents(s)? {
+        if d.path == Path::new("rules.toml") && matches!(kind, "flags" | "counters") {
+            if let Some(entry) = d.doc.get_mut(kind) {
+                let changed = if let Some(table) = entry.as_table_mut() {
+                    if let Some((key, value)) = table.remove_entry(old) {
+                        table.insert_formatted(
+                            &toml_edit::Key::new(new).with_leaf_decor(key.leaf_decor().clone()),
+                            value,
+                        );
+                        true
+                    } else {
+                        false
+                    }
+                } else if let Some(table) = entry.as_inline_table_mut() {
+                    if let Some((key, value)) = table.remove_entry(old) {
+                        table.insert_formatted(
+                            &toml_edit::Key::new(new).with_leaf_decor(key.leaf_decor().clone()),
+                            value,
+                        );
+                        true
+                    } else {
+                        false
+                    }
+                } else {
+                    return Err("Cannot safely rename this state declaration representation".into());
+                };
+                if changed {
+                    refs.push(format!("rules.toml: {kind}.{old} -> {kind}.{new}"));
+                }
+            }
+        }
         if kind == "currencies" && old == "gold" && d.path == Path::new("game.toml") {
             if let Some(t) = d.doc.get_mut("currency").and_then(Item::as_table_like_mut) {
                 if !t.contains_key("id") {

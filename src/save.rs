@@ -1,7 +1,7 @@
-//! RORK save-file format v1: explicit conversion between mutable GameState and TOML.
+//! RORK save-file format v2: explicit conversion between mutable GameState and TOML.
 //!
 //! This module does not trigger any saving. Terminal commands, save directories,
-//! confirmations, and crash-safe disk writes are subsequent v0.6 milestones.
+//! confirmations, and crash-safe disk writes are implemented by the terminal layer.
 
 use std::collections::{BTreeMap, HashMap, HashSet};
 
@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use crate::state::{GameState, ItemLocation};
 use crate::world::World;
 
-pub const SAVE_FORMAT_VERSION: u32 = 1;
+pub const SAVE_FORMAT_VERSION: u32 = 2;
 
 fn default_save_compatibility_version() -> u32 {
     1
@@ -22,6 +22,7 @@ fn default_next_enemy_id() -> u64 {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct SaveFile {
+    story: crate::rules::StoryState,
     save_format_version: u32,
     game_id: String,
     #[serde(default = "default_save_compatibility_version")]
@@ -78,7 +79,7 @@ pub fn encode_save(
     encode_save_with_compat(world, state, game_id, save_name, 1)
 }
 
-/// Explicit story compatibility revision; 1 preserves legacy RORK v1 saves.
+/// Explicit story compatibility revision, independent of the save serialization version.
 pub fn encode_save_with_compat(
     world: &World,
     state: &GameState,
@@ -111,6 +112,7 @@ pub fn encode_save_with_compat(
     let mut flags = state.flags.iter().cloned().collect::<Vec<_>>();
     flags.sort();
     let file = SaveFile {
+        story: state.story.clone(),
         save_format_version: SAVE_FORMAT_VERSION,
         game_id: game_id.into(),
         save_compatibility_version: compatibility_version,
@@ -160,7 +162,17 @@ pub fn decode_save_with_compat(
     compatibility_version: u32,
 ) -> Result<GameState, String> {
     validate_compat_version(compatibility_version)?;
-    let file: SaveFile = toml::from_str(input).map_err(|e| format!("Invalid RORK TOML: {e}"))?;
+    let document: toml::Value =
+        toml::from_str(input).map_err(|e| format!("Invalid RORK TOML: {e}"))?;
+    let version = document
+        .get("save_format_version")
+        .and_then(toml::Value::as_integer);
+    if version != Some(i64::from(SAVE_FORMAT_VERSION)) {
+        return Err(format!("Unsupported RORK save_format_version {version:?} (supported: {SAVE_FORMAT_VERSION}). Use the matching engine/game build; existing saves are never rewritten."));
+    }
+    let file: SaveFile = document
+        .try_into()
+        .map_err(|e| format!("Invalid RORK TOML: {e}"))?;
     if file.save_format_version != SAVE_FORMAT_VERSION {
         return Err(format!(
             "Unsupported RORK save_format_version {} (supported: {})",
@@ -216,6 +228,7 @@ pub fn decode_save_with_compat(
         return Err("RORK save has duplicate completed unique encounters".into());
     }
     let state = GameState {
+        story: file.story,
         current_room: file.current_room,
         item_locations,
         flags,
@@ -257,6 +270,10 @@ fn validate_metadata(game_id: &str, save_name: &str) -> Result<(), String> {
 }
 
 fn validate_state(world: &World, state: &GameState) -> Result<(), String> {
+    world.rules.validate_state(&state.story, world)?;
+    for id in &state.flags {
+        crate::rules::flag(world, id)?;
+    }
     if state.shop_purchases.keys().any(|id| !id.contains(':')) {
         return Err("Invalid shop purchase key in RORK save".into());
     }

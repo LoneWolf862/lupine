@@ -76,6 +76,7 @@ fn snapshot(path: &Path) -> Vec<(PathBuf, Vec<u8>)> {
 #[test]
 fn native_package_is_valid_launchable_and_excludes_saves_and_development_files() {
     let f = Fixture::new();
+    fs::write(f.game.join("rules.toml"), "[counters]\nvisits=3\n").unwrap();
     for relative in [
         "private.rork",
         "items/private.rork",
@@ -92,7 +93,12 @@ fn native_package_is_valid_launchable_and_excludes_saves_and_development_files()
     assert_eq!(snapshot(&f.game), before);
     assert!(!path.join("EXPORT_INCOMPLETE.txt").exists());
     let package = path.join(Target::host().unwrap().label());
-    Adventure::load(&package.join("adventure")).unwrap();
+    let packaged = Adventure::load(&package.join("adventure")).unwrap();
+    assert_eq!(packaged.game.world.rules.counters["visits"], 3);
+    assert_eq!(
+        fs::read(package.join("adventure/rules.toml")).unwrap(),
+        fs::read(f.game.join("rules.toml")).unwrap()
+    );
     assert!(package.join("START_HERE.txt").is_file());
     assert!(package
         .join(if cfg!(windows) { "Play.cmd" } else { "Play.sh" })

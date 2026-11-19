@@ -1,0 +1,16 @@
+id = "foyer"
+title = "Test Foyer"
+description = "A plain room. A passage leads north."
+
+art_file = "door_locked.txt"
+
+[[art_variants]]
+when = [{ flag_set = "door_open" }]
+file = "door_open.txt"
+
+[exits]
+north = "workshop"
+
+[[descriptions]]
+when = [{ flag_set = "door_open" }]
+text = "The doorway to the north stands open."

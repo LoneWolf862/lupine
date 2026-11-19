@@ -1,6 +1,6 @@
 [package]
 name = "lupine"
-version = "0.10.0-dev.1"
+version = "0.11.0-dev.1"
 edition = "2021"
 autoexamples = false
 description = "A small, offline, story-independent interactive fiction engine"

@@ -1,0 +1,5 @@
+format_version = 1
+id = "rules_demo"
+title = "Shared Rules Demonstration"
+starting_room = "foyer"
+save_compatibility_version = 1

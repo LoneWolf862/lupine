@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use crate::commands::Direction;
-use crate::state::{GameState, ItemLocation};
+use crate::state::GameState;
 
 /// IDs are owned so worlds can eventually be constructed from disk-loaded text.
 /// They remain stable identifiers, not player-facing names.
@@ -9,29 +9,7 @@ pub type RoomId = String;
 pub type ItemId = String;
 pub type FlagId = String;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Condition {
-    HasItem(ItemId),
-    FlagSet(FlagId),
-    FlagUnset(FlagId),
-}
-
-impl Condition {
-    pub fn met(&self, state: &GameState) -> bool {
-        match self {
-            Self::HasItem(id) => state.location(id) == Some(ItemLocation::Inventory),
-            Self::FlagSet(flag) => state.flags.contains(flag),
-            Self::FlagUnset(flag) => !state.flags.contains(flag),
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Effect {
-    SetFlag(FlagId),
-    ClearFlag(FlagId),
-    MoveItemToRoom { item: ItemId, room: RoomId },
-}
+pub use crate::rules::{Condition, Effect};
 
 #[derive(Debug, Clone)]
 pub struct DescriptionVariant {
@@ -84,6 +62,7 @@ pub struct ExitRule {
 
 #[derive(Debug)]
 pub struct Interaction {
+    pub outcomes: Vec<crate::rules::Outcome>,
     pub item: ItemId,
     pub target: ItemId,
     pub requires: Vec<Condition>,
@@ -94,6 +73,7 @@ pub struct Interaction {
 
 #[derive(Debug)]
 pub struct World {
+    pub rules: crate::rules::StoryRules,
     pub rooms: Vec<Room>,
     pub items: Vec<Item>,
     pub interactions: Vec<Interaction>,
@@ -113,6 +93,9 @@ impl World {
     /// Validate an authored world before play; reports all detected problems.
     pub fn validate(&self) -> Result<(), Vec<String>> {
         let mut errors = Vec::new();
+        if let Err(e) = self.rules.validate() {
+            errors.push(e);
+        }
         let mut rooms = HashSet::new();
         let mut items = HashSet::new();
         for room in &self.rooms {
@@ -149,7 +132,7 @@ impl World {
                 }
             }
             for variant in room.descriptions.iter().chain(&room.art_variants) {
-                check_conditions(&variant.when, &items, &mut errors);
+                check_conditions(&variant.when, self, &mut errors);
             }
         }
         for item in &self.items {
@@ -160,11 +143,14 @@ impl World {
                 ));
             }
             for variant in &item.descriptions {
-                check_conditions(&variant.when, &items, &mut errors);
+                check_conditions(&variant.when, self, &mut errors);
             }
         }
         let mut interactions = HashSet::new();
         for interaction in &self.interactions {
+            if interaction.effects.len() > 256 || interaction.outcomes.len() > 128 {
+                errors.push("Interaction exceeds 256 effects or 128 outcomes".into());
+            }
             if !items.contains(interaction.item.as_str())
                 || !items.contains(interaction.target.as_str())
             {
@@ -179,14 +165,23 @@ impl World {
                     interaction.item, interaction.target
                 ));
             }
-            check_conditions(&interaction.requires, &items, &mut errors);
+            check_conditions(&interaction.requires, self, &mut errors);
             for effect in &interaction.effects {
-                if let Effect::MoveItemToRoom { item, room } = effect {
-                    if !items.contains(item.as_str()) || !rooms.contains(room.as_str()) {
-                        errors.push(format!(
-                            "Move effect references missing item '{}' or room '{}'",
-                            item, room
-                        ));
+                if let Err(e) = effect.validate(self) {
+                    errors.push(format!(
+                        "Interaction '{} -> {}': {e}",
+                        interaction.item, interaction.target
+                    ));
+                }
+            }
+            for outcome in &interaction.outcomes {
+                if outcome.effects.len() > 256 {
+                    errors.push("Outcome exceeds 256 effects".into());
+                }
+                check_conditions(&outcome.when, self, &mut errors);
+                for effect in &outcome.effects {
+                    if let Err(e) = effect.validate(self) {
+                        errors.push(e);
                     }
                 }
             }
@@ -211,7 +206,7 @@ impl World {
                     rule.from
                 ));
             }
-            check_conditions(&rule.requires, &items, &mut errors);
+            check_conditions(&rule.requires, self, &mut errors);
         }
         if errors.is_empty() {
             Ok(())
@@ -221,12 +216,10 @@ impl World {
     }
 }
 
-fn check_conditions(conditions: &[Condition], items: &HashSet<&str>, errors: &mut Vec<String>) {
+fn check_conditions(conditions: &[Condition], world: &World, errors: &mut Vec<String>) {
     for condition in conditions {
-        if let Condition::HasItem(id) = condition {
-            if !items.contains(id.as_str()) {
-                errors.push(format!("Condition references missing item '{id}'"));
-            }
+        if let Err(e) = condition.validate(world) {
+            errors.push(e);
         }
     }
 }
