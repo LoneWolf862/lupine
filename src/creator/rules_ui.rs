@@ -55,7 +55,39 @@ pub(super) fn select_entry<R: BufRead, W: Write>(
         w.say("No entries yet.")?;
         return Ok(None);
     }
-    Ok(choose(w, "Entry number:", &list)?.map(|s| s.parse::<usize>().unwrap() - 1))
+    let mut lookup = Vec::new();
+    let mut clone = doc.clone();
+    for (i, (_, details)) in list.iter_mut().enumerate() {
+        let t = entry_mut(&mut clone, key, i)?;
+        let id = ["id", "enemy", "item", "currency"]
+            .iter()
+            .find_map(|k| t.get(k).and_then(Item::as_str))
+            .map(str::to_owned)
+            .unwrap_or_else(|| (i + 1).to_string());
+        let name = t
+            .get("name")
+            .and_then(Item::as_str)
+            .unwrap_or(&id)
+            .to_owned();
+        w.say(&format!("{}. {name} ({id})\n{details}", i + 1))?;
+        lookup.push((id, name));
+    }
+    w.say(
+        "0/back returns. Choose a number or unambiguous exact ID/name; blank keeps this menu open.",
+    )?;
+    loop {
+        let answer = w.line(&format!("Select {key}:"))?;
+        if matches!(answer.trim().to_ascii_lowercase().as_str(), "0" | "back") {
+            return Ok(None);
+        }
+        match super::content_edit::selection_index(answer.trim(), &lookup) {
+            Ok(i) => {
+                w.say(&format!("Selected: {} ({}).", lookup[i].1, lookup[i].0))?;
+                return Ok(Some(i));
+            }
+            Err(e) => w.say(&e)?,
+        }
+    }
 }
 
 pub(super) fn edit_conditions<R: BufRead, W: Write>(
@@ -73,7 +105,7 @@ pub(super) fn edit_conditions<R: BufRead, W: Write>(
     };
     loop {
         w.say(&format!("Current conditions (all required): {list}\nA. Add conditions\nR. Remove one\n0. Finish\nback discards these condition edits"))?;
-        match w.line("Selection:")?.trim().to_ascii_lowercase().as_str(){
+        match w.menu("Selection:")?.trim().to_ascii_lowercase().as_str(){
             "0"=>return Ok(Some(list)), "back"=>return Ok(None),
             "a"=>if let Some(extra)=conditions(snapshot,w)? { for v in extra.iter(){list.push(v.clone());} },
             "r"=>{let entries=list.iter().enumerate().map(|(i,v)|(i.to_string(),v.to_string())).collect::<Vec<_>>();if let Some(i)=choose(w,"Condition to remove:",&entries)?{list.remove(i.parse().unwrap());}},
@@ -90,7 +122,7 @@ pub(super) fn conditions<R: BufRead, W: Write>(
     w.say("Conditions are requirements that must ALL be true. A flag is a named yes/no memory, initially unset. Interactions can set or clear it. Has item means the player carries that object. Enter 0 when finished; back discards this list.")?;
     loop {
         w.say(&format!("Current requirements: {result}\n1. Flag is set\n2. Flag is unset\n3. Player carries item\n0. Finish"))?;
-        let choice = w.line("Condition:")?;
+        let choice = w.menu("Condition:")?;
         let key = match choice.trim() {
             "0" => return Ok(Some(result)),
             "back" => return Ok(None),

@@ -399,3 +399,102 @@ fn editing_existing_rpg_items_protects_shop_and_loot_dependencies() {
     assert_eq!(f.read("weapons/rusty_dagger.toml"), weapon);
     assert_eq!(f.read("shops/healer.toml"), shop);
 }
+
+// The reported Bronze Key workflow uses an existing key, not a newly made key.
+fn bronze_fixture() -> Fixture {
+    let f = Fixture::new();
+    let out = f.run("7\nn\nHall\n\nA hall.\n1\nstart\neast\nyes\n0\n6\nyes\n0\n4\nn\nkey3\nstart\n1\nBronze Key\ns\nyes\n0\n0\n");
+    assert!(out.contains("Changes saved"), "{out}");
+    f
+}
+#[test]
+fn existing_bronze_key_selection_unlocks_real_exit_by_id_number_and_name() {
+    use lupine::{engine::execute_command, parser::parse_command, state::GameState};
+    for selection in ["key3", "1", "Bronze Key", "\nnot_an_item\nhelp\nkey3"] {
+        let f = bronze_fixture();
+        let out = f.run(&format!("9\n2\nstart\neast\n{selection}\nn\ngate\nBronze Gate\nA fixed gate.\n\nUnlocked.\nAlready open.\nLocked.\nyes\n0\n0\n"));
+        assert!(out.contains("Selected: Bronze Key (key3)."), "{out}");
+        assert!(out.contains("DOOR CREATED"), "{out}");
+        assert!(!out.contains("Enter to select an existing"));
+        let game = lupine::story_loader::load_game(&f.game).unwrap();
+        let mut state = GameState::new(&game.world);
+        execute_command(&game.world, &mut state, parse_command("east").unwrap());
+        assert_eq!(state.current_room, "start", "Exit must begin blocked");
+        execute_command(
+            &game.world,
+            &mut state,
+            parse_command("take bronze key").unwrap(),
+        );
+        execute_command(
+            &game.world,
+            &mut state,
+            parse_command("use bronze key on bronze gate").unwrap(),
+        );
+        assert!(state.flags.contains("gate_open"));
+        execute_command(&game.world, &mut state, parse_command("east").unwrap());
+        assert_eq!(state.current_room, "hall");
+        let before = f.read("interactions.toml");
+        assert!(f.run("2\n0\n").contains("Validation successful"));
+        assert_eq!(before, f.read("interactions.toml"));
+        assert!(!f.saves.exists());
+    }
+}
+#[test]
+fn door_cancel_back_and_declined_save_preserve_all_files() {
+    for ending in [
+        "0\n",
+        "back\n",
+        "cancel\n",
+        "key3\nn\ngate\nGate\nGate.\n\n\n\n\nno\n",
+    ] {
+        let f = bronze_fixture();
+        let before = f.read("interactions.toml");
+        let key = f.read("items/key3.toml");
+        let room = f.read("rooms/start.toml");
+        let out = f.run(&format!("9\n2\nstart\neast\n{ending}0\n0\n"));
+        assert!(out.contains("canceled"), "{out}");
+        assert!(!out.contains("DOOR CREATED"));
+        assert_eq!(before, f.read("interactions.toml"));
+        assert_eq!(key, f.read("items/key3.toml"));
+        assert_eq!(room, f.read("rooms/start.toml"));
+        assert!(!f.game.join("items/gate.toml").exists());
+    }
+}
+#[test]
+fn ambiguous_item_names_reprompt_and_exact_id_selects_the_intended_key() {
+    let f = bronze_fixture();
+    f.run("4\nn\nkey4\nstart\n1\nBronze Key\ns\nyes\n0\n0\n");
+    let out =
+        f.run("9\n2\nstart\neast\nBronze Key\nkey3\nn\ngate\nGate\nGate.\n\n\n\n\nyes\n0\n0\n");
+    assert!(out.contains("ambiguous"), "{out}");
+    let rules: toml::Value = f.read("interactions.toml").parse().unwrap();
+    assert_eq!(rules["interactions"][0]["item"].as_str(), Some("key3"));
+}
+#[test]
+fn shared_selectors_keep_drafts_and_accept_ids_for_teaching_and_placement() {
+    let f = bronze_fixture();
+    let out = f.run("4\nkey3\n1\nRevised Key\n5\n\nmissing\nhelp\nback\ns\nno\ns\nyes\n0\n3\n1\nenabled\ntrue\ns\nyes\n0\n5\nn\nrenew\n6\nkey3\ns\nyes\n0\n0\n");
+    assert!(out.contains("Save declined; draft retained"), "{out}");
+    let item: toml::Value = f.read("items/key3.toml").parse().unwrap();
+    assert_eq!(item["name"].as_str(), Some("Revised Key"));
+    assert_eq!(item["starting_room"].as_str(), Some("start"));
+    let spell: toml::Value = f.read("spells/renew.toml").parse().unwrap();
+    assert_eq!(spell["learn_from_item"].as_str(), Some("key3"));
+}
+#[test]
+fn conditional_description_reorder_changes_runtime_priority_and_preserves_comments() {
+    let f = Fixture::new();
+    let text = f.read("rooms/start.toml") + "\n[[descriptions]] # one\nwhen=[{flag_unset='open'}]\ntext='First.'\n[[descriptions]] # two\nwhen=[{flag_unset='open'}]\ntext='Second.'\n";
+    fs::write(f.game.join("rooms/start.toml"), text).unwrap();
+    let out = f.run("7\nstart\n7\n1\n4\n2\n0\n0\n6\nyes\n0\n1\nlook\nquit\n0\n");
+    assert!(out.contains("Room changes saved"), "{out}");
+    let text = f.read("rooms/start.toml");
+    assert!(text.contains("# one") && text.contains("# two"));
+    let v: toml::Value = text.parse().unwrap();
+    assert_eq!(v["descriptions"][0]["text"].as_str(), Some("Second."));
+    assert!(out
+        .split_once("Powered by Lupine")
+        .unwrap()
+        .1
+        .contains("Second."));
+}

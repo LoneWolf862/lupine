@@ -78,7 +78,7 @@ pub(super) fn confirm<R: BufRead, W: Write>(
     Ok(w.ask(
         label,
         "no",
-        "yes saves this draft; no/back returns without saving",
+        "yes approves the described action; no/back declines it",
         |s| {
             if ["yes", "no", "y", "n"].contains(&s.to_ascii_lowercase().as_str()) {
                 Ok(())
@@ -94,31 +94,83 @@ pub(super) fn choose<R: BufRead, W: Write>(
     label: &str,
     entries: &[(String, String)],
 ) -> Result<Option<String>, String> {
+    choose_with_actions(w, label, entries, &[])
+}
+
+/// Numbers retain their displayed meaning. Exact IDs precede unique names.
+pub(super) fn selection_index(answer: &str, entries: &[(String, String)]) -> Result<usize, String> {
+    if let Ok(n) = answer.parse::<usize>() {
+        return n
+            .checked_sub(1)
+            .filter(|i| *i < entries.len())
+            .ok_or_else(|| {
+                "Choose a displayed number, exact ID/name, or 0/back to return.".into()
+            });
+    }
+    let ids = entries
+        .iter()
+        .enumerate()
+        .filter(|(_, (id, _))| id == answer)
+        .map(|(i, _)| i)
+        .collect::<Vec<_>>();
+    let matches = if ids.is_empty() {
+        entries
+            .iter()
+            .enumerate()
+            .filter(|(_, (_, name))| name.eq_ignore_ascii_case(answer))
+            .map(|(i, _)| i)
+            .collect::<Vec<_>>()
+    } else {
+        ids
+    };
+    match matches.as_slice() {
+        [i] => Ok(*i),
+        [] => Err("No matching choice. Use a displayed number, exact ID/name, or 0/back to return. Blank input keeps this menu open.".into()),
+        _ => Err("That name is ambiguous. Choose its displayed number or exact internal ID.".into()),
+    }
+}
+pub(super) fn choose_with_actions<R: BufRead, W: Write>(
+    w: &mut Wizard<'_, R, W>,
+    label: &str,
+    entries: &[(String, String)],
+    actions: &[(&str, &str)],
+) -> Result<Option<String>, String> {
+    w.heading(label.trim_end_matches(':'))?;
     for (n, (id, name)) in entries.iter().enumerate() {
         w.say(&format!("  {}. {} ({})", n + 1, name, id))?;
     }
+    if entries.is_empty() {
+        w.say("No eligible definitions yet.")?;
+    }
+    for (key, description) in actions {
+        w.say(&format!("  {key}. {description}"))?;
+    }
+    w.say("  0. Cancel selection / return\nChoose a number, exact ID or unambiguous name. ?/help explains. Blank input keeps this menu open.")?;
     loop {
-        let Some(s) = w.ask(
-            label,
-            "0",
-            "Choose a listed number. 0/back returns without changing this field.",
-            |_| Ok(()),
-        )?
-        else {
-            return Ok(None);
-        };
-        if s == "0" {
+        let answer = w.menu("Selection:")?;
+        let answer = answer.trim();
+        if answer == "0" || answer.eq_ignore_ascii_case("back") {
+            w.say("Selection canceled; this field is unchanged.")?;
             return Ok(None);
         }
-        if let Some((id, _)) = s
-            .parse::<usize>()
-            .ok()
-            .and_then(|n| n.checked_sub(1))
-            .and_then(|n| entries.get(n))
+        if matches!(answer.to_ascii_lowercase().as_str(), "?" | "help") {
+            w.say("Choose a displayed number, exact internal ID or unique display name. 0/back returns; cancel abandons the current operation. Enter makes no selection.")?;
+            continue;
+        }
+        if let Some((key, _)) = actions
+            .iter()
+            .find(|(key, _)| key.eq_ignore_ascii_case(answer))
         {
-            return Ok(Some(id.clone()));
+            return Ok(Some((*key).into()));
         }
-        w.say("Choose a listed number, or 0 to return.")?;
+        match selection_index(answer, entries) {
+            Ok(i) => {
+                let (id, name) = &entries[i];
+                w.say(&format!("Selected: {name} ({id})."))?;
+                return Ok(Some(id.clone()));
+            }
+            Err(e) => w.say(&e)?,
+        }
     }
 }
 pub(super) fn entries(
@@ -224,8 +276,8 @@ fn item_form<R: BufRead, W: Write>(
     loop {
         w.heading("ITEM OPTIONS")?;
         w.say(&format!("{} ({})\n1. Display name\n2. Description\n3. Aliases\n4. Portable\n5. Starting room\n6. Inspect / preview TOML\n7. Conditional descriptions\nS. Save\n0. Discard and return", d.text("name"), d.text("id")))?;
-        match w.line("Selection:")?.trim().to_ascii_lowercase().as_str() {
-            "0" | "back" => return Ok(false),
+        match w.menu("Selection:")?.trim().to_ascii_lowercase().as_str() {
+            "0" | "back" => { w.say("Draft discarded; no draft changes saved.")?; return Ok(false); },
             "1" => if let Some(s) = w.ask("Display name", d.text("name"), "The name shown to players; the stable ID does not change", |s| super::validate_text(s,120))? { d.set("name", value(s)); },
             "2" => { w.say("Describe what players see when examining this object.")?; if let Some(s) = w.description_labeled("Description", d.text("description"))? { d.set("description", value(s)); } },
             "3" => aliases(d,w)?,
@@ -254,12 +306,14 @@ pub(super) fn save<R: BufRead, W: Write>(
     }
     d.preview(&snapshot.root, w.output)?;
     if !confirm(w, "Save these changes after full adventure validation?")? {
+        w.say("Save declined; draft retained for revision. No files changed.")?;
         return Ok(false);
     }
     if let Err(error) = snapshot.commit(&BTreeMap::from([(d.path.clone(), d.contents())])) {
         w.say(&format!("Save needs attention: {error}\nYour draft remains open. Correct proposed values and retry; for external changes or recovery conflicts, discard and reopen after review."))?;
         return Ok(false);
     }
+    w.say(&format!("Saved file: {}", d.path.display()))?;
     w.say("Changes saved. Validation PASSED. Select the content again to review, or return to the creator to playtest.")?;
     Ok(true)
 }
@@ -286,12 +340,15 @@ pub(super) fn manage<R: BufRead, W: Write>(
         if category == "shops" {
             w.say("I. Prerequisite items\nT. Prerequisite spells\nC. Currencies\nThese managers save separately; return before starting a shop draft.")?;
         }
-        let choice = w.line("Selection:")?.trim().to_ascii_lowercase();
-        if matches!(choice.as_str(), "0" | "back") {
+        let choice = w
+            .line("Selection (number, exact ID/name, N, or 0/back):")?
+            .trim()
+            .to_owned();
+        if matches!(choice.to_ascii_lowercase().as_str(), "0" | "back") {
             return Ok(());
         }
         if category == "shops" {
-            match choice.as_str() {
+            match choice.to_ascii_lowercase().as_str() {
                 "i" => {
                     manage(root, "items", w)?;
                     continue;
@@ -308,7 +365,7 @@ pub(super) fn manage<R: BufRead, W: Write>(
                 _ => (),
             }
         }
-        let mut d = if choice == "n" {
+        let mut d = if choice.eq_ignore_ascii_case("n") {
             w.say("Give this definition a stable internal ID; player-facing names can change later. The ID connects authored references and player saves.")?;
             let Some(id) = w.ask(
                 "Stable ID",
@@ -360,15 +417,15 @@ pub(super) fn manage<R: BufRead, W: Write>(
                 d.set("starting_room", value(room));
             }
             d
-        } else if let Some(path) = choice
-            .parse::<usize>()
+        } else if let Some(path) = selection_index(&choice, &list)
             .ok()
-            .and_then(|n| n.checked_sub(1))
             .and_then(|n| paths.get(n))
         {
+            let i = selection_index(&choice, &list)?;
+            w.say(&format!("Selected: {} ({}).", list[i].1, list[i].0))?;
             Document::load(&snapshot, path.clone(), "")?
         } else {
-            w.say("Choose a listed definition, N, or 0. Changes are held until confirmed Save.")?;
+            w.say(&selection_index(&choice, &list).unwrap_err())?;
             continue;
         };
         let result = if category == "shops" {

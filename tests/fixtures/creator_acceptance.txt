@@ -152,8 +152,7 @@ Restores health.
 5
 20
 6
-
-3
+scroll
 s
 yes
 0

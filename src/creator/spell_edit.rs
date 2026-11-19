@@ -38,8 +38,8 @@ pub(super) fn form<R: BufRead, W: Write>(
     loop {
         w.heading("SPELL OPTIONS")?;
         w.say(&format!("{} ({})\n1. Display name\n2. Description\n3. MP cost\n4. Effect / target\n5. Power\n6. Teaching item\n7. Inspect / preview\nS. Save\n0. Discard and return",d.text("name"),d.text("id")))?;
-        match w.line("Selection:")?.trim().to_ascii_lowercase().as_str() {
-            "0" | "back" => return Ok(false),
+        match w.menu("Selection:")?.trim().to_ascii_lowercase().as_str() {
+            "0" | "back" => { w.say("Draft discarded; no draft changes saved.")?; return Ok(false); },
             "1" => if let Some(s)=w.ask("Spell name",d.text("name"),"Displayed name; ID remains stable",|s| super::validate_text(s,120))? {d.set("name",value(s));},
             "2" => if let Some(s)=w.description_labeled("Description", d.text("description"))? {d.set("description",value(s));},
             s @ ("3" | "5") => {
@@ -53,13 +53,11 @@ pub(super) fn form<R: BufRead, W: Write>(
             },
             "6" => {
                 w.say("A teaching item is consumed by learn <item>. It must be portable and available to carry. Create items with main menu 4. Choose 0/back to keep the link, or type remove to clear it.")?;
-                let action=w.line("Enter to choose an item; remove clears the link:")?;
-                if action.trim().eq_ignore_ascii_case("remove") { d.doc.remove("learn_from_item"); }
-                else if !action.trim().eq_ignore_ascii_case("back") {
-                    if let Some(id)=choose(w,"Teaching item:",&entries(snapshot,"items")?)? {
-                        let portable = snapshot.sources("items").any(|(_,b)| std::str::from_utf8(b).ok().and_then(|s| s.parse::<toml::Value>().ok()).is_some_and(|v| v["id"].as_str()==Some(&id) && v["portable"].as_bool()==Some(true)));
-                        if portable {d.set("learn_from_item",value(id));} else {w.say("That item is fixed. Make it portable in Item Manager first.")?;}
-                    }
+                let a = crate::adventure::Adventure::load(&snapshot.root)?;
+                let list = entries(snapshot,"items")?.into_iter().filter(|(id,_)| a.game.world.item(id).is_some_and(|i|i.portable)).collect::<Vec<_>>();
+                if let Some(id) = super::content_edit::choose_with_actions(w, "Teaching item:", &list, &[("remove", "Clear the teaching link")])? {
+                    if id == "remove" { d.doc.remove("learn_from_item"); }
+                    else { d.set("learn_from_item",value(id)); }
                 }
             },
             "7" => d.preview(&snapshot.root,w.output)?,

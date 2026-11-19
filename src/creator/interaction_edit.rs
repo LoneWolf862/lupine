@@ -33,7 +33,7 @@ fn effects<R: BufRead, W: Write>(
     };
     loop {
         w.say(&format!("Effects run after all requirements pass: {result}\n1. Set flag\n2. Clear flag\n3. Move item to room\nR. Remove an effect\n0. Finish\nback leaves effects unchanged"))?;
-        match w.line("Effect:")?.trim().to_ascii_lowercase().as_str(){
+        match w.menu("Effect:")?.trim().to_ascii_lowercase().as_str(){
             "0"=>return Ok(Some(result)),"back"=>return Ok(None),
             s @ ("1"|"2")=>if let Some(flag)=w.ask("Flag name","","Flags remember story changes; use the same name in exit/description/art conditions",super::validate_id)?{result.push(one(if s=="1"{"set_flag"}else{"clear_flag"},&flag));},
             "3"=>{
@@ -85,7 +85,7 @@ fn interaction<R: BufRead, W: Write>(
         let t = rules_ui::entry_mut(&mut d.doc, "interactions", index)?;
         w.heading("INTERACTION")?;
         w.say("Players use <item> on <target>. Both objects must be accessible. Requirements all pass before effects run. Each used-item/target pair has one rule.\n1. Used item\n2. Target object\n3. Requirements\n4. Effects\n5. Success message\n6. Failure message\n0. Finish editing this rule")?;
-        match w.line("Selection:")?.trim().to_ascii_lowercase().as_str() {
+        match w.menu("Selection:")?.trim().to_ascii_lowercase().as_str() {
             "0" | "back" => return Ok(()),
             s @ ("1" | "2") => {
                 if let Some(id) = choose(w, "Object:", &entries(snapshot, "items")?)? {
@@ -133,7 +133,7 @@ fn exit_rule<R: BufRead, W: Write>(
     loop {
         let t = rules_ui::entry_mut(&mut d.doc, "exit_rules", index)?;
         w.say("CONDITIONAL EXIT\n1. Room and exit\n2. Requirements to allow travel\n3. Message when blocked\n0. Finish editing")?;
-        match w.line("Selection:")?.trim(){
+        match w.menu("Selection:")?.trim(){
             "0"|"back"=>return Ok(()),
             "1"=>if let Some((room,dir))=exit(snapshot,w)?{rules_ui::set(t,"from",value(room));rules_ui::set(t,"direction",value(dir));},
             "2"=>if let Some(a)=rules_ui::edit_conditions(t.get("requires").unwrap_or(&Item::None),snapshot,w)?{rules_ui::set(t,"requires",value(a));},
@@ -164,7 +164,7 @@ fn rules<R: BufRead, W: Write>(
     loop {
         w.heading("INTERACTION AND EXIT RULES")?;
         w.say("1. Add interaction\n2. Edit interaction\n3. Remove interaction\n4. Add conditional exit\n5. Edit conditional exit\n6. Remove conditional exit\n7. Preview all rules\nS. Save\n0. Discard and return")?;
-        match w.line("Selection:")?.trim().to_ascii_lowercase().as_str(){
+        match w.menu("Selection:")?.trim().to_ascii_lowercase().as_str(){
             "0"|"back"=>return Ok(()),
             "1"=>{
                 let Some(item)=choose(w,"Used item:",&entries(snapshot,"items")?)? else{continue;};
@@ -196,27 +196,39 @@ fn door_item<R: BufRead, W: Write>(
     portable: bool,
     changes: &mut BTreeMap<PathBuf, String>,
 ) -> Result<Option<String>, String> {
-    w.say(if portable {
-        "Choose a portable key, or N to create one."
-    } else {
-        "Choose the door object, or N to create a fixed door."
-    })?;
-    let action = w.line("Enter to select an existing item; N creates; back returns:")?;
-    if action.eq_ignore_ascii_case("back") {
-        return Ok(None);
-    }
-    if !action.eq_ignore_ascii_case("n") {
-        let id = choose(w, "Item:", &entries(snapshot, "items")?)?;
-        if portable {
-            if let Some(id) = &id {
-                let a = Adventure::load(&snapshot.root)?;
-                if !a.game.world.item(id).is_some_and(|i| i.portable) {
-                    w.say("A key must be portable to carry. Change it in Item Manager first.")?;
-                    return Ok(None);
+    let adventure = Adventure::load(&snapshot.root)?;
+    let list = entries(snapshot, "items")?
+        .into_iter()
+        .filter(|(id, _)| {
+            adventure.game.world.item(id).is_some_and(|i| {
+                if portable {
+                    i.portable
+                } else {
+                    !i.portable && i.starting_room == room
                 }
-            }
-        }
-        return Ok(id);
+            })
+        })
+        .collect::<Vec<_>>();
+    w.say(if portable {
+        "A key must be portable: take it, then use it on the door to unlock this exit."
+    } else {
+        "Choose a fixed door in the exit's room, or create one there."
+    })?;
+    let Some(action) = super::content_edit::choose_with_actions(
+        w,
+        if portable {
+            "SELECT A KEY FOR THIS DOOR"
+        } else {
+            "SELECT THE DOOR OBJECT"
+        },
+        &list,
+        &[("N", "Create a new object")],
+    )?
+    else {
+        return Ok(None);
+    };
+    if action != "N" {
+        return Ok(Some(action));
     }
     let list = entries(snapshot, "items")?;
     let Some(id) = w.ask(
@@ -278,14 +290,17 @@ fn locked_door<R: BufRead, W: Write>(
     w.heading("LOCKED DOOR CREATOR")?;
     w.say("This creates a key-on-door interaction and a conditional exit. A flag remembers when the door is unlocked. The reverse route is unchanged; add its exit rule separately if needed.")?;
     let Some((room, dir)) = exit(snapshot, w)? else {
+        w.say("Door creation canceled; nothing changed.")?;
         return Ok(());
     };
     let mut d = Document::load(snapshot, PathBuf::from("interactions.toml"), "")?;
     let mut changes = BTreeMap::new();
     let Some(key) = door_item(snapshot, w, &room, true, &mut changes)? else {
+        w.say("Door creation canceled; nothing changed.")?;
         return Ok(());
     };
     let Some(door) = door_item(snapshot, w, &room, false, &mut changes)? else {
+        w.say("Door creation canceled; nothing changed.")?;
         return Ok(());
     };
     let Some(flag) = w.ask(
@@ -295,6 +310,7 @@ fn locked_door<R: BufRead, W: Write>(
         super::validate_id,
     )?
     else {
+        w.say("Door creation canceled; nothing changed.")?;
         return Ok(());
     };
     let Some(success) = w.ask(
@@ -304,6 +320,7 @@ fn locked_door<R: BufRead, W: Write>(
         |s| super::validate_text(s, 65536),
     )?
     else {
+        w.say("Door creation canceled; nothing changed.")?;
         return Ok(());
     };
     let Some(failure) = w.ask(
@@ -313,6 +330,7 @@ fn locked_door<R: BufRead, W: Write>(
         |s| super::validate_text(s, 65536),
     )?
     else {
+        w.say("Door creation canceled; nothing changed.")?;
         return Ok(());
     };
     let Some(blocked) = w.ask(
@@ -322,6 +340,7 @@ fn locked_door<R: BufRead, W: Write>(
         |s| super::validate_text(s, 65536),
     )?
     else {
+        w.say("Door creation canceled; nothing changed.")?;
         return Ok(());
     };
     let mut requires = Array::new();
@@ -330,8 +349,8 @@ fn locked_door<R: BufRead, W: Write>(
     let mut effects = Array::new();
     effects.push(one("set_flag", &flag));
     let mut t = Table::new();
-    t["item"] = value(key);
-    t["target"] = value(door);
+    t["item"] = value(&key);
+    t["target"] = value(&door);
     t["requires"] = value(requires);
     t["effects"] = value(effects);
     t["success_text"] = value(success);
@@ -340,12 +359,15 @@ fn locked_door<R: BufRead, W: Write>(
     let mut t = Table::new();
     let mut requires = Array::new();
     requires.push(one("flag_set", &flag));
-    t["from"] = value(room);
-    t["direction"] = value(dir);
+    t["from"] = value(&room);
+    t["direction"] = value(&dir);
     t["requires"] = value(requires);
     t["blocked_text"] = value(blocked);
     rules_ui::append(&mut d.doc, "exit_rules", t)?;
     changes.insert(d.path.clone(), d.contents());
+    let summary = format!("Door: {door}\nLocation: {room}\nAffected exit: {dir}\nRequired key: {key}\nStarting state: locked\nInteraction: take {key}, then use {key} on {door}\nUnlock memory (flag): {flag}\nReverse route: unchanged");
+    w.heading("LOCKED DOOR DRAFT")?;
+    w.say(&summary)?;
     for (p, s) in &changes {
         DraftFile::text(
             &p.to_string_lossy(),
@@ -356,7 +378,11 @@ fn locked_door<R: BufRead, W: Write>(
     }
     if confirm(w, "Save this door, items and rules together?")? {
         snapshot.commit(&changes)?;
-        w.say("Locked door saved and validated. Playtest the blocked route, take the key, then use key on door. Use the unlocked flag for conditional descriptions or art.")?;
+        w.heading("DOOR CREATED")?;
+        w.say(&summary)?;
+        w.say("Locked door saved and validated. Validation PASSED. Ready to playtest.")?;
+    } else {
+        w.say("Door creation canceled; no door, item or rule changes saved.")?;
     }
     Ok(())
 }
@@ -372,7 +398,7 @@ pub(super) fn run<R: BufRead, W: Write>(
             Adventure::load(root)?;
             w.heading("PUZZLE MANAGER")?;
             w.say("1. Interaction and conditional exit rules\n2. Guided locked door\n0. Return to creator\nRoom Options > 7 edits conditional descriptions and encounters.")?;
-            let result = match w.line("Selection:")?.trim() {
+            let result = match w.menu("Selection:")?.trim() {
                 "0" | "back" => return Ok(()),
                 "1" => rules(&snapshot, &mut w),
                 "2" => locked_door(&snapshot, &mut w),

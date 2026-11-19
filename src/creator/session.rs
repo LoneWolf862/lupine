@@ -68,6 +68,7 @@ pub fn open<R: BufRead, W: Write>(
     saves: &Path,
 ) -> io::Result<()> {
     let root = tree::root(path).map_err(io::Error::other)?;
+    writeln!(output, "Creator controls: Enter accepts only a displayed default. Definition lists accept numbers, exact IDs and unique names. ?/help explains. Read each 0/back label: some finish a nested edit; others discard its draft. cancel abandons the current operation and unsaved edits; earlier confirmed saves remain.")?;
     loop {
         // Recheck the root in case an external process replaced it during this session.
         if let Err(message) = tree::root(&root) {

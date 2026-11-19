@@ -62,7 +62,7 @@ fn room<R: BufRead, W: Write>(snapshot: &Snapshot, w: &mut Wizard<'_, R, W>) -> 
     loop {
         w.heading("ROOM ARTWORK")?;
         w.say("1. Set default artwork\n2. Remove default reference\n3. Add conditional variant\n4. Remove variant\n5. Inspect/preview\n6. Edit a variant\n7. Move a variant earlier\nS. Save\n0. Discard and return\nVariants use first-match order, then fall back to default artwork.")?;
-        match w.line("Selection:")?.trim().to_ascii_lowercase().as_str() {
+        match w.menu("Selection:")?.trim().to_ascii_lowercase().as_str() {
             "0"|"back"=>return Ok(()),
             "1"=>if let Some(file)=choose(w,"Artwork file:",&art_entries(snapshot))? {
                 if d.doc.contains_key("art") && !confirm(w,"Replace existing inline artwork with this file reference?")? {continue;}
@@ -76,16 +76,15 @@ fn room<R: BufRead, W: Write>(snapshot: &Snapshot, w: &mut Wizard<'_, R, W>) -> 
                 let mut t=Table::new();t["when"]=value(when);t["file"]=value(file);rules_ui::append(&mut d.doc,"art_variants",t)?;
             },
             "4"=>{
-                d.preview(&snapshot.root,w.output)?;
-                if let Some(n)=w.ask("Variant number (first is 1)","","Only the selected variant is removed",|s|s.parse::<usize>().ok().filter(|n|*n>0).map(|_|()).ok_or("Enter a positive number".into()))? {
-                    if confirm(w,"Remove this variant?")? {if let Err(e)=rules_ui::remove(&mut d.doc,"art_variants",n.parse::<usize>().unwrap()-1){w.say(&e)?;}}
+                if let Some(i)=rules_ui::select_entry(&d.doc,"art_variants",w)? {
+                    if confirm(w,"Remove this variant?")? {rules_ui::remove(&mut d.doc,"art_variants",i)?;}
                 }
             },
             "5"=>d.preview(&snapshot.root,w.output)?,
             "6"=>if let Some(i)=rules_ui::select_entry(&d.doc,"art_variants",w)? {
                 let t=rules_ui::entry_mut(&mut d.doc,"art_variants",i)?;
                 w.say("1. Choose artwork file\n2. Edit inline artwork\n3. Edit conditions\n0. Return")?;
-                match w.line("Variant field:")?.trim(){
+                match w.menu("Variant field:")?.trim(){
                     "1"=>if let Some(file)=choose(w,"Artwork:",&art_entries(snapshot))? {
                         if t.get("text").is_none() || confirm(w,"Replace this variant's inline text with a file?")? {t.remove("text");rules_ui::set(t,"file",value(file));}
                     },
@@ -121,7 +120,7 @@ fn edit<R: BufRead, W: Write>(
     loop {
         w.heading("ARTWORK OPTIONS")?;
         w.say("1. Replace text (multiline)\n2. Preview\nS. Save\n0. Discard and return")?;
-        match w.line("Selection:")?.trim().to_ascii_lowercase().as_str() {
+        match w.menu("Selection:")?.trim().to_ascii_lowercase().as_str() {
             "0"|"back"=>return Ok(()),
             "1"=>if let Some(s)=read_art(w)?{text=s;},
             "2"=>DraftFile::text(&path.to_string_lossy(),&text,"Artwork preview; whitespace is significant.").preview(&snapshot.root,w.output)?,
@@ -152,14 +151,17 @@ fn manage<R: BufRead, W: Write>(root: &Path, w: &mut Wizard<'_, R, W>) -> Result
         w.say(
             "N. Create artwork\nR. Attach/change room artwork and variants\n0. Return to creator",
         )?;
-        let choice = w.line("Selection:")?.trim().to_ascii_lowercase();
+        let choice = w
+            .line("Selection (number, exact artwork filename, N, R, or 0):")?
+            .trim()
+            .to_owned();
         if matches!(choice.as_str(), "0" | "back") {
             return Ok(());
         }
-        let result = if choice == "r" {
+        let result = if choice.eq_ignore_ascii_case("r") {
             room(&snapshot, w)
         } else {
-            let path = if choice == "n" {
+            let path = if choice.eq_ignore_ascii_case("n") {
                 let Some(id) = w.ask(
                     "Artwork name (without .txt)",
                     "",
@@ -175,11 +177,10 @@ fn manage<R: BufRead, W: Write>(root: &Path, w: &mut Wizard<'_, R, W>) -> Result
                     continue;
                 }
                 p
-            } else if let Some(p) = choice
-                .parse::<usize>()
-                .ok()
-                .and_then(|n| n.checked_sub(1))
-                .and_then(|n| paths.get(n))
+            } else if let Some(p) =
+                super::content_edit::selection_index(&choice, &art_entries(&snapshot))
+                    .ok()
+                    .and_then(|n| paths.get(n))
             {
                 p.clone()
             } else {

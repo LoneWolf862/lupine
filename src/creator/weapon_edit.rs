@@ -19,8 +19,8 @@ fn form<R: BufRead, W: Write>(
     loop {
         w.heading("WEAPON OPTIONS")?;
         w.say(&format!("Physical item: {} (stable association)\n1. Damage\n2. Damage type\nP. Exact preview\nS. Save\n0. Discard",d.text("item")))?;
-        match w.line("Selection:")?.trim().to_ascii_lowercase().as_str(){
-   "0"|"back"=>return Ok(false),
+        match w.menu("Selection:")?.trim().to_ascii_lowercase().as_str(){
+   "0"|"back"=>{w.say("Draft discarded; no draft changes saved.")?;return Ok(false);},
    "1"=>numeric(d.doc.as_table_mut(),w,"damage","Base damage at AP 100 (1.00x). AP scales damage, then enemy defense subtracts; a valid hit deals at least 1.",5,1,u32::MAX as i64)?,
    "2"=>text(d.doc.as_table_mut(),w,"damage_type","A nonempty descriptive label, such as physical, piercing or slashing. The engine has no damage-type resistance mechanic.")?,
    "p"=>d.preview(&snapshot.root,w.output)?,
@@ -35,6 +35,7 @@ fn manage<R: BufRead, W: Write>(root: &Path, w: &mut Wizard<'_, R, W>) -> Result
         let snapshot = Snapshot::capture(root)?;
         let a = crate::adventure::Adventure::load(root)?;
         let mut paths = Vec::new();
+        let mut list = Vec::new();
         w.heading("WEAPON MANAGER")?;
         for (p, b) in snapshot.sources("weapons") {
             if p.extension().is_none_or(|e| e != "toml") {
@@ -49,6 +50,14 @@ fn manage<R: BufRead, W: Write>(root: &Path, w: &mut Wizard<'_, R, W>) -> Result
                 .and_then(Item::as_str)
                 .ok_or("Weapon missing item")?;
             paths.push(p.clone());
+            list.push((
+                id.to_owned(),
+                a.game
+                    .world
+                    .item(id)
+                    .map(|i| i.name.clone())
+                    .unwrap_or_else(|| id.to_owned()),
+            ));
             w.say(&format!(
                 "{}. {} ({id})",
                 paths.len(),
@@ -58,8 +67,11 @@ fn manage<R: BufRead, W: Write>(root: &Path, w: &mut Wizard<'_, R, W>) -> Result
         w.say(
             "N. New weapon\nI. Create/edit prerequisite items (separate confirmed save)\n0. Return",
         )?;
-        let choice = w.line("Selection:")?.trim().to_ascii_lowercase();
-        let mut d = match choice.as_str() {
+        let choice = w
+            .line("Selection (number, exact item ID/name, N, I, or 0):")?
+            .trim()
+            .to_owned();
+        let mut d = match choice.to_ascii_lowercase().as_str() {
             "0" | "back" => return Ok(()),
             "i" => {
                 content_edit::manage(root, "items", w)?;
@@ -92,13 +104,11 @@ fn manage<R: BufRead, W: Write>(root: &Path, w: &mut Wizard<'_, R, W>) -> Result
                 d
             }
             _ => {
-                let Some(p) = choice
-                    .parse::<usize>()
+                let Some(p) = super::content_edit::selection_index(&choice, &list)
                     .ok()
-                    .and_then(|n| n.checked_sub(1))
                     .and_then(|n| paths.get(n))
                 else {
-                    w.say("Choose a listed weapon, N, I, or 0.")?;
+                    w.say(&super::content_edit::selection_index(&choice, &list).unwrap_err())?;
                     continue;
                 };
                 Document::load(&snapshot, p.clone(), "")?

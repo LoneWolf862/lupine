@@ -164,38 +164,15 @@ fn choose_room<R: BufRead, W: Write>(
     w: &mut Wizard<'_, R, W>,
     except: Option<&str>,
 ) -> Result<Option<String>, String> {
-    let ids = draft
+    let list = draft
         .rooms
-        .keys()
-        .filter(|id| Some(id.as_str()) != except)
-        .cloned()
+        .iter()
+        .filter(|(id, _)| Some(id.as_str()) != except)
+        .map(|(id, r)| (id.clone(), r.text("title").to_owned()))
         .collect::<Vec<_>>();
-    for (i, id) in ids.iter().enumerate() {
-        w.say(&format!(
-            "  {}. {} ({id})",
-            i + 1,
-            draft.rooms[id].text("title")
-        ))?;
-    }
-    if ids.is_empty() {
-        w.say("No other locations yet. Create a second room first.")?;
-        return Ok(None);
-    }
-    loop {
-        let choice = menu(w, "Select a location number (0/back cancels connection): ")?;
-        if matches!(choice.as_str(), "0" | "back") {
-            return Ok(None);
-        }
-        if let Ok(n) = choice.parse::<usize>() {
-            if n > 0 && n <= ids.len() {
-                return Ok(Some(ids[n - 1].clone()));
-            }
-        }
-        if choice != "help" {
-            w.say("Choose a listed room number.")?;
-        }
-    }
+    super::content_edit::choose(w, "Connecting room:", &list)
 }
+
 fn direction<R: BufRead, W: Write>(w: &mut Wizard<'_, R, W>) -> Result<Option<usize>, String> {
     w.say("1 north, 2 south, 3 east, 4 west, 5 up, 6 down")?;
     loop {
@@ -586,7 +563,7 @@ pub(super) fn run<R: BufRead, W: Write>(
         }
         w.say("\n----------------------------------------\n\n  N. Create New Room\n  0. Return to Creator Menu")
             .map_err(io::Error::other)?;
-        let choice = match menu(&mut w, "Select a room or N: ") {
+        let choice = match menu(&mut w, "Select a room number, exact ID/name, N, or 0: ") {
             Ok(c) => c,
             Err(e) if e.starts_with("Setup canceled") => return Ok(()),
             Err(e) => return Err(io::Error::other(e)),
@@ -598,12 +575,20 @@ pub(super) fn run<R: BufRead, W: Write>(
             let id = if choice == "n" {
                 create(&mut draft, &mut w)?
             } else {
-                choice
-                    .parse::<usize>()
-                    .ok()
-                    .and_then(|n| n.checked_sub(1))
-                    .and_then(|n| ids.get(n))
-                    .cloned()
+                let list = ids
+                    .iter()
+                    .map(|id| (id.clone(), draft.rooms[id].text("title").to_owned()))
+                    .collect::<Vec<_>>();
+                match super::content_edit::selection_index(&choice, &list) {
+                    Ok(i) => {
+                        w.say(&format!("Selected: {} ({}).", list[i].1, list[i].0))?;
+                        Some(ids[i].clone())
+                    }
+                    Err(e) => {
+                        w.say(&e)?;
+                        None
+                    }
+                }
             };
             if let Some(id) = id {
                 edit(&mut draft, &id, &mut w)

@@ -15,7 +15,7 @@ fn offer<R: BufRead, W: Write>(
 ) -> Result<(), String> {
     loop {
         w.say(&format!("OFFER {}\n1. Name\n2. Type\n3. Currency\n4. Price\n5. Item / ability / flag / restoration amount\n6. Stock\n7. Required flags\nP. Preview offer\n0. Keep draft and return",d["id"].as_str().unwrap_or("")))?;
-        match w.line("Selection:")?.trim().to_ascii_lowercase().as_str(){
+        match w.menu("Selection:")?.trim().to_ascii_lowercase().as_str(){
    "0"|"back"=>return Ok(()),
    "1"=>text(d.as_table_mut(),w,"name","Name players can use with buy <offer>")?,
    "2"=>{
@@ -42,7 +42,7 @@ fn offer<R: BufRead, W: Write>(
    },
    "7"=>{
     let mut list=d.get("requires_flags").and_then(Item::as_array).cloned().unwrap_or_default();
-    loop {w.say(&format!("All these flags must be set: {list}\nA. Add flag\nR. Remove flag\n0. Return"))?;match w.line("Selection:")?.trim().to_ascii_lowercase().as_str(){
+    loop {w.say(&format!("All these flags must be set: {list}\nA. Add flag\nR. Remove flag\n0. Return"))?;match w.menu("Selection:")?.trim().to_ascii_lowercase().as_str(){
      "0"|"back"=>break,
      "a"=>if let Some(s)=w.ask("Required flag","","A flag set by an interaction or another offer",super::validate_id)?{if !list.iter().any(|v|v.as_str()==Some(&s)){list.push(s);}},
      "r"=>{let choices=list.iter().enumerate().map(|(i,v)|(i.to_string(),v.to_string())).collect::<Vec<_>>();if let Some(i)=choose(w,"Remove:",&choices)?{list.remove(i.parse().unwrap());}},
@@ -75,7 +75,7 @@ pub(super) fn form<R: BufRead, W: Write>(
     loop {
         w.heading("SHOP OPTIONS")?;
         w.say("1. Display name\n2. Room\n3. Add offer\n4. Edit offer\nP. Exact preview\nS. Save\n0. Discard")?;
-        match w.line("Selection:")?.trim().to_ascii_lowercase().as_str() {
+        match w.menu("Selection:")?.trim().to_ascii_lowercase().as_str() {
             "0" | "back" => return Ok(false),
             "1" => text(d.doc.as_table_mut(), w, "name", "Shop display name")?,
             "2" => {
