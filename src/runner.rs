@@ -230,7 +230,7 @@ pub fn run_configured(
         encounters,
         wallet,
         shops,
-        io::stdin().lock(),
+        crate::terminal::stdin()?,
         io::stdout().lock(),
     )
 }
@@ -391,6 +391,16 @@ pub fn run_configured_with_io<R: BufRead, W: Write>(
         if input.read_line(&mut line)? == 0 {
             writeln!(output, "\nGoodbye!")?;
             break;
+        }
+        if line
+            .chars()
+            .any(|c| c.is_control() && !matches!(c, '\n' | '\r' | '\t'))
+        {
+            writeln!(
+                output,
+                "Input contains terminal control characters. Please type a command.\n"
+            )?;
+            continue;
         }
         let command = line.trim();
         let (verb, argument) = command

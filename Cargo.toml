@@ -7,6 +7,7 @@ description = "A small, offline, story-independent interactive fiction engine"
 license = "MIT"
 
 [dependencies]
+rustyline = { version = "18", default-features = false }
 serde = { version = "1", features = ["derive"] }
 toml = "0.8"
 toml_edit = "0.22"
