@@ -14,6 +14,7 @@ pub mod runner;
 pub mod save;
 pub mod save_files;
 pub mod shops;
+pub mod startup;
 pub mod state;
 pub mod story_loader;
 pub mod wallet;
