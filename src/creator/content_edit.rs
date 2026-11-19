@@ -232,7 +232,7 @@ fn item_form<R: BufRead, W: Write>(
             "4" => {
                 w.say("Portable objects can be picked up and carried. A teaching scroll must be carried to learn from it. Fixed objects stay in the room.")?;
                 let default = if d.doc["portable"].as_bool() == Some(true) { "yes" } else { "no" };
-                if let Some(s) = w.ask("Portable?", default, "yes permits taking; no makes a fixed object", |s| if ["yes","no"].contains(&s) { Ok(()) } else { Err("Enter yes or no".into()) })? { if s=="no" && (!teaching.is_empty() || weapon) { w.say("Cannot make a teaching or weapon item fixed. Its linked gameplay definition requires a carried item.")?; } else { d.set("portable", value(s=="yes")); } }
+                if let Some(s) = w.ask("Portable?", default, "yes permits taking; no makes a fixed object", |s| if ["yes","no"].contains(&s) { Ok(()) } else { Err("Enter yes or no".into()) })? { if s=="no" && (!teaching.is_empty() || weapon) { w.say(if weapon {"Cannot make a weapon item fixed. Players must carry it to attack."} else {"Cannot make a teaching item fixed. Remove or change its teaching link in Spell Manager first."})?; } else { d.set("portable", value(s=="yes")); } }
             },
             "5" => { w.say("Starting room affects new play sessions; existing player saves are not rewritten.")?; if let Some(id) = choose(w,"Starting room:",&entries(snapshot,"rooms")?)? { d.set("starting_room",value(id)); } },
             "6" => d.preview(&snapshot.root,w.output)?,

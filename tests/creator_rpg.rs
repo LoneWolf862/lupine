@@ -266,10 +266,7 @@ fn shop_and_weapon_edit_keep_comments_ids_and_unedited_fields() {
 fn weapon_item_cannot_become_uncollectable_through_item_editor() {
     let f = Fixture::new();
     let out = f.run("r\n2\ni\nn\nsword\n1\ns\nyes\n0\nn\n1\ns\nyes\n0\n0\n4\n1\n4\nno\n0\n0\n0\n");
-    assert!(
-        out.contains("Cannot make a teaching or weapon item fixed"),
-        "{out}"
-    );
+    assert!(out.contains("Cannot make a weapon item fixed"), "{out}");
     assert!(
         Adventure::load(&f.game)
             .unwrap()
