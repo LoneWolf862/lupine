@@ -17,7 +17,7 @@ The baseline is main 451f409, including merged Phase 4 PRs #26â€“#30.
 | 6 | NPCs, conditional dialogue, choices, transfers and movement | Verified locally; draft PR #36 |
 | 7 | Independent economy, shared rewards, world abilities, equipment/status/combat configuration | Verified locally; draft PR #37 |
 | 8 | Wizard coverage, project properties, repair, duplicate/delete/reference migration | Verified locally; draft PR #38 |
-| 9 | Consistent controls, draft visibility, search and room-centered navigation | Implemented candidate; verification in progress |
+| 9 | Consistent controls, draft visibility, search and room-centered navigation | Verified locally; draft PR #39 |
 
 Validation, debug/scenario support, docs, save round trips, references and export
 coverage accompany each phase. Each major phase uses an isolated feature branch,
@@ -42,6 +42,8 @@ personal untracked adventures remain untouched.
   evidence-based recovery, confined export and no saved progress in packages.
 
 ## Verification
+
+Entries below record verification as it happened; later CI results supersede earlier pending statements.
 
 Phase 1 local Windows: 273 tests passed, formatting and strict all-target Clippy
 passed, release build passed. `scripts/phase4_acceptance.py` authored the full RPG
@@ -127,3 +129,36 @@ Phase 7 Windows/Ubuntu CI passed at 0d48cc7, Actions run 44609348060.
 Phase 8 local Windows: all 347 tests passed, formatting and strict all-target Clippy passed; release build and native creator/manual-save/independent-ZIP/launcher acceptance passed (target/phase4-acceptance-829a1563/). Nine new regressions cover repair/deletion recovery, publication refusal, cancellation/EOF, combat settings, author trace and metadata export. Complete-schema coverage uses structural/text editing, with dedicated property/combat forms; it does not claim bespoke beginner forms for every feature. Recovery journal is v2, RORK remains 6. [Draft PR #38](https://github.com/LoneWolf862/lupine/pull/38) targets phase 7. CI, native CachyOS and human beginner acceptance are not yet claimed.
 
 Phase 8 Windows/Ubuntu CI passed at a9a7ecc, Actions run 44611857492.
+
+Phase 9 local Windows: the full 355-test suite passed; an additional nested-dialogue
+copy/delete/reference-repair regression passed (356 distinct tests). Formatting,
+strict all-target Clippy and release build passed. Native creator/manual-save/
+independent ZIP extraction/launcher acceptance passed
+(target/phase4-acceptance-eb7c9eaa/). New regressions cover paging, ambiguous search,
+room navigation, portable file selections, draft retention, narrative economy/world
+abilities, raw replacement cancellation and verified local runtime discovery.
+RORK remains 6. [Draft PR #39](https://github.com/LoneWolf862/lupine/pull/39) targets
+phase 8. Final CI is pending; native CachyOS and human beginner acceptance are not
+claimed.
+
+## Review handoff
+
+Review draft PRs #31 through #39 in order. Each targets its immediate dependency;
+none is merged or published. The final stack is 0.11.0-dev.8. Engine state additions
+intentionally revise development RORK to 6; existing saves require their matching
+engine/game build and are never rewritten. The published v0.9.0 release is untouched.
+The owner's primary checkout remains at 451f409 with its original untracked files.
+
+Engine schemas, validation, save state, scenario tests and export are implemented.
+Wizard coverage for advanced schemas is the multi-file structural/text editor F,
+with dedicated properties/combat forms and existing guided managers. This does not
+claim bespoke nontechnical forms for every new field. Structural edits reformat the
+selected file; exact-text editing preserves pasted text. Both are previewed and
+confirmed before publication. Human beginner testing remains a future acceptance
+step, consistent with the creator vision.
+
+For a review session, use the final isolated worktree: run the bundled scenario
+suites, inspect room/reference output, open F to inspect/repair a disposable game,
+then try B room navigation and G publication metadata. Validate and export a new
+folder/ZIP; keep production adventures and saves on their matching engine build
+until the changes are reviewed. No merge or release action has been taken.

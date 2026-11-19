@@ -599,3 +599,21 @@ fn raw_replacement_back_keeps_prior_batch_and_end_does_not_publish() {
     assert!(out.contains("1 unsaved file(s)"));
     assert_eq!(snapshot(&f.game), before);
 }
+
+#[test]
+fn nested_definition_copy_delete_and_reference_repair_publish_as_one_batch() {
+    let f = Fixture::new();
+    fs::write(f.game.join("dialogue.toml"),"[npcs.guide]\nname='Guide'\ndescription='A guide'\nroom='start'\nstart='entry'\n[npcs.guide.nodes.entry]\ntext='Welcome'\nchoices=[{id='one',label='One',text='Chosen'}]\n").unwrap();
+    let out=f.run("f\n1\ndialogue.toml\n4\n/npcs/guide/nodes/entry\n/npcs/guide/nodes/second\n3\n/npcs/guide/nodes/entry\n2\n/npcs/guide/start\n'second'\n4\n/npcs/guide/nodes/second/choices/0\n/npcs/guide/nodes/second/choices/-\ntwo\n0\ns\nyes\n0\n0\n");
+    assert!(out.contains("Published and validated"), "{out}");
+    let text = fs::read_to_string(f.game.join("dialogue.toml")).unwrap();
+    let value: toml::Value = text.parse().unwrap();
+    let npc = &value["npcs"]["guide"];
+    assert_eq!(npc["start"].as_str(), Some("second"));
+    assert!(npc["nodes"].get("entry").is_none());
+    assert_eq!(
+        npc["nodes"]["second"]["choices"][1]["id"].as_str(),
+        Some("two")
+    );
+    lupine::adventure::Adventure::load(&f.game).unwrap();
+}
