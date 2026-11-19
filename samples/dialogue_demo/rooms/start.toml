@@ -1,0 +1,5 @@
+id='start'
+title='Start'
+description='A neutral dialogue test room.'
+[exits]
+north='hall'

@@ -47,6 +47,13 @@ pub fn warnings(a: &Adventure) -> Vec<String> {
                 }
             }
         }
+        for n in w.dialogue.npcs.values().flat_map(|n| n.nodes.values()) {
+            for e in n.choices.iter().flat_map(|c| &c.effects) {
+                if let Effect::MovePlayer(to) = e {
+                    reachable.insert(to.clone());
+                }
+            }
+        }
         if reachable.len() == before {
             break;
         }
@@ -173,6 +180,28 @@ pub fn warnings(a: &Adventure) -> Vec<String> {
             for e in &consumable.effects {
                 if let Effect::SetFlag(id) = e {
                     written.insert(id.clone());
+                }
+            }
+        }
+    }
+    for npc in w.dialogue.npcs.values() {
+        for c in &npc.requires {
+            condition(c, &mut read);
+        }
+        for n in npc.nodes.values() {
+            for v in &n.variants {
+                for c in &v.when {
+                    condition(c, &mut read);
+                }
+            }
+            for choice in &n.choices {
+                for c in &choice.requires {
+                    condition(c, &mut read);
+                }
+                for e in &choice.effects {
+                    if let Effect::SetFlag(id) = e {
+                        written.insert(id.clone());
+                    }
                 }
             }
         }

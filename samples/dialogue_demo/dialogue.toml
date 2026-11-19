@@ -1,0 +1,40 @@
+[npcs.guide]
+name="Guide"
+aliases=["helper"]
+description="A neutral test character."
+room="start"
+start="hello"
+[npcs.guide.nodes.hello]
+text="Choose a demonstration."
+[[npcs.guide.nodes.hello.variants]]
+when=[{flag_set="introduced"}]
+text="We have already been introduced."
+[[npcs.guide.nodes.hello.choices]]
+id="introduce"
+label="Introduce yourself"
+requires=[{flag_unset="introduced"}]
+effects=[{set_flag="introduced"}]
+text="Introduction complete."
+[[npcs.guide.nodes.hello.choices]]
+id="receive"
+label="Receive two tokens"
+requires=[{flag_set="introduced"},{item_count={item="token",op="ge",value=2,location={kind="npc",id="guide"}}}]
+effects=[{transfer_item={item="token",from={kind="npc",id="guide"},to={kind="inventory"},quantity=2}}]
+next="return"
+text="Two tokens received."
+[npcs.guide.nodes.return]
+text="You can return one token or arrange a meeting."
+[[npcs.guide.nodes.return.choices]]
+id="give"
+label="Return one token"
+requires=[{item_count={item="token",op="ge",value=1}}]
+effects=[{transfer_item={item="token",from={kind="inventory"},to={kind="npc",id="guide"},quantity=1}}]
+text="One token returned."
+[[npcs.guide.nodes.return.choices]]
+id="meet"
+label="Meet in the hall"
+effects=[{move_npc={npc="guide",room="hall"}}]
+next="done"
+text="The guide moves to the hall."
+[npcs.guide.nodes.done]
+text="The meeting has finished."

@@ -1,0 +1,7 @@
+id='token'
+name='token'
+description='A test token.'
+portable=true
+stackable=true
+quantity=3
+initial={kind='npc',id='guide'}

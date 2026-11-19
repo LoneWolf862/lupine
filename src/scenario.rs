@@ -46,6 +46,7 @@ struct Scenario {
     ending: Option<String>,
     ended: Option<bool>,
     completed_events: Option<Vec<String>>,
+    npcs: Option<std::collections::BTreeMap<String, crate::dialogue::NpcState>>,
 }
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -193,6 +194,14 @@ pub fn run(root: &Path, path: &Path, output: &mut impl Write) -> Result<(), Stri
                     assertion.item,
                     assertion.location,
                     state.count_at(&assertion.item, &assertion.location)
+                ));
+            }
+        }
+        if let Some(expected) = &case.npcs {
+            if expected != &state.dialogue.npcs {
+                errors.push(format!(
+                    "NPC states: expected {expected:?}, got {:?}",
+                    state.dialogue.npcs
                 ));
             }
         }

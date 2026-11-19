@@ -6,6 +6,7 @@ pub mod commands;
 pub mod config;
 pub mod creator;
 pub mod diagnostics;
+pub mod dialogue;
 pub mod encounters;
 pub mod engine;
 pub mod events;

@@ -1,0 +1,5 @@
+id='hall'
+title='Hall'
+description='The second test room.'
+[exits]
+south='start'

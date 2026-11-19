@@ -48,3 +48,7 @@ Event scenarios can assert `turn=2`, `timers={deadline=3}` (exact active remaini
 turns), `quests={delivery="active"}` (exact stage map), `journal=["instructions"]`
 (exact acquisition order), `completed_events=["arrival"]` (exact once-event order),
 `ended=false`, or `ending="success"`. See samples/events_demo/scenarios.toml.
+
+Dialogue scenarios can assert the complete `npcs` state map, for example
+`npcs={guide={room="hall",node="done"}}`; omit room for an offstage NPC.
+Quantity locations accept `{kind="npc",id="guide"}`.

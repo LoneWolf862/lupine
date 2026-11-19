@@ -68,3 +68,7 @@ The creator's Snapshot, ID migration, recovery and export inventories include
 `samples/rules_demo` exercise both interaction and action commands. Actions use
 existing mutable story state. Phase 3 kept RORK 2; phase 4 introduced RORK 3 for objects, and phase 5 uses
 RORK 4 for [event progress](EVENTS.md).
+
+Phase 6 uses RORK 5 for NPC progress. `talk` and `people` are reserved player commands.
+NPC conditions and movement/dialogue effects can be used in authored actions;
+object placeholders still bind objects, not NPC names. See [dialogue](DIALOGUE.md).

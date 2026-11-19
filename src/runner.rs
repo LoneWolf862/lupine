@@ -510,6 +510,33 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
                 .iter()
                 .any(|v| verb.eq_ignore_ascii_case(v)),
         ));
+        if verb.eq_ignore_ascii_case("people") && command.split_whitespace().count() == 1 {
+            writeln!(output, "{}\n", crate::dialogue::people(&world, &state))?;
+            continue;
+        }
+        if verb.eq_ignore_ascii_case("talk") {
+            let query = crate::resolution::normalize(command[verb.len()..].trim());
+            let query = query.strip_prefix("to ").unwrap_or(&query);
+            if query.is_empty() {
+                writeln!(output, "Talk to whom? Use talk <name>.\n")?;
+                continue;
+            }
+            let before = state.current_room.clone();
+            if crate::dialogue::talk(&world, &mut state, query, &mut input, &mut output)? {
+                if let Some(step) = pending.as_mut() {
+                    step.performed = true;
+                }
+                sync_object_room(
+                    &before,
+                    &world,
+                    &mut state,
+                    &encounters,
+                    &mut rng,
+                    &mut output,
+                )?;
+            }
+            continue;
+        }
         if ["journal", "quests"]
             .iter()
             .any(|v| verb.eq_ignore_ascii_case(v))

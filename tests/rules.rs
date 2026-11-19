@@ -123,7 +123,13 @@ fn nested_toml_conditions_and_ordered_outcomes_execute_and_roundtrip() {
     assert!(lupine::save::decode_save(
         w,
         &a.game.id,
-        &encoded.replace("save_format_version = 4", "save_format_version = 3")
+        &encoded.replace(
+            &format!(
+                "save_format_version = {}",
+                lupine::save::SAVE_FORMAT_VERSION
+            ),
+            "save_format_version = 1"
+        )
     )
     .is_err());
     s.story.counters.insert("unknown".into(), 1);

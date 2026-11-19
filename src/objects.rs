@@ -290,7 +290,7 @@ pub fn validate(world: &World) -> Result<(), String> {
             if !item.portable
                 && matches!(
                     initial,
-                    ItemLocation::Inventory | ItemLocation::Container(_)
+                    ItemLocation::Inventory | ItemLocation::Container(_) | ItemLocation::Npc(_)
                 )
             {
                 return Err(format!(
@@ -334,6 +334,9 @@ pub fn validate(world: &World) -> Result<(), String> {
 }
 pub(crate) fn validate_location(world: &World, location: &ItemLocation) -> Result<(), String> {
     match location {
+        ItemLocation::Npc(id) if !world.dialogue.npcs.contains_key(id) => {
+            Err(format!("Unknown NPC location '{id}'"))
+        }
         ItemLocation::Room(id) if world.room(id).is_none() => {
             Err(format!("Unknown item room '{id}'"))
         }
@@ -377,7 +380,7 @@ pub fn validate_state(world: &World, state: &GameState) -> Result<(), String> {
             if !item.portable
                 && matches!(
                     stack.location,
-                    ItemLocation::Inventory | ItemLocation::Container(_)
+                    ItemLocation::Inventory | ItemLocation::Container(_) | ItemLocation::Npc(_)
                 )
             {
                 return Err(format!("Fixed item '{id}' cannot be carried or contained"));
@@ -502,7 +505,7 @@ impl GameState {
                         .flatten()
                         .any(|s| self.place_accessible(&s.location, depth + 1))
             }
-            ItemLocation::Consumed => false,
+            ItemLocation::Consumed | ItemLocation::Npc(_) => false,
         }
     }
     /// Explicit whole-object relocation; authored give/remove retain their original semantics.

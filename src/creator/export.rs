@@ -205,6 +205,7 @@ impl ExportPlan {
         let mut content = BTreeMap::new();
         for name in [
             "events.toml",
+            "dialogue.toml",
             "actions.toml",
             "rules.toml",
             "game.toml",

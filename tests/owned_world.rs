@@ -15,6 +15,7 @@ fn dynamic(text: &str) -> String {
 #[test]
 fn accepts_runtime_allocated_names_descriptions_and_ids() {
     let world = World {
+        dialogue: Default::default(),
         events: Default::default(),
         object_defs: Default::default(),
         actions: Vec::new(),
