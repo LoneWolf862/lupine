@@ -56,13 +56,28 @@ impl<R: BufRead, W: Write> Wizard<'_, R, W> {
         .map_err(|e| e.to_string())?;
         let mut line = String::new();
         if self.input.read_line(&mut line).map_err(|e| e.to_string())? == 0 {
-            return Err("Setup canceled (end of input); no files created".into());
+            return Err("Setup canceled (end of input); unsaved changes discarded; earlier confirmed saves remain".into());
         }
         let line = line.trim_end_matches(['\n', '\r']).to_owned();
         if line.trim().eq_ignore_ascii_case("cancel") {
-            return Err("Setup canceled; no files created".into());
+            return Err(
+                "Setup canceled; unsaved changes discarded; earlier confirmed saves remain".into(),
+            );
         }
         Ok(line)
+    }
+    /// Menu controls do not turn blank input or help into an action.
+    pub fn menu(&mut self, prompt: &str) -> Result<String, String> {
+        loop {
+            let answer = self.line(prompt)?;
+            let trimmed = answer.trim();
+            match trimmed.to_ascii_lowercase().as_str() {
+                "" => self.say("Choose one of the displayed options. Enter has no default here; your draft is unchanged.")?,
+                "?" | "help" => self.say("Use a displayed menu option. Definition lists also accept exact IDs and unique names. 0/back follows the displayed return/finish/discard action; cancel abandons this operation's unsaved edits. Save always requires confirmation.")?,
+                "back" => return Ok("back".into()),
+                _ => return Ok(trimmed.to_owned()),
+            }
+        }
     }
     pub fn ask(
         &mut self,
@@ -77,7 +92,7 @@ impl<R: BufRead, W: Write> Wizard<'_, R, W> {
             if value.eq_ignore_ascii_case("back") {
                 return Ok(None);
             }
-            if value == "?" {
+            if value == "?" || value.eq_ignore_ascii_case("help") {
                 self.say(help)?;
                 continue;
             }
@@ -87,7 +102,7 @@ impl<R: BufRead, W: Write> Wizard<'_, R, W> {
                 if value.starts_with('\\')
                     && matches!(
                         &value[1..].to_ascii_lowercase()[..],
-                        "cancel" | "back" | "?"
+                        "cancel" | "back" | "?" | "help"
                     )
                 {
                     &value[1..]
@@ -112,25 +127,26 @@ impl<R: BufRead, W: Write> Wizard<'_, R, W> {
         self.say(
             "Write one line below, or type /multi to write several lines. Instructions will follow.",
         )?;
+        let mut current = default.to_owned();
         loop {
-            let first = self.line(&format!("{label} [{default}]: "))?;
+            let first = self.line(&format!("{label} [{current}]: "))?;
             if first.eq_ignore_ascii_case("back") {
                 return Ok(None);
             }
-            if first == "?" {
+            if first == "?" || first.eq_ignore_ascii_case("help") {
                 self.say("Plain story text, not TOML. Quotes and newlines are encoded for you. In /multi, prefix literal /end or cancel with a backslash.")?;
                 continue;
             }
             let value = if first == "/multi" {
-                self.say("Write as many lines as you like, including blank lines. Type /end on a line by itself when finished. back discards this edit; cancel stops setup. Prefix literal controls with a backslash.")?;
+                self.say("Write as many lines as you like, including blank lines. Type /end on a line by itself when finished. back discards this edit; cancel abandons the current operation. Prefix literal controls with a backslash.")?;
                 let mut lines = Vec::new();
                 loop {
                     let line = self.line("... ")?;
                     if line.eq_ignore_ascii_case("back") {
                         return Ok(None);
                     }
-                    if line == "?" {
-                        self.say("Type /end to finish, back to discard this edit, or cancel to stop. Use \\? for a literal question mark.")?;
+                    if line == "?" || line.eq_ignore_ascii_case("help") {
+                        self.say("Type /end to finish, back to discard this edit, or cancel to abandon the current operation. Use \\? for a literal question mark.")?;
                         continue;
                     }
                     if line == "/end" {
@@ -140,13 +156,16 @@ impl<R: BufRead, W: Write> Wizard<'_, R, W> {
                 }
                 lines.join("\n")
             } else if first.is_empty() {
-                default.to_owned()
+                current.clone()
             } else {
                 first.strip_prefix('\\').unwrap_or(&first).to_owned()
             };
             match super::validate_text(&value, 65536) {
                 Ok(()) => return Ok(Some(value)),
-                Err(e) => self.say(&e)?,
+                Err(e) => {
+                    self.say(&format!("{e}. Your text is retained below; enter a corrected description or back to leave this field unchanged."))?;
+                    current = value;
+                }
             }
         }
     }

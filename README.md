@@ -1,5 +1,9 @@
 # Lupine
 
+## Phase 2I creator usability candidate (2026-11-18)
+
+Draft [PR #19](https://github.com/LoneWolf862/lupine/pull/19) targets `codex/phase-2h-rpg-integration`. Existing-definition selectors now accept numbers, exact IDs and unambiguous names; blank input keeps selections open and 0/back explicitly returns. Locked doors and teaching items use one selection screen. Door preview/declined-save revision, description ordering and multiline recovery are improved. Read the [audit, navigation rules, verification, remaining limits and Windows test procedure](docs/CREATOR_USABILITY_AUDIT.md) before review. Nested 0/back behavior follows its displayed finish/discard label; cancel abandons unsaved edits, while previous confirmed saves remain. Exact previews, Snapshot safety and manual-only RORK saves remain required.
+
 ## RPG authoring development candidate
 
 Main menu **R** now exposes guided enemies, physical weapons, shops and currencies; room encounters can create an enemy in the same confirmed transaction. See [RPG authoring review](docs/RPG_AUTHORING_DEVELOPMENT.md) for schemas, safety, tests, Windows instructions and draft PRs #14-#18. Earlier creator PRs #8-#13 are merged. These new changes are pending review.

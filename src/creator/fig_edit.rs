@@ -63,7 +63,10 @@ fn character<R: BufRead, W: Write>(
             ))?;
         }
         w.say("P. Preview exact FIG\nS. Save\n0. Discard and return")?;
-        let choice = w.line("Setting:")?.trim().to_ascii_lowercase();
+        let choice = w
+            .menu("Setting (number or exact field name):")?
+            .trim()
+            .to_ascii_lowercase();
         match choice.as_str() {
             "0" | "back" => return Ok(()),
             "p" => d.preview(&snapshot.root, w.output)?,
@@ -73,10 +76,12 @@ fn character<R: BufRead, W: Write>(
                 }
             }
             _ => {
-                let Some(key) = choice
-                    .parse::<usize>()
+                let list = fields
+                    .iter()
+                    .map(|k| (k.clone(), k.clone()))
+                    .collect::<Vec<_>>();
+                let Some(key) = super::content_edit::selection_index(&choice, &list)
                     .ok()
-                    .and_then(|n| n.checked_sub(1))
                     .and_then(|n| fields.get(n))
                 else {
                     w.say("Select a listed setting, P, S or 0. ? at a field shows help; Enter keeps its current value.")?;
@@ -131,7 +136,12 @@ fn terminology<R: BufRead, W: Write>(
             ))?;
         }
         w.say("P. Preview\nS. Save\n0. Discard and return")?;
-        match w.line("Setting:")?.trim().to_ascii_lowercase().as_str() {
+        match w
+            .menu("Setting (number or exact field name):")?
+            .trim()
+            .to_ascii_lowercase()
+            .as_str()
+        {
             "0" | "back" => return Ok(()),
             "p" => d.preview(&snapshot.root, w.output)?,
             "s" => {
@@ -139,8 +149,12 @@ fn terminology<R: BufRead, W: Write>(
                     return Ok(());
                 }
             }
-            s @ ("1" | "2") => {
-                let key = if s == "1" { "spellbook" } else { "spells" };
+            s @ ("1" | "2" | "spellbook" | "spells") => {
+                let key = if s == "1" || s == "spellbook" {
+                    "spellbook"
+                } else {
+                    "spells"
+                };
                 w.say(&explanation(TERMS, key))?;
                 let current = d
                     .doc
@@ -189,7 +203,7 @@ pub(super) fn run<R: BufRead, W: Write>(
             Adventure::load(root)?;
             w.heading("ADVENTURE CONFIGURATION")?;
             w.say("1. Character: RPG enablement, starting stats and progression\n2. Terminology: displayed collection labels\n0. Return to creator\nOnly these two FIG categories are implemented. Opening a category writes nothing.")?;
-            let result = match w.line("Category:")?.trim() {
+            let result = match w.menu("Category:")?.trim() {
                 "0" | "back" => return Ok(()),
                 "1" => character(&snapshot, &mut w),
                 "2" => terminology(&snapshot, &mut w),

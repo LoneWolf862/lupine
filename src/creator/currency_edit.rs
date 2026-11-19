@@ -18,7 +18,7 @@ fn edit<R: BufRead, W: Write>(
     loop {
         let id = t.get("id").and_then(Item::as_str).unwrap_or("gold");
         w.say(&format!("Currency ID: {id} (fixed)\n1. Display name\n2. Symbol\n3. Starting balance\n0. Keep draft and return"))?;
-        match w.line("Selection:")?.trim(){
+        match w.menu("Selection:")?.trim(){
    "0"|"back"=>return Ok(()),
    s @ ("1"|"2")=>field(t,w,if s=="1"{"name"}else{"symbol"})?,
    "3"=>numeric(t,w,"starting_amount","Starting balances apply only to fresh games. Manual saves retain their balances. Shops spend this currency and enemies can reward it; changing a label does not change references.",0,0,i64::MAX)?,
@@ -104,7 +104,7 @@ fn manage<R: BufRead, W: Write>(root: &Path, w: &mut Wizard<'_, R, W>) -> Result
     loop {
         w.heading("CURRENCY SETTINGS")?;
         w.say(&format!("Current saved primary: {}\n{}\n1. Configure primary currency\n2. Add another currency\n3. Edit additional currency\nP. Exact manifest preview\nS. Save\n0. Discard",a.wallet.primary.as_deref().unwrap_or("none"),d.doc.get("currency").map(ToString::to_string).unwrap_or_default()))?;
-        match w.line("Selection:")?.trim().to_ascii_lowercase().as_str(){
+        match w.menu("Selection:")?.trim().to_ascii_lowercase().as_str(){
    "0"|"back"=>return Ok(()),
    "1"=>{if !d.doc.contains_key("currency"){if let Some(t)=create(&d,w)?{d.doc["currency"]=Item::Table(t);}}else{let t=d.doc.get_mut("currency").and_then(Item::as_table_like_mut).ok_or("Cannot safely edit primary currency representation")?;edit(t,w)?;}},
    "2"=>if let Some(t)=create(&d,w)?{rules_ui::append(&mut d.doc,"currencies",t)?;},

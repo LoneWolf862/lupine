@@ -96,7 +96,7 @@ fn collection<R: BufRead, W: Write>(
         w.say(&format!(
             "{key}: A adds, E edits, R removes, 0 returns. Changes remain in the enemy draft."
         ))?;
-        match w.line("Selection:")?.trim().to_ascii_lowercase().as_str() {
+        match w.menu("Selection:")?.trim().to_ascii_lowercase().as_str() {
             "0" | "back" => return Ok(()),
             "a" => {
                 let mut t = Table::new();
@@ -138,9 +138,12 @@ fn form_inner<R: BufRead, W: Write>(
     loop {
         w.heading("ENEMY OPTIONS")?;
         w.say("1. Display name\n2. Description\n3. Level\n4. Maximum HP\n5. Attack power\n6. Defense\n7. Experience reward\n8. Attacks\n9. Item drops\nC. Currency rewards\nP. Exact preview\nS. Save\n0. Discard and return")?;
-        let choice = w.line("Selection:")?.trim().to_ascii_lowercase();
+        let choice = w.menu("Selection:")?.trim().to_ascii_lowercase();
         match choice.as_str() {
-            "0" | "back" => return Ok(false),
+            "0" | "back" => {
+                w.say("Draft discarded; no draft changes saved.")?;
+                return Ok(false);
+            }
             "1" => text(
                 d.doc.as_table_mut(),
                 w,

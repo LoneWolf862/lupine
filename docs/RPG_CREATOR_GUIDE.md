@@ -1,5 +1,9 @@
 # Lupine v0.8.4 — RPG creator guide
 
+## Phase 2I creator usability candidate (2026-11-18)
+
+Draft [PR #19](https://github.com/LoneWolf862/lupine/pull/19) targets `codex/phase-2h-rpg-integration`. Existing-definition selectors accept numbers, exact IDs and unambiguous names. Blank selections stay open; 0/back explicitly returns. Locked doors and teaching items use one selection screen. Door review retains answers after declined Save; description ordering and multiline recovery are improved. See the [audit, navigation rules, verification, remaining limits and Windows procedure](CREATOR_USABILITY_AUDIT.md). Nested 0/back follows its displayed finish/discard label; cancel abandons unsaved edits while earlier confirmed saves remain. Exact previews, Snapshot safety and manual-only RORK saves remain required.
+
 ## Guided RPG authoring candidate
 
 Enemies, weapons, shops and currencies now have guided managers under main menu R. Configure existing character/progression fields in 3; use Rooms > Advanced > Encounters to select or create enemies. All six shop offer types are exposed. The [RPG authoring review](RPG_AUTHORING_DEVELOPMENT.md) documents field semantics, multi-currency rewards, safe draft publication and a real-CLI demonstration authored without manual TOML/FIG editing. PRs #14-#18 remain draft; #8-#13 are merged. Transaction-object bindings below still require text authoring.

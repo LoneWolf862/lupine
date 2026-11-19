@@ -15,7 +15,7 @@ pub(super) fn descriptions<R: BufRead, W: Write>(
 ) -> Result<(), String> {
     loop {
         w.say("CONDITIONAL DESCRIPTIONS\nThe first matching description replaces the default. All its conditions must pass. {{objects}} lists visible objects.\n1. Add variant\n2. Edit variant\n3. Remove variant\n4. Move a variant earlier\n0. Return")?;
-        match w.line("Selection:")?.trim() {
+        match w.menu("Selection:")?.trim() {
             "0" | "back" => return Ok(()),
             "1" => {
                 let Some(when) = rules_ui::conditions(snapshot, w)? else {
@@ -37,7 +37,7 @@ pub(super) fn descriptions<R: BufRead, W: Write>(
                 if let Some(i) = rules_ui::select_entry(doc, "descriptions", w)? {
                     let t = rules_ui::entry_mut(doc, "descriptions", i)?;
                     w.say("1. Alternate text\n2. Conditions\n0. Return")?;
-                    match w.line("Field:")?.trim() {
+                    match w.menu("Field:")?.trim() {
                         "1" => {
                             if let Some(s) = w.description_labeled(
                                 "Description",
@@ -70,8 +70,17 @@ pub(super) fn descriptions<R: BufRead, W: Write>(
                     }
                 }
             }
+            "4" => {
+                if let Some(i) = rules_ui::select_entry(doc, "descriptions", w)? {
+                    if i == 0 {
+                        w.say("That variant is already first.")?;
+                    } else {
+                        rules_ui::move_earlier(doc, "descriptions", i)?;
+                    }
+                }
+            }
             _ => w.say(
-                "Choose 0-3. Existing variants stay in order and remain unchanged unless selected.",
+                "Choose 0-4. Existing variants stay in order and remain unchanged unless selected.",
             )?,
         }
     }
@@ -80,15 +89,27 @@ fn encounter_entry<R: BufRead, W: Write>(
     doc: &mut DocumentMut,
     i: usize,
     snapshot: &Snapshot,
+    extra: &std::collections::BTreeMap<std::path::PathBuf, String>,
     w: &mut Wizard<'_, R, W>,
 ) -> Result<(), String> {
     loop {
         let t = rules_ui::entry_mut(doc, "enemies", i)?;
         w.say("ENCOUNTER CHOICE\n1. Enemy\n2. Relative weight\n3. Flag requirements\n0. Return\nWeights are relative chances among eligible enemies, not percentages.")?;
-        match w.line("Selection:")?.trim() {
+        match w.menu("Selection:")?.trim() {
             "0" | "back" => return Ok(()),
             "1" => {
-                if let Some(id) = choose(w, "Enemy:", &entries(snapshot, "enemies")?)? {
+                if let Some(id) = choose(w, "Enemy:", &{
+                    let mut list = entries(snapshot, "enemies")?;
+                    for text in extra.values() {
+                        let v: toml::Value =
+                            text.parse::<toml::Value>().map_err(|e| e.to_string())?;
+                        list.push((
+                            v["id"].as_str().unwrap().into(),
+                            v["name"].as_str().unwrap().into(),
+                        ));
+                    }
+                    list
+                })? {
                     rules_ui::set(t, "enemy", value(id));
                 }
             }
@@ -113,7 +134,7 @@ fn encounter_entry<R: BufRead, W: Write>(
                     .cloned()
                     .ok_or("Cannot safely edit this requirement representation")?;
                 w.say(&format!("Current requirements: {list}\n1. Add flag set\n2. Add flag unset\n3. Remove a requirement\n0. Return"))?;
-                match w.line("Requirement:")?.trim() {
+                match w.menu("Requirement:")?.trim() {
                     s @ ("1" | "2") => {
                         if let Some(flag) = w.ask(
                             "Flag name",
@@ -184,7 +205,7 @@ fn encounters<R: BufRead, W: Write>(
     let baseline = ed.to_string();
     loop {
         w.say(&format!("ROOM ENCOUNTERS\n{ed}\n1. Encounter chance (percent)\n2. Minimum enemies\n3. Maximum enemies\n4. Persistence\n5. Add enemy choice\n6. Edit enemy choice\n7. Remove enemy choice\n8. Remove entire encounter table\nN. Create enemy in this room draft\nE. Edit a pending enemy\n0. Keep draft and return\nback discards these encounter edits"))?;
-        match w.line("Selection:")?.trim(){
+        match w.menu("Selection:")?.trim(){
             "back"=>{*extra=original_extra;return Ok(());},
             "e"|"E"=>super::enemy_edit::edit_pending(snapshot,extra,w)?,
             "0"=>{if ed.to_string()!=baseline||original.is_none(){let table=ed.into_table();doc["encounters"]=if inline{value(table.into_inline_table())}else{Item::Table(table)};}return Ok(());},
@@ -192,7 +213,7 @@ fn encounters<R: BufRead, W: Write>(
             "4"=>if let Some(s)=choose(w,"Persistence:",&[("temporary".into(),"Reroll on re-entry".into()),("room".into(),"Keep living enemy wounds after retreat".into()),("unique".into(),"Stay cleared after defeat".into())])?{rules_ui::set(ed.as_table_mut(),"persistence",value(s));},
             "n"|"N"=>if let Some(id)=super::enemy_edit::draft_new(snapshot,extra,w)?{let mut t=Table::new();t["enemy"]=value(id);t["weight"]=value(1);rules_ui::append(&mut ed,"enemies",t)?;},
             "5"=>if let Some(id)=choose(w,"Enemy definition:",&{let mut list=entries(snapshot,"enemies")?;for text in extra.values(){let v:toml::Value=text.parse::<toml::Value>().map_err(|e|e.to_string())?;list.push((v["id"].as_str().unwrap().into(),v["name"].as_str().unwrap().into()));}list})?{let mut t=Table::new();t["enemy"]=value(id);t["weight"]=value(1);rules_ui::append(&mut ed,"enemies",t)?;},
-            "6"=>if let Some(i)=rules_ui::select_entry(&ed,"enemies",w)?{encounter_entry(&mut ed,i,snapshot,w)?;},
+            "6"=>if let Some(i)=rules_ui::select_entry(&ed,"enemies",w)?{encounter_entry(&mut ed,i,snapshot,extra,w)?;},
             "7"=>if let Some(i)=rules_ui::select_entry(&ed,"enemies",w)?{if confirm(w,"Remove this enemy choice?")?{rules_ui::remove(&mut ed,"enemies",i)?;}},
             "8"=>if confirm(w,"Remove this room's entire encounter table?")?{doc.remove("encounters");return Ok(());},
             _=>w.say("Choose 0-8 or back. Full validation checks min/max bounds, weights and references at Save.")?,
@@ -208,7 +229,7 @@ pub(super) fn edit<R: BufRead, W: Write>(
     loop {
         w.heading("ADVANCED ROOM SETTINGS")?;
         w.say("1. Conditional descriptions\n2. RPG encounter settings\n0. Return to Room Options\nThese changes join the room draft. Use Room Options > Save to publish.")?;
-        match w.line("Selection:")?.trim() {
+        match w.menu("Selection:")?.trim() {
             "0" | "back" => return Ok(()),
             "1" => descriptions(doc, snapshot, w)?,
             "2" => encounters(doc, snapshot, extra, w)?,

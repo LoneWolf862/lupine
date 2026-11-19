@@ -277,3 +277,14 @@ fn weapon_item_cannot_become_uncollectable_through_item_editor() {
             .portable
     );
 }
+
+#[test]
+fn pending_enemy_can_be_reselected_by_id_before_room_publication() {
+    let f = Fixture::new();
+    let out = f.run("7\nstart\n7\n2\n1\n100\nn\nguard\ns\nyes\n6\nguard\n1\nhelp\nguard\n0\n0\n0\n6\nyes\n0\n0\n");
+    assert!(out.contains("Selected: guard (guard)."), "{out}");
+    assert!(out.contains("Room changes saved"), "{out}");
+    let a = Adventure::load(&f.game).unwrap();
+    assert_eq!(a.encounters.tables["start"].enemies[0].enemy, "guard");
+    assert!(a.encounters.enemies.contains_key("guard"));
+}

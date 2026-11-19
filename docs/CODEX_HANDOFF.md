@@ -1,5 +1,9 @@
 # Lupine â€” Codex Development Handoff
 
+## Phase 2I creator usability candidate (2026-11-18)
+
+Draft [PR #19](https://github.com/LoneWolf862/lupine/pull/19) targets `codex/phase-2h-rpg-integration`. Existing-definition selectors accept numbers, exact IDs and unambiguous names. Blank selections stay open; 0/back explicitly returns. Locked doors and teaching items use one selection screen. Door review retains answers after declined Save; description ordering and multiline recovery are improved. See the [audit, navigation rules, verification, remaining limits and Windows procedure](CREATOR_USABILITY_AUDIT.md). Nested 0/back follows its displayed finish/discard label; cancel abandons unsaved edits while earlier confirmed saves remain. Exact previews, Snapshot safety and manual-only RORK saves remain required.
+
 ## RPG authoring handoff — 2026-11-18
 
 Continue from `codex/phase-2h-rpg-integration` in its isolated managed Windows worktree. Five draft PRs #14-#18 contain enemies, weapons, shops, currencies and integration; none merged. The owner primary checkout and personal adventures remain untouched. Read [complete handoff, tests, limits and human guide](RPG_AUTHORING_DEVELOPMENT.md). No Cargo/RORK versions or gameplay mechanics changed. Earlier records below are historical.
