@@ -86,3 +86,5 @@ Guided editing follows in expansion phase 8. Currency remains game.toml content
 and no longer requires RPG.
 
 Current expansion: creator F provides complete-schema multi-file structural/text drafts, repair, duplicate/delete and validation. G edits publication properties; I inspects the room map and typed references. Combat FIG has a dedicated form at 3 > 3. See [PROJECT_EDITOR.md](PROJECT_EDITOR.md) for controls, formatting effects and recovery v2. Individual guided managers remain available.
+
+Engine expansion Phase 9: [CREATOR_NAVIGATION.md](CREATOR_NAVIGATION.md) describes searchable/paged selectors, visible draft status, room-centered browsing and verified local runtime discovery. Current controls and capabilities there supersede historical limitations above. Publication still requires explicit confirmation.

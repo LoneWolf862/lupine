@@ -469,6 +469,8 @@ fn edit<R: BufRead, W: Write>(
 ) -> Result<bool, String> {
     loop {
         w.heading("ROOM OPTIONS")?;
+        let changed = draft.changes();
+        w.say(&format!("{} unsaved file(s). Changes to connections and pending enemies publish with this room.",changed.len()))?;
         w.say(&format!("Room: {} ({id})\n\n  1. Change name\n  2. Edit description\n  3. Manage connections\n  4. Review properties\n  5. Preview exact TOML changes\n  6. Save room and connections\n  7. Conditional descriptions and encounters\n  0. Back without saving (discard draft)", draft.rooms[id].text("title")))?;
         match menu(w, "Selection: ")?.as_str() {
             "0" | "back" => return Ok(false),
@@ -553,24 +555,21 @@ pub(super) fn run<R: BufRead, W: Write>(
         w.say(&format!("Adventure: {title}\n\nExisting Rooms:\n"))
             .map_err(io::Error::other)?;
         let ids = draft.rooms.keys().cloned().collect::<Vec<_>>();
-        for (i, id) in ids.iter().enumerate() {
-            w.say(&format!(
-                "  {}. {} ({id})",
-                i + 1,
-                draft.rooms[id].text("title")
-            ))
-            .map_err(io::Error::other)?;
-        }
-        w.say("\n----------------------------------------\n\n  N. Create New Room\n  0. Return to Creator Menu")
-            .map_err(io::Error::other)?;
-        let choice = match menu(&mut w, "Select a room number, exact ID/name, N, or 0: ") {
-            Ok(c) => c,
+        let list = ids
+            .iter()
+            .map(|id| (id.clone(), draft.rooms[id].text("title").to_owned()))
+            .collect::<Vec<_>>();
+        let choice = match super::content_edit::choose_with_actions(
+            &mut w,
+            "",
+            &list,
+            &[("n", "Create New Room")],
+        ) {
+            Ok(Some(c)) => c,
+            Ok(None) => return Ok(()),
             Err(e) if e.starts_with("Setup canceled") => return Ok(()),
             Err(e) => return Err(io::Error::other(e)),
         };
-        if matches!(choice.as_str(), "0" | "back") {
-            return Ok(());
-        }
         let operation = (|| -> Result<bool, String> {
             let id = if choice == "n" {
                 create(&mut draft, &mut w)?
@@ -609,4 +608,26 @@ pub(super) fn run<R: BufRead, W: Write>(
             )?,
         }
     }
+}
+
+pub(super) fn edit_selected<R: BufRead, W: Write>(
+    root: &Path,
+    id: &str,
+    input: &mut R,
+    output: &mut W,
+) -> io::Result<()> {
+    let mut w = Wizard { input, output };
+    let result = (|| -> Result<(), String> {
+        let mut draft = Draft::load(root)?;
+        if !draft.rooms.contains_key(id) {
+            return Err("Room no longer exists; refresh navigation".into());
+        }
+        edit(&mut draft, id, &mut w)?;
+        Ok(())
+    })();
+    if let Err(e) = result {
+        w.say(&format!("Room draft stopped: {e}"))
+            .map_err(io::Error::other)?;
+    }
+    Ok(())
 }

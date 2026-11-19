@@ -71,6 +71,7 @@ fn room<R: BufRead, W: Write>(snapshot: &Snapshot, w: &mut Wizard<'_, R, W>) -> 
     let mut d = Document::load(snapshot, path, "")?;
     loop {
         w.heading("ROOM ARTWORK")?;
+        d.status(w)?;
         w.say("1. Set default artwork\n2. Remove default reference\n3. Add conditional variant\n4. Remove variant\n5. Inspect/preview\n6. Edit a variant\n7. Move a variant earlier\nS. Save\n0. Discard and return\nVariants use first-match order, then fall back to default artwork.")?;
         match w.menu("Selection:")?.trim().to_ascii_lowercase().as_str() {
             "0"|"back"=>return Ok(()),
@@ -129,6 +130,11 @@ fn edit<R: BufRead, W: Write>(
     crate::story_loader::validate_art(&text, "Existing artwork")?;
     loop {
         w.heading("ARTWORK OPTIONS")?;
+        w.say(if original.as_ref() == Some(&text) {
+            "No unsaved changes"
+        } else {
+            "UNSAVED DRAFT — publication requires confirmation"
+        })?;
         w.say("1. Replace text (multiline)\n2. Preview\nS. Save\n0. Discard and return")?;
         match w.menu("Selection:")?.trim().to_ascii_lowercase().as_str() {
             "0"|"back"=>return Ok(()),
@@ -156,19 +162,18 @@ fn manage<R: BufRead, W: Write>(root: &Path, w: &mut Wizard<'_, R, W>) -> Result
             .art_sources()
             .map(|(p, _)| p.clone())
             .collect::<Vec<_>>();
-        for (i, p) in paths.iter().enumerate() {
-            w.say(&format!("{}. {}", i + 1, p.display()))?;
-        }
-        w.say(
-            "N. Create artwork\nR. Attach/change room artwork and variants\n0. Return to creator",
-        )?;
-        let choice = w
-            .menu("Selection (number, exact artwork filename, N, R, or 0):")?
-            .trim()
-            .to_owned();
-        if matches!(choice.as_str(), "0" | "back") {
+        let Some(choice) = super::content_edit::choose_with_actions(
+            w,
+            "ARTWORK MANAGER",
+            &art_entries(&snapshot),
+            &[
+                ("n", "Create artwork"),
+                ("r", "Attach/change room artwork and variants"),
+            ],
+        )?
+        else {
             return Ok(());
-        }
+        };
         let result = if choice.eq_ignore_ascii_case("r") {
             room(&snapshot, w)
         } else {

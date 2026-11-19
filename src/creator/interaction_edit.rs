@@ -163,6 +163,7 @@ fn rules<R: BufRead, W: Write>(
     )?;
     loop {
         w.heading("INTERACTION AND EXIT RULES")?;
+        d.status(w)?;
         w.say("1. Add interaction\n2. Edit interaction\n3. Remove interaction\n4. Add conditional exit\n5. Edit conditional exit\n6. Remove conditional exit\n7. Preview all rules\nS. Save\n0. Discard and return")?;
         match w.menu("Selection:")?.trim().to_ascii_lowercase().as_str(){
             "0"|"back"=>return Ok(()),

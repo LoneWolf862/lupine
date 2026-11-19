@@ -18,11 +18,12 @@ fn form<R: BufRead, W: Write>(
 ) -> Result<bool, String> {
     loop {
         w.heading("WEAPON OPTIONS")?;
+        d.status(w)?;
         w.say(&format!("Physical item: {} (stable association)\n1. Damage\n2. Damage type\nP. Exact preview\nS. Save\n0. Discard",d.text("item")))?;
         match w.menu("Selection:")?.trim().to_ascii_lowercase().as_str(){
    "0"|"back"=>{w.say("Draft discarded; no draft changes saved.")?;return Ok(false);},
-   "1"=>numeric(d.doc.as_table_mut(),w,"damage","Base damage at AP 100 (1.00x). AP scales damage, then enemy defense subtracts; a valid hit deals at least 1.",5,1,u32::MAX as i64)?,
-   "2"=>text(d.doc.as_table_mut(),w,"damage_type","A nonempty descriptive label, such as physical, piercing or slashing. The engine has no damage-type resistance mechanic.")?,
+   "1"=>numeric(d.doc.as_table_mut(),w,"damage","Base damage at AP 100 (1.00x). AP scales damage, then defense, typed resistance and combat.fig minimum damage apply.",5,1,u32::MAX as i64)?,
+   "2"=>text(d.doc.as_table_mut(),w,"damage_type","A nonempty descriptive label, such as physical, piercing or slashing. Enemy and equipment resistances use this exact damage-type key.")?,
    "p"=>d.preview(&snapshot.root,w.output)?,
    "s"=>if save(snapshot,d,w)?{return Ok(true);},
    _=>w.say("Choose 1, 2, P, S, or 0. To change item names or descriptions use Item Manager. Weapon item IDs remain stable.")?,
@@ -58,19 +59,19 @@ fn manage<R: BufRead, W: Write>(root: &Path, w: &mut Wizard<'_, R, W>) -> Result
                     .map(|i| i.name.clone())
                     .unwrap_or_else(|| id.to_owned()),
             ));
-            w.say(&format!(
-                "{}. {} ({id})",
-                paths.len(),
-                a.game.world.item(id).map(|i| i.name.as_str()).unwrap_or(id)
-            ))?;
         }
-        w.say(
-            "N. New weapon\nI. Create/edit prerequisite items (separate confirmed save)\n0. Return",
-        )?;
-        let choice = w
-            .menu("Selection (number, exact item ID/name, N, I, or 0):")?
-            .trim()
-            .to_owned();
+        let Some(choice) = content_edit::choose_with_actions(
+            w,
+            "WEAPON MANAGER",
+            &list,
+            &[
+                ("n", "New weapon"),
+                ("i", "Prerequisite items (separate save)"),
+            ],
+        )?
+        else {
+            return Ok(());
+        };
         let mut d = match choice.to_ascii_lowercase().as_str() {
             "0" | "back" => return Ok(()),
             "i" => {

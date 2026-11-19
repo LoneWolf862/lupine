@@ -87,7 +87,7 @@ fn spell_enablement_is_explicit_and_all_fields_are_editable() {
     let f = Fixture::new();
     let original = f.read("config/character.fig");
     let output = f.run("5\n0\n");
-    assert!(output.contains("Spells require RPG"));
+    assert!(output.contains("World abilities with zero MP work without RPG"));
     assert_eq!(original, f.read("config/character.fig"));
     fs::write(
         f.game.join("config/character.fig"),

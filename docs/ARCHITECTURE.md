@@ -5,7 +5,7 @@ loads strict TOML test suites and invokes the real runner with an explicit rando
 seed, returning final in-memory state for assertions. Existing runner APIs preserve
 their signatures/default randomness. Scenarios never save implicitly.
 
-## Current development architecture (0.11.0-dev.6)
+## Current development architecture (0.11.0-dev.8)
 
 Lupine is an offline terminal engine. Immutable TOML content is separate from mutable
 GameState; supported FIG files hold configuration. Manual RORK persistence remains in
@@ -89,7 +89,7 @@ Preexisting invalid projects cannot be edited through the room manager; staged-v
 
 GameConfig reads character.fig as a TOML table, consumes the single boolean enabled key, and passes the remaining fields through the existing strict Progression deserializer/validator. Disabled files still validate; only enabled progression becomes GameConfig.character. Missing-key enabled semantics preserve older authored FIGs without a second format loader. Runtime, CLI validation and creator operations share that resolved Option, so generation does not accidentally activate RPG. No configuration fields are added to player state or saves.
 
-The two commented FIGs under templates/starter/config are included verbatim as DraftFile content by the generator. All eight standard folders are created/tracked by the existing exclusive writer and rollback path. Both preview and write consume the same text. Root-level supported FIG names report placement guidance; supported filenames and value schemas otherwise retain strict validation.
+The three commented FIGs under templates/starter/config are included verbatim as DraftFile content by the generator. All eight standard folders are created/tracked by the existing exclusive writer and rollback path. Both preview and write consume the same text. Root-level supported FIG names report placement guidance; supported filenames and value schemas otherwise retain strict validation.
 
 
 ## Current Phase 2D–2F editor architecture
@@ -105,3 +105,5 @@ Existing invalid projects must be repaired before editing. Exact IDs are not ren
 ## Project drafts and publication metadata
 
 `creator/project_edit.rs` uses one Snapshot and `Option<String>` file proposals: Some writes, None deletes. Existing write-only callers delegate to this shared transaction. Proposed projects must load before any publication. Recovery journal v2 includes baseline validity and absent-file inventories, allowing exact restoration of invalid projects under repair. Foreign changes are never overwritten. `story_loader::Metadata` is immutable game publication information, excluded from mutable state and RORK revisioning. Export generates separate authored publication documents.
+
+Room-centered navigation (`creator/room_hub.rs`) holds no mutable draft between editors. It reloads saved content after each editor and uses schema-typed references. Shared selectors paginate/filter without mutating content. Runtime discovery checks only two known relative locations and reuses existing binary verification.

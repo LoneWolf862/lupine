@@ -9,7 +9,7 @@
 
 ## Current pre-release policy (2026-11-18)
 
-Lupine is pre-1.0. The published v0.9.0 standalone release remains unchanged; current development uses 0.11.0-dev.6. No known external games require development-version compatibility. Justified breaking API and format changes are allowed. Do not add obsolete-format loaders or unnecessary compatibility layers. Update bundled samples, templates, tests and current documentation together; preserve gameplay unless a change is intentional.
+Lupine is pre-1.0. The published v0.9.0 standalone release remains unchanged; current development uses 0.11.0-dev.8. No known external games require development-version compatibility. Justified breaking API and format changes are allowed. Do not add obsolete-format loaders or unnecessary compatibility layers. Update bundled samples, templates, tests and current documentation together; preserve gameplay unless a change is intentional.
 
 File responsibilities:
 
@@ -145,3 +145,14 @@ Prior sections are historical milestone instructions, not the current feature in
 ## Historical approved phase — self-documenting FIG files (Phase 2C.2)
 
 Read `docs/SELF_DOCUMENTING_CONFIG_SPEC.md` before changing new-adventure scaffolding or FIG activation. Every **new** game should expose implemented configuration defaults in commented FIG files, while narrative-only behavior remains the default. `config/character.fig` currently enables RPG by its mere presence; change this deliberately via an explicit opt-in `enabled` field and test existing RPG games/migrations. Do not create unsupported gameplay/progression/combat/parser FIG files. Keep content TOML, configuration FIG, manual player RORK saves strictly separate. Every Codex task uses an isolated feature branch, frequent checkpoint pushes, a reviewable PR, and no self-merge or direct pushes to `main`.
+
+## Approved engine expansion review stack (2026-11-19)
+
+Phases 1-9 are implemented in stacked draft PRs #31-#39, unmerged. Read
+`docs/ENGINE_EXPANSION.md` for actual verification and review order. Current RORK is
+6 for added engine state; metadata/editor changes do not revise it. Recovery journal
+v2 supports deletion and an explicitly recorded invalid baseline; never guess through
+older, corrupt or externally changed evidence. Project Files F supplies complete-schema
+structural/text editing, with exact previews and confirmed multi-file publication;
+ordinary guided forms retain stable IDs. Room navigation does not share hidden drafts.
+Keep runtime discovery bounded, offline and subject to target/version/digest checks.

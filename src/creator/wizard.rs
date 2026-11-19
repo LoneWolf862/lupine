@@ -73,7 +73,7 @@ impl<R: BufRead, W: Write> Wizard<'_, R, W> {
             let trimmed = answer.trim();
             match trimmed.to_ascii_lowercase().as_str() {
                 "" => self.say("Choose one of the displayed options. Enter has no default here; your draft is unchanged.")?,
-                "?" | "help" => self.say("Use a displayed menu option. Definition lists also accept exact IDs and unique names. 0/back follows the displayed return/finish/discard action; cancel abandons this operation's unsaved edits. Save always requires confirmation.")?,
+                "?" | "help" => self.say("Use a displayed menu option. Definition lists also accept exact IDs and unique names, /text to filter, / to clear, >/< to page. 0/back follows the displayed return/finish/discard action; cancel abandons this operation's unsaved edits. Save always requires confirmation.")?,
                 "back" => return Ok("back".into()),
                 _ => return Ok(trimmed.to_owned()),
             }

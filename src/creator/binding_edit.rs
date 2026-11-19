@@ -148,6 +148,7 @@ fn manage<R: BufRead, W: Write>(root: &Path, w: &mut Wizard<'_, R, W>) -> Result
         let initial = d.contents();
         loop {
             w.heading("TRANSACTION BINDINGS")?;
+            d.status(w)?;
             w.say("Connect a world object to an existing shop offer. Use I / H to save missing prerequisite items / shops separately before starting this draft. Canceling a binding never undoes those confirmed saves.")?;
             let bindings: Bindings = toml::from_str(&d.contents()).map_err(|e| e.to_string())?;
             let list = bindings

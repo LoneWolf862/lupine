@@ -66,6 +66,17 @@ impl Document {
     pub fn changed(&self) -> bool {
         self.original.is_none() || self.doc.to_string() != self.baseline
     }
+    pub fn status<R: BufRead, W: Write>(&self, w: &mut Wizard<'_, R, W>) -> Result<(), String> {
+        w.say(&format!(
+            "{} | {}",
+            self.path.display(),
+            if self.changed() {
+                "UNSAVED DRAFT — publication requires confirmation"
+            } else {
+                "No unsaved changes"
+            }
+        ))
+    }
     pub fn preview(&self, root: &Path, out: &mut impl Write) -> Result<(), String> {
         DraftFile::text(&self.path.to_string_lossy(), &self.contents(), "These are the exact proposed file contents. Stable IDs and unedited properties are retained.").preview(root, out)
     }
@@ -135,26 +146,53 @@ pub(super) fn choose_with_actions<R: BufRead, W: Write>(
     entries: &[(String, String)],
     actions: &[(&str, &str)],
 ) -> Result<Option<String>, String> {
-    w.heading(label.trim_end_matches(':'))?;
-    for (n, (id, name)) in entries.iter().enumerate() {
-        w.say(&format!("  {}. {} ({})", n + 1, name, id))?;
-    }
-    if entries.is_empty() {
-        w.say("No eligible definitions yet.")?;
-    }
-    for (key, description) in actions {
-        w.say(&format!("  {key}. {description}"))?;
-    }
-    w.say("  0. Cancel selection / return\nChoose a number, exact ID or unambiguous name. ?/help explains. Blank input keeps this menu open.")?;
+    let mut query = String::new();
+    let mut page = 0usize;
     loop {
+        if !label.is_empty() {
+            w.heading(label.trim_end_matches(':'))?;
+        }
+        let matching = entries
+            .iter()
+            .enumerate()
+            .filter(|(_, (id, name))| {
+                id.to_lowercase().contains(&query) || name.to_lowercase().contains(&query)
+            })
+            .map(|(i, _)| i)
+            .collect::<Vec<_>>();
+        let pages = matching.len().div_ceil(20).max(1);
+        page = page.min(pages - 1);
+        for &i in matching.iter().skip(page * 20).take(20) {
+            let (id, name) = &entries[i];
+            w.say(&format!("  {}. {} ({})", i + 1, name, id))?;
+        }
+        if entries.is_empty() {
+            w.say("No eligible definitions yet.")?;
+        } else if matching.is_empty() {
+            w.say("No matches. / clears the filter.")?;
+        }
+        w.say(&format!("{} matches; page {}/{}. /text filters ID/name; / clears; > next; < previous. Numbers stay fixed across pages.",matching.len(),page+1,pages))?;
+        for (key, description) in actions {
+            w.say(&format!("  {key}. {description}"))?;
+        }
+        w.say("  0. Cancel selection / return\nChoose a number, exact ID or unambiguous name. ?/help explains. Blank input keeps this menu open.")?;
         let answer = w.menu("Selection:")?;
         let answer = answer.trim();
         if answer == "0" || answer.eq_ignore_ascii_case("back") {
             w.say("Selection canceled; this field is unchanged.")?;
             return Ok(None);
         }
-        if matches!(answer.to_ascii_lowercase().as_str(), "?" | "help") {
-            w.say("Choose a displayed number, exact internal ID or unique display name. 0/back returns; cancel abandons the current operation. Enter makes no selection.")?;
+        if let Some(text) = answer.strip_prefix('/') {
+            query = text.to_lowercase();
+            page = 0;
+            continue;
+        }
+        if answer == ">" {
+            page = (page + 1).min(pages - 1);
+            continue;
+        }
+        if answer == "<" {
+            page = page.saturating_sub(1);
             continue;
         }
         if let Some((key, _)) = actions
@@ -173,6 +211,7 @@ pub(super) fn choose_with_actions<R: BufRead, W: Write>(
         }
     }
 }
+
 pub(super) fn entries(
     snapshot: &Snapshot,
     category: &str,
@@ -275,6 +314,7 @@ fn item_form<R: BufRead, W: Write>(
     }
     loop {
         w.heading("ITEM OPTIONS")?;
+        d.status(w)?;
         w.say(&format!("{} ({})\n1. Display name\n2. Description\n3. Aliases\n4. Portable\n5. Starting room\n6. Inspect / preview TOML\n7. Conditional descriptions\nS. Save\n0. Discard and return", d.text("name"), d.text("id")))?;
         match w.menu("Selection:")?.trim().to_ascii_lowercase().as_str() {
             "0" | "back" => { w.say("Draft discarded; no draft changes saved.")?; return Ok(false); },
@@ -332,21 +372,23 @@ pub(super) fn manage<R: BufRead, W: Write>(
             .map(|(p, _)| p.clone())
             .collect::<Vec<_>>();
         let list = entries(&snapshot, category)?;
-        w.heading(&format!("{} MANAGER", category.to_ascii_uppercase()))?;
-        for (i, (id, name)) in list.iter().enumerate() {
-            w.say(&format!("{}. {name} ({id})", i + 1))?;
-        }
-        w.say("N. Create new definition\n0. Return to creator")?;
+        let mut actions = vec![("n", "Create new definition")];
         if category == "shops" {
-            w.say("I. Prerequisite items\nT. Prerequisite spells\nC. Currencies\nThese managers save separately; return before starting a shop draft.")?;
+            actions.extend([
+                ("i", "Prerequisite items (separate save)"),
+                ("t", "Prerequisite spells (separate save)"),
+                ("c", "Currencies (separate save)"),
+            ]);
         }
-        let choice = w
-            .menu("Selection (number, exact ID/name, N, or 0/back):")?
-            .trim()
-            .to_owned();
-        if matches!(choice.to_ascii_lowercase().as_str(), "0" | "back") {
+        let Some(choice) = choose_with_actions(
+            w,
+            &format!("{} MANAGER", category.to_ascii_uppercase()),
+            &list,
+            &actions,
+        )?
+        else {
             return Ok(());
-        }
+        };
         if category == "shops" {
             match choice.to_ascii_lowercase().as_str() {
                 "i" => {
@@ -469,14 +511,7 @@ pub(super) fn run_spells<R: BufRead, W: Write>(
     output: &mut W,
 ) -> io::Result<()> {
     let mut w = Wizard { input, output };
-    match Adventure::load(root) {
-        Ok(a) if a.game.config.character.is_none() => {
-            w.say("Spells require RPG. Choose Configure Adventure Settings and explicitly enable character RPG first; no setting has been changed.").map_err(io::Error::other)?;
-            return Ok(());
-        }
-        _ => (),
-    }
-    w.say("Defining a spell does not teach it. Link a portable teaching item, then take it and use learn <item> during play. The item is consumed. Damage targets an enemy; healing and mana restoration target the player. This schema has no spell damage-type setting.").map_err(io::Error::other)?;
+    w.say("Defining an ability does not teach it. Link a portable teaching item or use a TeachAbility effect. World abilities with zero MP work without RPG. Use Project Files (F) for world targets, conditions/effects, damage types and on-hit statuses. Other ability kinds and positive MP costs require RPG.").map_err(io::Error::other)?;
     if let Err(e) = manage(root, "spells", &mut w) {
         writeln!(
             w.output,
@@ -485,4 +520,60 @@ pub(super) fn run_spells<R: BufRead, W: Write>(
         )?;
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod navigation_tests {
+    use super::*;
+    use std::io::Cursor;
+    #[test]
+    fn search_pages_keep_global_numbers_and_never_auto_select() {
+        let entries = (1..=45)
+            .map(|i| (format!("id_{i:02}"), format!("Entry {i}")))
+            .collect::<Vec<_>>();
+        let mut output = Vec::new();
+        let mut input = Cursor::new(">\n/id_41\n\n41\n");
+        let selected = choose(
+            &mut Wizard {
+                input: &mut input,
+                output: &mut output,
+            },
+            "Definitions",
+            &entries,
+        )
+        .unwrap();
+        assert_eq!(selected.as_deref(), Some("id_41"));
+        let text = String::from_utf8(output).unwrap();
+        assert!(text.contains("page 2/3"));
+        assert!(text.contains("1 matches; page 1/1"));
+        assert!(text.contains("41. Entry 41 (id_41)"));
+        let mut out = Vec::new();
+        assert!(choose(
+            &mut Wizard {
+                input: &mut Cursor::new("/missing\n0\n"),
+                output: &mut out
+            },
+            "Definitions",
+            &entries
+        )
+        .unwrap()
+        .is_none());
+        assert!(String::from_utf8(out).unwrap().contains("No matches"));
+    }
+    #[test]
+    fn filtered_duplicate_names_still_need_explicit_selection() {
+        let entries = vec![("a".into(), "Door".into()), ("b".into(), "Door".into())];
+        let mut output = Vec::new();
+        let result = choose(
+            &mut Wizard {
+                input: &mut Cursor::new("/door\nDoor\nb\n"),
+                output: &mut output,
+            },
+            "Select",
+            &entries,
+        )
+        .unwrap();
+        assert_eq!(result.as_deref(), Some("b"));
+        assert!(String::from_utf8(output).unwrap().contains("ambiguous"));
+    }
 }

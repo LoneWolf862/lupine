@@ -92,3 +92,5 @@ Review the open draft PR; do not merge automatically.
 - [Draft PR #19](https://github.com/LoneWolf862/lupine/pull/19) targets that integration branch. No merge.
 - Checkpoints: `44bf163` shared selection; `2a7d75c` review/recovery and audit; `8175484` remaining guidance and pending-enemy regression. All pushed.
 - Owner's primary checkout tracked files and preexisting untracked projects remain untouched. Disposable walkthroughs/logs are under ignored `target/` in this worktree.
+
+Engine expansion Phase 9: [CREATOR_NAVIGATION.md](CREATOR_NAVIGATION.md) describes searchable/paged selectors, visible draft status, room-centered browsing and verified local runtime discovery. Current controls and capabilities there supersede historical limitations above. Publication still requires explicit confirmation.

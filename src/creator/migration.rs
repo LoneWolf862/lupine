@@ -327,6 +327,29 @@ fn walk_value(
         f(path, scope, v);
     }
 }
+pub(super) fn referenced_files(s: &Snapshot, kind: &str, id: &str) -> Result<Vec<PathBuf>, String> {
+    let mut result = BTreeSet::new();
+    for mut d in documents(s)? {
+        let file = d.path.clone();
+        let scope = d
+            .doc
+            .get("id")
+            .and_then(Item::as_str)
+            .unwrap_or("")
+            .to_owned();
+        walk(
+            d.doc.as_item_mut(),
+            &mut Vec::new(),
+            &scope,
+            &mut |path, scope, v| {
+                if category(&file, path, scope).as_deref() == Some(kind) && v.as_str() == Some(id) {
+                    result.insert(file.clone());
+                }
+            },
+        );
+    }
+    Ok(result.into_iter().collect())
+}
 pub(super) fn references(s: &Snapshot) -> Result<Vec<String>, String> {
     let mut result = Vec::new();
     for mut d in documents(s)? {

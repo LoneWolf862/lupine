@@ -5,7 +5,7 @@ RPG engine. Authors build adventures with editable TOML content, FIG configurati
 the guided Adventure Creator. HOWLBOUND is only the tentative name of a future original
 adventure; no original story is prescribed by this engine.
 
-**Development version: 0.11.0-dev.6.** Creator work through Phase 2I and Phase 3
+**Development version: 0.11.0-dev.8.** Creator work through Phase 2I and Phase 3
 startup, history, parser and export improvements (#20–#24) are merged.
 They are not a published release. The existing
 [v0.9.0 standalone release](https://github.com/LoneWolf862/lupine/releases/tag/v0.9.0)
@@ -18,7 +18,7 @@ and atomic effects. [Authored actions](docs/ACTIONS.md) add custom commands and 
 [Events, timers, quests, journals and endings](docs/EVENTS.md) are implemented.
 [NPCs and conditional dialogue](docs/DIALOGUE.md) support choices, transfers and movement.
 [Independent economy, world abilities, equipment and statuses](docs/SYSTEMS.md) are implemented.
-This development build writes RORK format 6 for object, story and event progress;
+This development build writes RORK format 6 for objects, story/events, NPC dialogue and equipment/status progress;
 older saves need their matching engine/game build and are never rewritten automatically.
 
 ## Players: start here
@@ -154,3 +154,5 @@ in exported packages. Regenerate with `python scripts/update_notices.py` after d
 updates. Authors supply their own adventure license and credits.
 
 Current development creator: **F** edits/repairs complete multi-file TOML/FIG drafts; **G** edits publication properties; **I** inspects rooms and typed references. Combat settings are in **3 > 3**. See [project editor](docs/PROJECT_EDITOR.md). `lupine inspect PATH` and `lupine test PATH SCENARIOS.toml --trace` provide read-only author diagnostics.
+
+Creator **B** browses by room; shared selectors support `/text` search and paging, and document forms show draft status. Export discovers verified local runtimes in bounded adjacent folders. See [creator navigation](docs/CREATOR_NAVIGATION.md).

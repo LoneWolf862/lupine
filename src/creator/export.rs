@@ -466,6 +466,19 @@ fn prompt(
         Ok(Some(line.into()))
     }
 }
+/// Bounded local discovery. Every candidate is inspected without executing it.
+fn discover(directory: &Path, target: Target) -> Vec<PathBuf> {
+    [
+        directory.join(target.label()).join(target.executable()),
+        directory
+            .join("runtimes")
+            .join(target.label())
+            .join(target.executable()),
+    ]
+    .into_iter()
+    .filter(|p| runtime(p, target).is_ok())
+    .collect()
+}
 pub fn run(source: &Path, input: &mut impl BufRead, output: &mut impl Write) -> io::Result<()> {
     super::ui::heading(output, "EXPORT YOUR ADVENTURE")?;
     writeln!(output,"Export creates a new distribution folder containing ZIPs or platform folders.\n  1. Windows x64\n  2. Linux x64\n  3. Both platforms\n  C. Clean a recorded export workspace\n  0. Back")?;
@@ -515,6 +528,17 @@ pub fn run(source: &Path, input: &mut impl BufRead, output: &mut impl Write) -> 
     let mut binaries = Vec::new();
     for target in targets {
         let host = Target::host() == Some(target);
+        let current = std::env::current_exe()?;
+        let available = discover(current.parent().unwrap_or(Path::new(".")), target);
+        if !available.is_empty() {
+            writeln!(
+                output,
+                "Verified local runtimes (no downloads; type @number to select):"
+            )?;
+            for (i, p) in available.iter().enumerate() {
+                writeln!(output, "  @{} {}", i + 1, p.display())?;
+            }
+        }
         let message = format!(
             "{} runtime executable path{}:",
             target.label(),
@@ -528,7 +552,21 @@ pub fn run(source: &Path, input: &mut impl BufRead, output: &mut impl Write) -> 
             return Ok(());
         };
         let path = if path.is_empty() && host {
-            std::env::current_exe()?
+            current
+        } else if let Some(n) = path.strip_prefix('@') {
+            let Some(p) = n
+                .parse::<usize>()
+                .ok()
+                .and_then(|n| n.checked_sub(1))
+                .and_then(|n| available.get(n))
+            else {
+                writeln!(
+                    output,
+                    "No such discovered runtime. Export canceled; nothing written."
+                )?;
+                return Ok(());
+            };
+            p.clone()
         } else {
             PathBuf::from(path)
         };
@@ -571,4 +609,34 @@ pub fn run(source: &Path, input: &mut impl BufRead, output: &mut impl Write) -> 
         Err(e) => writeln!(output, "Export failed:\n{e}")?,
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod discovery_tests {
+    use super::*;
+    #[test]
+    fn only_matching_local_runtimes_are_discovered() {
+        let Some(target) = Target::host() else {
+            return;
+        };
+        let root =
+            std::env::temp_dir().join(format!("lupine-runtime-discovery-{}", std::process::id()));
+        fs::create_dir(&root).unwrap();
+        let dir = root.join(target.label());
+        fs::create_dir(&dir).unwrap();
+        let binary = dir.join(target.executable());
+        fs::copy(std::env::current_exe().unwrap(), &binary).unwrap();
+        let manifest = binary.with_extension("runtime.toml");
+        fs::write(&manifest, runtime_manifest().unwrap()).unwrap();
+        assert_eq!(discover(&root, target), vec![binary.clone()]);
+        let text = fs::read_to_string(&manifest)
+            .unwrap()
+            .replace(env!("CARGO_PKG_VERSION"), "0.0.0-untrusted");
+        fs::write(&manifest, text).unwrap();
+        assert!(discover(&root, target).is_empty());
+        fs::remove_file(manifest).unwrap();
+        fs::remove_file(binary).unwrap();
+        fs::remove_dir(dir).unwrap();
+        fs::remove_dir(root).unwrap();
+    }
 }

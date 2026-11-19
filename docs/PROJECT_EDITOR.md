@@ -35,8 +35,8 @@ new key. Full validation detects collisions and broken references.
 
 Structural edits reserialize that file, removing comments and normalizing layout;
 the preview shows this before publication. Use exact text replacement to retain
-your own formatting/comments. Paste until a line `.end`; `\.end` inserts a literal
-`.end`. Pasted lines use LF. Syntax errors can remain in a draft, but cannot be
+your own formatting/comments. Paste until `/end` (or `.end`); prefix a literal control line with a backslash.
+`back` keeps this file unchanged while retaining other draft files. Pasted lines use LF. Syntax errors can remain in a draft, but cannot be
 published. This also allows an invalid existing project to be repaired without
 requiring it to load first. Unsafe filesystem layouts/links still require manual
 attention; F never bypasses path protections.
@@ -87,3 +87,5 @@ FIGs. `lupine test PATH SCENARIOS.toml --trace` prints each scenario's transcrip
 seed and final mutable state for debugging. This author-only output can reveal
 hidden state; normal player output continues to hide exact enemy HP. Tests cannot
 read or write RORK slots, and trace writes only to the supplied output stream.
+
+Searchable file selection is available at F > L. [CREATOR_NAVIGATION.md](CREATOR_NAVIGATION.md) documents shared search, draft status and room-centered navigation.
