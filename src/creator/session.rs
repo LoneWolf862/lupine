@@ -89,7 +89,7 @@ pub fn open<R: BufRead, W: Write>(
             )?;
         }
         super::ui::heading(output, "ADVENTURE CREATOR")?;
-        writeln!(output, "  0. Exit Creator\n  1. Play Your Adventure\n  2. Validate Your Adventure\n  3. Configure Adventure Settings\n  4. Create or Edit Items\n  5. Create or Edit Spells\n  6. Create or Edit Artwork\n  7. Create or Edit Rooms\n  8. Help\n  9. Interactions and puzzles\n  R. RPG Content\n  E. Export Your Adventure\n  T. Transaction Bindings\n\nEnter refreshes the tree; ? gives help.")?;
+        writeln!(output, "  0. Exit Creator\n  1. Play Your Adventure\n  2. Validate Your Adventure\n  3. Configure Adventure Settings\n  4. Create or Edit Items\n  5. Create or Edit Spells\n  6. Create or Edit Artwork\n  7. Create or Edit Rooms\n  8. Help\n  9. Interactions and puzzles\n  R. RPG Content\n  E. Export Your Adventure\n  T. Transaction Bindings\n  M. Rename Internal ID\n\nEnter refreshes the tree; ? gives help.")?;
         let Some(choice) = answer(input, output, "Selection:")? else {
             writeln!(
                 output,
@@ -122,6 +122,7 @@ pub fn open<R: BufRead, W: Write>(
             }
             "e" => super::export::run(&root, input, output)?,
             "t" => super::binding_edit::run(&root, input, output)?,
+            "m" => super::migration::run(&root, input, output)?,
             "r" => super::rpg_menu::run(&root, input, output)?,
             "9" => super::interaction_edit::run(&root, input, output)?,
             "7" => super::room_edit::run(&root, input, output)?,

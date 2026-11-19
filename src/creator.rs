@@ -23,6 +23,7 @@ pub mod export;
 mod fig_edit;
 mod files;
 mod interaction_edit;
+mod migration;
 mod room_advanced;
 mod room_edit;
 mod room_transaction;

@@ -21,7 +21,30 @@ declined Save, EOF and no player-save creation. The actual CLI RPG walkthrough n
 creates and activates an object binding, preserving wallet/MP and manual-save
 assertions. This is scripted automated acceptance, not human beginner testing.
 
+## 4B: internal-ID migration
+
+Creator M supports rooms, items, abilities, enemies, shops, shop-scoped offers,
+currencies (including implicit gold IDs), and referenced flags. Weapons have no
+separate ID: migrating an item updates its physical weapon association. Interaction
+and binding records have no independent IDs. Game identity, filenames/art paths,
+runtime instance IDs and RORK migration are explicitly excluded.
+
+The reference inventory follows explicit schema paths, including conditions,
+effects, art/prose variants, encounters, loot, rewards, teaching items and offers.
+It never substitutes narrative strings or comments. Original filenames remain.
+Review lists every changed field and exact file bytes, warns about saves, stages
+and validates the complete result, then requires confirmation. Publication rechecks
+the snapshot and reuses the existing multi-file rollback path. No save version is
+bumped: creators must deliberately choose their game's compatibility policy.
+Old flags may remain loadable but change behavior, so compatibility is never promised.
+
+Five focused tests cover all categories, inline bindings/implicit currency IDs,
+cross-file puzzles/art, invalid IDs, collisions, cancellation, stale files, unchanged
+RORK bytes and reopening. The executable creator acceptance migrates its bound
+object before gameplay and verifies the new binding. Shared publication tests cover
+invalid dependencies and interrupted multi-file publication.
+
 ## Remaining assignment
 
-4B ID migration, 4C guided recovery, 4D ZIP export and 4E integration review remain
+4C guided recovery, 4D ZIP export and 4E integration review remain
 in progress. Cross-platform CI and final release-readiness findings are pending.
