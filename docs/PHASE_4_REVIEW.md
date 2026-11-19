@@ -46,5 +46,30 @@ invalid dependencies and interrupted multi-file publication.
 
 ## Remaining assignment
 
-4C guided recovery, 4D ZIP export and 4E integration review remain
+4D ZIP export and 4E integration review remain
 in progress. Cross-platform CI and final release-readiness findings are pending.
+
+## 4C: guided editor recovery
+
+Opening an adventure detects the existing .lupine-room-edit lock before play or
+editing. New transactions retain a full baseline and versioned SHA-256 journal
+before publishing. Recovery verifies confined regular paths, the whole recognized
+content inventory, retained baseline/proposal bytes and full adventure validity.
+Creators can inspect, restore the baseline or complete the proposal, with explicit
+confirmation. Conflicting external edits, links, unknown recovery files, missing
+data and corrupt records cause refusal with preservation/help instructions.
+
+This extends Snapshot rather than creating another publication system. Recovery
+can be retried after an interrupted target replacement or verified cleanup. A
+resolved marker permits cleanup only when the full current inventory matches the
+recorded outcome. Cleanup removes only verified files and empty known directories.
+RORK files are never recovery targets. Original target permissions are retained.
+
+Limits: older text-only records and crashes before a complete journal exists need
+manual review. An interruption during the final journal/marker removal can also
+need manual review. Stop other creator processes before recovery. This is not a
+hostile-concurrency or power-loss atomicity guarantee. Baseline plus proposed data
+can require roughly twice the 64 MiB snapshot size, in addition to displaced files.
+Temporary staging and baseline copies may exist, but no authored file changes
+before confirmation. Four failure-simulation tests cover multiple publication
+stages, cancellation, external edits, missing/corrupt/unknown data and retry.

@@ -9,6 +9,7 @@ use std::{
     time::SystemTime,
 };
 const LOCK: &str = ".lupine-room-edit";
+pub(super) mod recovery;
 const DIRS: &[&str] = &[
     "rooms", "items", "config", "art", "spells", "weapons", "enemies", "shops",
 ];
@@ -55,8 +56,11 @@ pub(super) struct Snapshot {
 }
 impl Snapshot {
     pub fn capture(root: &Path) -> Result<Self, String> {
+        Self::capture_inner(root, false)
+    }
+    fn capture_inner(root: &Path, recovering: bool) -> Result<Self, String> {
         let root = tree::root(root)?;
-        if fs::symlink_metadata(root.join(LOCK)).is_ok() {
+        if !recovering && fs::symlink_metadata(root.join(LOCK)).is_ok() {
             return Err(format!("Recovery folder {} exists. Do not edit further. See its RECOVERY.txt and restore/review the retained originals before removing that folder.", root.join(LOCK).display()));
         }
         let report = tree::inspect(&root);
@@ -311,6 +315,7 @@ impl Snapshot {
             if validate_only {
                 return Ok(());
             }
+            recovery::prepare(self, changes, &lock, &mut owned)?;
             for (index, (relative, text)) in changes.iter().enumerate() {
                 before_publish(index)?;
                 let target = self.root.join(relative);
@@ -340,6 +345,7 @@ impl Snapshot {
             }
             Adventure::load(&self.root)
                 .map_err(|e| format!("Post-write validation failed: {e}"))?;
+            before_publish(changes.len())?;
             owned.write(&lock.join("COMMITTED.txt"), b"All proposed content changes were published and the adventure passed validation. If this folder remains, cleanup was interrupted. Review the current adventure before removing recovery files; do not automatically roll back a completed edit.\n")?;
             Ok(())
         })();
@@ -368,6 +374,9 @@ impl Snapshot {
                 for dir in created_dirs.iter().rev() {
                     fs::remove_dir(dir).map_err(|e| e.to_string())?;
                 }
+                if lock.join("JOURNAL.toml").exists() {
+                    owned.write(&lock.join("RESOLVED.txt"), b"restored\n")?;
+                }
                 Ok(())
             })();
             return match rollback {
@@ -385,6 +394,9 @@ impl Snapshot {
         }
         for relative in moved {
             owned.files.push(lock.join("original").join(relative));
+        }
+        if !validate_only {
+            owned.write(&lock.join("RESOLVED.txt"), b"completed\n")?;
         }
         // A cleanup failure is not a failed commit: retain recovery and report the actual outcome.
         owned.clean().map_err(|e| {
@@ -419,7 +431,13 @@ impl Owned {
         let is_note = |path: &Path| {
             matches!(
                 path.file_name().and_then(|n| n.to_str()),
-                Some("RECOVERY.txt" | "CHANGES.txt" | "COMMITTED.txt")
+                Some(
+                    "RECOVERY.txt"
+                        | "CHANGES.txt"
+                        | "COMMITTED.txt"
+                        | "JOURNAL.toml"
+                        | "RESOLVED.txt"
+                )
             ) && path.parent() == self.dirs.first().map(PathBuf::as_path)
         };
         for path in self.files.iter().rev().filter(|p| !is_note(p)) {
@@ -428,8 +446,23 @@ impl Owned {
         for path in self.dirs.iter().skip(1).rev() {
             fs::remove_dir(path).map_err(|e| format!("{}: {e}", path.display()))?;
         }
-        for path in self.files.iter().rev().filter(|p| is_note(p)) {
+        for path in self.files.iter().rev().filter(|p| {
+            is_note(p)
+                && !matches!(
+                    p.file_name().and_then(|s| s.to_str()),
+                    Some("JOURNAL.toml" | "RESOLVED.txt")
+                )
+        }) {
             fs::remove_file(path).map_err(|e| format!("{}: {e}", path.display()))?;
+        }
+        for name in ["JOURNAL.toml", "RESOLVED.txt"] {
+            for path in self
+                .files
+                .iter()
+                .filter(|p| is_note(p) && p.file_name().is_some_and(|n| n == name))
+            {
+                fs::remove_file(path).map_err(|e| format!("{}: {e}", path.display()))?;
+            }
         }
         if let Some(root) = self.dirs.first() {
             fs::remove_dir(root).map_err(|e| format!("{}: {e}", root.display()))?;
@@ -442,9 +475,9 @@ impl Owned {
 mod tests {
     use super::*;
     use std::sync::atomic::{AtomicU64, Ordering};
-    struct Fixture(PathBuf);
+    pub(super) struct Fixture(pub(super) PathBuf);
     impl Fixture {
-        fn new() -> Self {
+        pub(super) fn new() -> Self {
             static NEXT: AtomicU64 = AtomicU64::new(0);
             let path = std::env::temp_dir().join(format!(
                 "lupine-room-tx-{}-{}",
@@ -454,7 +487,7 @@ mod tests {
             crate::creator::new_game(&path, "transaction", "Transaction").unwrap();
             Self(path)
         }
-        fn changes(&self) -> BTreeMap<PathBuf, String> {
+        pub(super) fn changes(&self) -> BTreeMap<PathBuf, String> {
             BTreeMap::from([
                 (
                     PathBuf::from("rooms/a_new.toml"),

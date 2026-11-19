@@ -75,6 +75,9 @@ pub fn open<R: BufRead, W: Write>(
             error(output, &message)?;
             return Ok(());
         }
+        if !super::room_transaction::recovery::run(&root, input, output)? {
+            return Ok(());
+        }
         let inspection = tree::inspect(&root);
         writeln!(
             output,
