@@ -5,12 +5,14 @@ import pty
 import select
 import signal
 import time
+import uuid
 
 root = Path(__file__).resolve().parents[1]
 binary = root / "target/release/lupine"
+userdata = root / "target" / f"prompt-pty-{uuid.uuid4().hex}"
 pid, fd = pty.fork()
 if pid == 0:
-    env = dict(os.environ, TERM="xterm")
+    env = dict(os.environ, TERM="xterm", XDG_DATA_HOME=str(userdata))
     os.execve(binary, [str(binary), "play", str(root / "story_example")], env)
 
 pending = b""
@@ -48,12 +50,59 @@ try:
     os.write(fd, b"\x1b[A\x1b[Binventory\n")
     expect(b"You are carrying nothing.")
     expect(b"> ")
+    # Questions must end on their own line before rustyline redraws the input.
+    os.write(fd, b"save\n")
+    expect(b"Type a name, not a game command.")
+    expect(b"Save name:\r\n")
+    expect(b"> ")
+    os.write(fd, b"north\n")
+    expect(b"Use it as the save name? (yes/no)\r\n")
+    expect(b"> ")
+    os.write(fd, b"no\n")
+    expect(b"Save canceled.")
+    expect(b"> ")
+    assert not userdata.exists(), "Declining a command-like name must not save"
+    os.write(fd, b"save\n")
+    expect(b"Save name:\r\n")
+    expect(b"> ")
+    os.write(fd, b"camp\n")
+    expect(b"Saved:")
+    expect(b"> ")
+    slots = list(userdata.rglob("*.rork"))
+    assert len(slots) == 1
+    saved = slots[0].read_bytes()
+    os.write(fd, b"take key\n")
+    expect(b"You take the brass key.")
+    expect(b"> ")
+    os.write(fd, b"save camp\n")
+    expect(b"Save exists. Overwrite? (yes/no):\r\n")
+    expect(b"> ")
+    os.write(fd, b"no\n")
+    expect(b"Save canceled.")
+    expect(b"> ")
+    os.write(fd, b"load camp\n")
+    expect(b"Discard unsaved progress and load? (yes/no):\r\n")
+    expect(b"> ")
+    os.write(fd, b"no\n")
+    expect(b"Load canceled.")
+    expect(b"> ")
+    os.write(fd, b"exit\n")
+    expect(b"Unsaved progress. Quit without saving? (yes/no):\r\n")
+    expect(b"> ")
+    # Exercise redraw/editing of an answer without losing its question above it.
+    os.write(fd, b"nox\x7f\n")
+    expect(b"> ")
+    os.write(fd, b"inventory\n")
+    expect(b"You are carrying: brass key")
+    expect(b"> ")
+    assert slots[0].read_bytes() == saved, "Declines must preserve the saved snapshot"
     os.write(fd, b"\x04")
     expect(b"Goodbye!")
     _, status = os.waitpid(pid, 0)
     assert os.waitstatus_to_exitcode(status) == 0
     pid = 0
-    print("Linux PTY: Up/Down, boundaries, cursor movement, backspace, recalled edits and EOF passed.")
+    assert slots[0].read_bytes() == saved, "EOF must not save"
+    print("Linux PTY: history/editing, visible save/load/quit prompts, naming guard, declines and EOF passed.")
 finally:
     (root / "target/history-pty-transcript.bin").write_bytes(transcript)
     os.close(fd)

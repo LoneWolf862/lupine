@@ -5,9 +5,9 @@ RPG engine. Authors build adventures with editable TOML content, FIG configurati
 the guided Adventure Creator. HOWLBOUND is only the tentative name of a future original
 adventure; no original story is prescribed by this engine.
 
-**Development version: 0.10.0-dev.1.** Creator work through Phase 2I is merged. The Phase 3
-startup, history, parser and export improvements are review candidates in draft PRs
-#20–#24. They are not a published release. The existing
+**Development version: 0.10.0-dev.1.** Creator work through Phase 2I and Phase 3
+startup, history, parser and export improvements (#20–#24) are merged.
+They are not a published release. The existing
 [v0.9.0 standalone release](https://github.com/LoneWolf862/lupine/releases/tag/v0.9.0)
 and its tag remain unchanged. See [Phase 3 verification and handoff](docs/PHASE_3_REVIEW.md).
 
@@ -33,6 +33,13 @@ exact IDs and unambiguous partial names work. `pick up the bronze key` and `grab
 are accepted when unambiguous. Multiple matches prompt for a number or ID; cancel with
 0/back/cancel. Typo suggestions never execute an action.
 
+Movement also accepts `travel south`, `run south`, `head south`, and `go to the south`.
+`look <object>` examines it; `look around` shows the room. Ordered word prefixes such as
+`fire scroll` can match `fireball scroll`; exact IDs, names and authored aliases still win.
+`leave <direction>` moves, while `leave <object>` remains a drop alias. There is no facing
+direction: use the listed compass exits rather than left/right. Suggestions explain how
+to retry the command; replying yes does not execute them.
+
 In supported interactive terminals, Up/Down recall recent input; Left/Right and Backspace
 edit it. History is memory-only, capped at 100 entries across this invocation's prompts,
 with empty lines and consecutive duplicates omitted. Redirected input remains scriptable.
@@ -43,9 +50,18 @@ and `buy <offer>`. Unambiguous `use <weapon/spell> on <enemy>` reaches the same 
 ordinary visible item targets retain priority. Use an enemy's `#instance` when needed.
 Exact enemy HP stays private. `help` explains commands in the game.
 
+`hit`, `strike`, `stab`, and `slash` are attack aliases. `attack <enemy>` asks which carried
+weapon to use, even with only one; cancel to spend no turn. `cast fireball at goblin` and
+`attack goblin with fireball` work for a learned spell when no carried weapon matches.
+Bare spell names provide syntax guidance without casting or choosing a target.
+
 **Saving is strictly manual:** `save <name>`, `saves`, `load <name>`. RORK files live in
 your user-data directory. There is no autosave, save-on-quit or automatic recovery after
 defeat. Unsaved quit/load confirmations remain in place. See [save format](docs/SAVE_FORMAT.md).
+Bare `save` explains naming and accepts Enter/cancel/back to cancel. A name resembling a
+command (such as north) requires explicit confirmation; declining neither saves nor moves.
+`save north` remains an explicit request to use that name. Save/load/quit questions appear
+above the editable input line so terminal redraws cannot erase them.
 
 ## Creators
 

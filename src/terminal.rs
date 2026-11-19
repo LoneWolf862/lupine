@@ -54,7 +54,9 @@ impl<R: BufRead> BufRead for TerminalInput<R> {
             self.buffer.clear();
             self.offset = 0;
             loop {
-                match editor.readline("") {
+                // The editor owns the input line: external inline prompts are
+                // erased on redraw. Callers print questions on a completed line.
+                match editor.readline("> ") {
                     Ok(line) => {
                         if !line.trim().is_empty() {
                             editor

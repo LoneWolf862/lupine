@@ -135,3 +135,73 @@ fn snapshot_stays_in_memory_without_save_command() {
         Some(ItemLocation::Room("foyer".into()))
     );
 }
+
+#[test]
+fn bare_save_explains_names_and_does_not_mistake_movement_for_a_name() {
+    let root = temporary_root();
+    let result = play(&root, "save\nnorth\nno\nlook\nquit\n");
+    assert!(
+        result.contains("Type a name, not a game command."),
+        "{result}"
+    );
+    assert!(result.contains("Save name:\n"), "{result}");
+    assert!(
+        result.contains("'north' looks like a game command. Use it as the save name? (yes/no)\n"),
+        "{result}"
+    );
+    assert!(result.contains("Save canceled"), "{result}");
+    assert!(
+        !result.contains("Test Corridor"),
+        "no movement on declined naming: {result}"
+    );
+    assert!(!root.exists());
+    let result = play(&root, "save\nnorth\nyes\nquit\n");
+    assert!(result.contains("Saved: north.fixture.rork"), "{result}");
+    assert!(!result.contains("Unsaved progress"));
+    assert_eq!(
+        read_slot(&root, &fixture_world::fixture_world(), "fixture", "north")
+            .unwrap()
+            .current_room,
+        "foyer"
+    );
+    fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn name_cancel_eof_and_explicit_command_names_remain_manual() {
+    for ending in ["cancel\nquit\n", "back\nquit\n", "\nquit\n", "", "north\n"] {
+        let root = temporary_root();
+        play(&root, &format!("save\n{ending}"));
+        assert!(!root.exists());
+    }
+    let root = temporary_root();
+    let result = play(&root, "save north\nquit\n");
+    assert!(result.contains("Saved: north.fixture.rork"));
+    assert!(!result.contains("looks like a game command"));
+    fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn confirmation_questions_are_complete_lines_and_declines_preserve_state() {
+    let root = temporary_root();
+    play(&root, "save camp\nquit\n");
+    let original = fs::read(slot_path(&root, "fixture", "camp").unwrap()).unwrap();
+    let result = play(
+        &root,
+        "take key\nsave camp\nno\nload camp\nno\nexit\nmaybe\nno\ninventory\nexit\nyes\n",
+    );
+    for text in [
+        "Save exists. Overwrite? (yes/no):\n",
+        "Discard unsaved progress and load? (yes/no):\n",
+        "Unsaved progress. Quit without saving? (yes/no):\n",
+    ] {
+        assert!(result.contains(text), "{result}");
+    }
+    assert!(result.contains("Please answer yes or no."));
+    assert!(result.contains("You are carrying: brass key"));
+    assert_eq!(
+        fs::read(slot_path(&root, "fixture", "camp").unwrap()).unwrap(),
+        original
+    );
+    fs::remove_dir_all(root).unwrap();
+}

@@ -688,16 +688,35 @@ pub fn run_configured_with_io<R: BufRead, W: Write>(
         }
         if verb.eq_ignore_ascii_case("save") {
             let name = if argument.is_empty() {
-                match prompt(&mut input, &mut output, "Save name: ")? {
+                writeln!(output, "Choose a name for this manual save, for example camp.\nType a name, not a game command. Enter or cancel returns to play.")?;
+                match prompt(&mut input, &mut output, "Save name:")? {
                     Some(name) => name,
                     None => break,
                 }
             } else {
                 argument.to_owned()
             };
-            if name.trim().is_empty() {
+            if argument.is_empty()
+                && matches!(name.to_ascii_lowercase().as_str(), "" | "cancel" | "back")
+            {
                 writeln!(output, "Save canceled.\n")?;
                 continue;
+            }
+            if argument.is_empty() && looks_like_command(&name) {
+                match confirm(
+                    &mut input,
+                    &mut output,
+                    &format!(
+                        "'{name}' looks like a game command. Use it as the save name? (yes/no)"
+                    ),
+                )? {
+                    Some(true) => (),
+                    Some(false) => {
+                        writeln!(output, "Save canceled. No command was executed; enter your next command below.\n")?;
+                        continue;
+                    }
+                    None => break,
+                }
             }
             let overwrite = match slot_exists(root, game_id, &name) {
                 Ok(true) => {
@@ -894,17 +913,22 @@ pub fn run_configured_with_io<R: BufRead, W: Write>(
             Err(ParseError::MissingDirection) => {
                 writeln!(output, "Where would you like to go? Try 'go north'.\n")?
             }
-            Err(ParseError::MissingTarget(action)) => writeln!(
-                output,
-                "Please specify a target. Try 'help' for the syntax of {action}.\n"
-            )?,
+            Err(ParseError::MissingTarget(action)) => {
+                let example = match action {
+                    "take" => "take <object> or take all",
+                    "drop" => "drop <object> or drop all",
+                    "examine" => "examine <object>",
+                    _ => "use <item> on <target>",
+                };
+                writeln!(output, "Please specify a target. Try '{example}'. 'look' shows nearby objects; 'inventory' shows what you carry.\n")?;
+            }
             Err(ParseError::Unknown(command)) => {
                 writeln!(
                     output,
                     "I don't understand '{command}'. Type 'help' for commands."
                 )?;
                 if let Some(suggestion) = suggest_verb(&command) {
-                    writeln!(output, "Did you mean '{suggestion}'?")?;
+                    writeln!(output, "Did you mean '{suggestion}'? Type '{suggestion}' to try it; suggestions do not run automatically.")?;
                 }
                 writeln!(output)?;
             }
@@ -918,6 +942,44 @@ fn is_defeated(state: &GameState) -> bool {
         .character
         .as_ref()
         .is_some_and(|character| character.hp == 0)
+}
+
+fn looks_like_command(name: &str) -> bool {
+    let normalized = crate::resolution::normalize(name);
+    let verb = normalized.split_whitespace().next().unwrap_or("");
+    parse_command(&normalized).is_ok()
+        || matches!(
+            verb,
+            "go" | "move"
+                | "walk"
+                | "travel"
+                | "run"
+                | "head"
+                | "take"
+                | "drop"
+                | "use"
+                | "attack"
+                | "stab"
+                | "slash"
+                | "hit"
+                | "strike"
+                | "cast"
+                | "learn"
+                | "save"
+                | "load"
+                | "saves"
+                | "stats"
+                | "enemies"
+                | "wallet"
+                | "money"
+                | "balance"
+                | "weapons"
+                | "spells"
+                | "spellbook"
+                | "shop"
+                | "buy"
+                | "sell"
+        )
 }
 
 // Lightweight command spelling suggestions. Never execute the suggestion.
@@ -954,14 +1016,59 @@ fn suggest_verb(command: &str) -> Option<String> {
         "west",
         "up",
         "down",
+        "go",
+        "move",
+        "walk",
+        "travel",
+        "run",
+        "head",
+        "leave",
+        "stab",
+        "slash",
+        "hit",
+        "strike",
+        "inspect",
+        "grab",
+        "get",
     ];
     let verb = command.split_whitespace().next()?;
+    // A recognized verb with unsupported arguments needs syntax guidance, not
+    // a different action (e.g. "look X" must never suggest "load X").
+    if VERBS.contains(&verb) {
+        return None;
+    }
     if verb.len() < 3 || !verb.is_ascii() {
         return None;
     }
     let mut matches = VERBS
         .iter()
         .filter_map(|candidate| {
+            let remainder = command.strip_prefix(verb).unwrap_or("").trim();
+            if !remainder.is_empty()
+                && matches!(
+                    *candidate,
+                    "inventory"
+                        | "spellbook"
+                        | "spells"
+                        | "weapons"
+                        | "stats"
+                        | "enemies"
+                        | "wallet"
+                        | "balance"
+                        | "money"
+                        | "saves"
+                        | "quit"
+                        | "help"
+                        | "north"
+                        | "south"
+                        | "east"
+                        | "west"
+                        | "up"
+                        | "down"
+                )
+            {
+                return None;
+            }
             let distance = edit_distance_at_most_two(verb, candidate)?;
             (distance > 0).then_some((distance, *candidate))
         })
@@ -985,7 +1092,8 @@ fn prompt<R: BufRead, W: Write>(
     output: &mut W,
     text: &str,
 ) -> io::Result<Option<String>> {
-    write!(output, "{text}")?;
+    // Rustyline redraws the input line; keep the question above that line.
+    writeln!(output, "{}", text.trim_end())?;
     output.flush()?;
     let mut line = String::new();
     if input.read_line(&mut line)? == 0 {

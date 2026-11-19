@@ -195,6 +195,8 @@ fn combat_and_spell_aliases_resolve_instances_and_conserve_failed_state() {
         s.item_locations.insert(id.clone(), ItemLocation::Inventory);
     }
     s.learned_abilities.insert("fireball".into());
+    s.item_locations
+        .insert("fireball_scroll".into(), ItemLocation::Consumed);
     s.current_room = "woods".into();
     s.active_enemies = vec![
         EnemyInstance {
@@ -211,6 +213,10 @@ fn combat_and_spell_aliases_resolve_instances_and_conserve_failed_state() {
     for command in [
         " ATTACK the GOBLIN WITH the DAGGER ",
         "use the dagger on the goblin",
+        "stab the goblin with the rusty dagger",
+        "slash goblin with dagger",
+        "hit goblin with dagger",
+        "strike goblin with dagger",
     ] {
         let (result, out) = prep(command, "2\n", &a.game.world, &s, &a.rpg, &a.encounters);
         assert!(out.contains("Which goblin"), "{command}: {result:?} {out}");
@@ -223,6 +229,9 @@ fn combat_and_spell_aliases_resolve_instances_and_conserve_failed_state() {
         "cast fireball on goblin #1",
         "use fireball on goblin #1",
         "cast fire on #1",
+        "cast fireball at goblin #1",
+        "use fireball at goblin #1",
+        "attack goblin #1 with fireball",
     ] {
         assert_eq!(
             prep(command, "", &a.game.world, &s, &a.rpg, &a.encounters)
@@ -240,6 +249,156 @@ fn combat_and_spell_aliases_resolve_instances_and_conserve_failed_state() {
         assert!(result.is_none());
         assert!(out.contains("Did you mean") || out.contains("available targets"));
     }
+}
+
+#[test]
+fn human_movement_and_examination_phrases() {
+    use lupine::commands::Direction;
+    let w = world();
+    let s = GameState::new(&w);
+    for line in [
+        "travel south",
+        "run south",
+        "head south",
+        "leave south",
+        "go to the south",
+        "walk to south",
+    ] {
+        assert_eq!(
+            parse_command(line),
+            Ok(Command::Move(Direction::South)),
+            "{line}"
+        );
+        assert!(
+            prep(line, "", &w, &s, &Default::default(), &Default::default())
+                .0
+                .is_some(),
+            "{line}"
+        );
+    }
+    assert_eq!(parse_command("look around"), Ok(Command::Look));
+    assert_eq!(
+        parse_command("look brass key"),
+        Ok(Command::Examine("brass key".into()))
+    );
+    assert_eq!(parse_command("leave key"), Ok(Command::Drop("key".into())));
+    assert!(prep(
+        "go left",
+        "",
+        &w,
+        &s,
+        &Default::default(),
+        &Default::default()
+    )
+    .1
+    .contains("exit direction"));
+    assert!(
+        prep("yes", "", &w, &s, &Default::default(), &Default::default())
+            .1
+            .contains("type the suggested command")
+    );
+}
+
+#[test]
+fn word_prefixes_are_ordered_and_ambiguous_matches_stay_ambiguous() {
+    let choices = vec![
+        Candidate::new("fire_scroll", "fireball scroll"),
+        Candidate::new("fire_stone", "firestorm scroll"),
+    ];
+    assert_eq!(resolution::matches("fire scroll", &choices).len(), 2);
+    assert_eq!(
+        resolution::unique("fireb scroll", &choices).unwrap(),
+        "fire_scroll"
+    );
+    assert!(resolution::matches("scroll fire", &choices).is_empty());
+    assert!(resolution::matches("fire fire", &choices).is_empty());
+    assert!(resolution::matches("firebll scroll", &choices).is_empty());
+    let a = Adventure::load(Path::new("samples/rpg_persistent")).unwrap();
+    let s = GameState::new(&a.game.world);
+    assert_eq!(
+        prep(
+            "take fire scroll",
+            "",
+            &a.game.world,
+            &s,
+            &a.rpg,
+            &a.encounters
+        )
+        .0
+        .as_deref(),
+        Some("take fireball_scroll")
+    );
+    // The sample's explicit alias is more specific than partial names.
+    assert_eq!(
+        prep("take scroll", "", &a.game.world, &s, &a.rpg, &a.encounters)
+            .0
+            .as_deref(),
+        Some("take healing_scroll")
+    );
+}
+
+#[test]
+fn omitted_weapon_requires_explicit_selection_and_can_cancel() {
+    let a = Adventure::load(Path::new("samples/rpg_persistent")).unwrap();
+    let mut s = GameState::new(&a.game.world);
+    s.item_locations
+        .insert("rusty_dagger".into(), ItemLocation::Inventory);
+    s.active_enemies.push(EnemyInstance {
+        instance_id: 1,
+        enemy_id: "goblin".into(),
+        current_hp: 20,
+    });
+    for answer in ["cancel\n", "", "0\n"] {
+        let (result, text) = prep(
+            "attack goblin",
+            answer,
+            &a.game.world,
+            &s,
+            &a.rpg,
+            &a.encounters,
+        );
+        assert!(result.is_none());
+        assert!(text.contains("Which weapon"));
+    }
+    assert_eq!(
+        prep(
+            "attack goblin",
+            "1\n",
+            &a.game.world,
+            &s,
+            &a.rpg,
+            &a.encounters
+        )
+        .0
+        .as_deref(),
+        Some("attack goblin #1 with rusty_dagger")
+    );
+    s.learned_abilities.insert("fireball".into());
+    s.item_locations
+        .insert("fireball_scroll".into(), ItemLocation::Consumed);
+    for command in ["fireball", "fireball goblin"] {
+        let (result, text) = prep(command, "", &a.game.world, &s, &a.rpg, &a.encounters);
+        assert!(result.is_none());
+        assert!(text.contains("No spell was cast"));
+    }
+}
+
+#[test]
+fn runner_accepts_movement_and_rejects_misleading_verb_suggestions() {
+    let w = world();
+    let mut out = Vec::new();
+    let saves =
+        std::env::temp_dir().join(format!("lupine-feedback-no-save-{}", std::process::id()));
+    lupine::runner::run_with_io_and_saves(w, "Feedback", "feedback", &saves,
+        Cursor::new("travle north\ntravel north\nhead south\nlook brass key\nstats goblin with dagger\nwalet\nyes\nquit\nyes\n"), &mut out).unwrap();
+    let text = String::from_utf8(out).unwrap();
+    assert!(text.contains("Did you mean 'travel north'?"), "{text}");
+    assert!(text.contains("Test Corridor"), "{text}");
+    assert!(!text.contains("Did you mean 'load brass key'"), "{text}");
+    assert!(!text.contains("Did you mean 'stats goblin"), "{text}");
+    assert!(text.contains("Type 'wallet' to try it"), "{text}");
+    assert!(text.contains("There is no question waiting"), "{text}");
+    assert!(!saves.exists());
 }
 #[test]
 fn visible_items_keep_priority_over_spell_names() {

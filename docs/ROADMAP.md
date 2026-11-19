@@ -2,11 +2,13 @@
 
 ## Current development: Phase 3
 
-Creator work through Phase 2I is merged. Draft merge order: #20 startup → #21 history →
-#22 parser → #23 export → #24 release readiness. Version 0.10.0-dev.1 identifies current
+Creator work through Phase 2I and Phase 3 PRs #20–#24 are merged.
+The human-feedback follow-up addresses disappearing prompts, save naming and practical
+parser phrases; see [follow-up scope and verification](PLAYER_FEEDBACK_FOLLOWUP.md).
+Version 0.10.0-dev.1 identifies current
 development; v0.9.0 remains unchanged. [Actual verification](PHASE_3_REVIEW.md).
 
-Next: human beginner feedback, native CachyOS acceptance, transaction-binding authoring,
+Next: retest with the original player, native CachyOS acceptance, transaction-binding authoring,
 stable-ID migration, guided editor recovery and optional pronouns/chained commands.
 
 ## Historical roadmap/backlog entries
