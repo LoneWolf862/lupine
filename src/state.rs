@@ -11,6 +11,7 @@ pub enum ItemLocation {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct GameState {
+    pub story: crate::rules::StoryState,
     pub current_room: RoomId,
     pub item_locations: HashMap<ItemId, ItemLocation>,
     pub flags: HashSet<String>,
@@ -42,9 +43,19 @@ impl GameState {
             })
             .collect();
         Self {
+            story: crate::rules::StoryState {
+                counters: world.rules.counters.clone(),
+                visited: [world.starting_room.clone()].into_iter().collect(),
+            },
             current_room: world.starting_room.clone(),
             item_locations,
-            flags: HashSet::new(),
+            flags: world
+                .rules
+                .flags
+                .iter()
+                .filter(|(_, v)| **v)
+                .map(|(id, _)| id.clone())
+                .collect(),
             character: None,
             learned_abilities: HashSet::new(),
             wallet: BTreeMap::new(),

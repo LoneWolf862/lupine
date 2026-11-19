@@ -8,7 +8,8 @@ PATH`, then [test scenarios](SCENARIO_TESTING.md) and `lupine play PATH`.
 All TOML/FIG files use standard TOML syntax. References use stable IDs, not filenames
 or display names. Unknown fields are rejected. Use lowercase ASCII IDs with digits,
 underscores or dashes; avoid changing game identity after players have saves.
-Examples below describe the Phase 1 baseline; later phases update this reference.
+The shared-rule additions are documented in [RULES.md](RULES.md); they extend the
+baseline fields below with nested conditions, effects and ordered interaction outcomes.
 
 ## Files and field reference
 
@@ -18,6 +19,7 @@ Examples below describe the Phase 1 baseline; later phases update this reference
 | rooms/*.toml | id, title, description | exits={} mapping north/south/east/west/up/down to rooms; descriptions=[]; art or art_file; art_variants=[]; encounters |
 | items/*.toml | id, name, description, portable, starting_room | aliases=[]; descriptions=[] |
 | interactions.toml | none | interactions=[]; exit_rules=[] |
+| rules.toml | none | flags={} initial booleans; counters={} initial signed integers |
 | weapons/*.toml | item, damage (positive integer) | damage_type="physical" (descriptive only, no resistance behavior) |
 | spells/*.toml | id, name, mana_cost (nonnegative), kind, power (positive) | description=""; learn_from_item (portable teaching item) |
 | enemies/*.toml | id, name, description, level, max_hp (positive) | attack_power=100; defense=0; experience=0; attacks=[]; loot=[]; currency_rewards=[] |
@@ -69,7 +71,9 @@ default to empty lists. Both objects must be accessible and the used item carrie
 One rule per pair; one exit rule per room/direction. Exit rules require an existing
 exit. Conditions: has_item, flag_set, flag_unset. All conditions must pass. Effects:
 set_flag, clear_flag, move_item_to_room={item="id",room="id"}.
-Flags initially unset. Flags are currently free-form; typo checking is future work.
+Undeclared-mode flags initially unset. Optional declarations provide initial values
+and strict name checks. Interaction outcomes use ordered when/effects/text entries;
+see [shared rules](RULES.md) for the complete extended condition/effect vocabulary.
 
 Room/item `[[descriptions]]` require nonempty `when` condition lists and `text`.
 First matching variant replaces default prose. Room `[[art_variants]]` require

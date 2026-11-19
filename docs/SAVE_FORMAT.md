@@ -1,4 +1,16 @@
-# RORK Save Format — v0.6.0-A Working Specification
+# RORK Save Format
+
+## Current development: version 2
+
+Engine expansion phase 2 introduces required `story` state: declared integer counters
+and visited-room IDs. Both round-trip on explicit manual save/load and validate against
+the current world. This is a deliberate structural revision, independent of Cargo
+version and game.toml save_compatibility_version. Older save formats are rejected with
+guidance to use their matching engine/game; no loader or automatic migration is added.
+Existing RORK files are never rewritten by authoring, migration, testing or export.
+
+The command semantics described next remain current. All v0.6 stage descriptions
+below are historical records, not the current schema or feature inventory.
 
 Phase 4 creator ID migration changes authored content only. It never searches for or
 rewrites player RORK files, changes game identity, or increments compatibility revisions.

@@ -5,11 +5,16 @@ loads strict TOML test suites and invokes the real runner with an explicit rando
 seed, returning final in-memory state for assertions. Existing runner APIs preserve
 their signatures/default randomness. No implicit persistence or RORK changes.
 
-## Current development architecture (0.10.0-dev.1)
+## Current development architecture (0.11.0-dev.1)
 
 Lupine is an offline terminal engine. Immutable TOML content is separate from mutable
 GameState; supported FIG files hold configuration. Manual RORK persistence remains in
-save.rs/save_files.rs with serialization version 1 unchanged.
+save.rs/save_files.rs; expansion phase 2 uses serialization version 2 for counters
+and visited rooms. `rules.rs` owns typed nested conditions, atomic effect application,
+ordered outcomes and initial declarations from rules.toml. Existing interactions,
+prose/art and exit rules share the same conditions. `diagnostics.rs` supplies advisory
+checks without rejecting intentional offstage content. Nested references and declaration
+keys are covered by schema-aware migration and Snapshot/export inventory.
 
 - adventure.rs assembles story, FIG, RPG, encounter, wallet and shop validation for CLI,
   startup, creator and export. Fresh play never silently loads a save.

@@ -1,0 +1,33 @@
+format_version = 1
+seed = 1
+
+[[scenario]]
+name = "locked route rejects travel"
+commands = ["north"]
+contains = ["The workshop door is locked."]
+room = "foyer"
+inventory = []
+flags = []
+counters = { unlocks = 0 }
+visited = ["foyer"]
+
+[[scenario]]
+name = "key unlocks route and changes presentation"
+setup = ["take brass key"]
+commands = ["use brass key on workshop door", "look", "north"]
+contains = ["The key turns; the door unlocks.", "The doorway to the north stands open."]
+room = "workshop"
+inventory = ["brass_key"]
+flags = ["door_open"]
+counters = { unlocks = 1 }
+visited = ["foyer", "workshop"]
+
+[[scenario]]
+name = "fixed objects cannot be taken"
+commands = ["take workshop door"]
+contains = ["cannot be moved"]
+room = "foyer"
+inventory = []
+flags = []
+counters = { unlocks = 0 }
+visited = ["foyer"]

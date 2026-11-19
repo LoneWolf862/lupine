@@ -5,6 +5,7 @@ use lupine::world::{Condition, DescriptionVariant, Effect, ExitRule, Interaction
 
 fn world() -> World {
     World {
+        rules: Default::default(),
         starting_room: "porch".into(),
         rooms: vec![
             Room {
@@ -40,6 +41,7 @@ fn world() -> World {
             },
         ],
         interactions: vec![Interaction {
+            outcomes: Vec::new(),
             item: "copper_token".into(), target: "door".into(),
             requires: vec![Condition::FlagUnset("door_open".into())],
             effects: vec![Effect::SetFlag("door_open".into())],

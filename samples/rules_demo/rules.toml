@@ -1,0 +1,4 @@
+[flags]
+door_open = false
+[counters]
+unlocks = 0

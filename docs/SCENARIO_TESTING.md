@@ -34,6 +34,7 @@ errors. Use several small independent scenarios, including failure and cancellat
 paths. A passing scenario tests only its authored assertions, not general solvability.
 
 The suite file is an author tool, not adventure content; export excludes it.
-Current foundation asserts prose, room, inventory and flags. Further engine phases
-will extend assertions/setup alongside their new state. Normal play retains its
-clock-derived randomness; this phase changes no RORK schema or gameplay defaults.
+Assertions cover prose, room, inventory and flags. Phase 2 additionally supports
+`counters = { attempts=1 }` and `visited = ["hall", "workshop"]`, each comparing the
+entire final collection when present. Normal play retains clock-derived randomness.
+RORK version 2 is introduced by phase 2 for new story state, not by scenario testing.

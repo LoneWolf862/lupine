@@ -3,14 +3,14 @@
 Approved by the creator on 2026-11-19. Primary workflow: directly author TOML
 content and FIG configuration. Engine capability precedes wizard coverage, which
 precedes wizard usability. This is engine work, not HOWLBOUND story development.
-The baseline is main 451f409, including merged Phase 4 PRs #26–#30.
+The baseline is main 451f409, including merged Phase 4 PRs #26â€“#30.
 
 ## Ordered delivery and status
 
 | Phase | Scope | Status |
 |---|---|---|
-| 1 | Current format reference, mechanic examples, file-based scenario testing | Candidate; verification recorded below |
-| 2 | Shared nested conditions, typed effects, counters, ordered outcomes | Approved, not implemented |
+| 1 | Current format reference, mechanic examples, file-based scenario testing | Verified locally and in CI; draft PR #31 |
+| 2 | Shared nested conditions, typed effects, counters, ordered outcomes | Verified locally; draft PR pending |
 | 3 | Authored actions/aliases, fixed-object use, player feedback | Approved, not implemented |
 | 4 | Hidden/starting inventory, containers, quantities, consumables | Approved, not implemented |
 | 5 | Events, timers, quests, journals, endings | Approved, not implemented |
@@ -48,4 +48,15 @@ passed, release build passed. `scripts/phase4_acceptance.py` authored the full R
 fixture through menus, exercised eight explicitly saved slots, exported/extracted a
 ZIP independently and launched the native package successfully. No automatic saves;
 source content unchanged. Artifacts: target/phase4-acceptance-e488ee8d/ in the phase-1
-worktree. CI is pending; native CachyOS and human beginner acceptance are not claimed.
+worktree. Native CachyOS and human beginner acceptance are not claimed.
+
+Phase 1 CI: Windows Server 2022 and Ubuntu 22.04 passed at 87992dc, Actions run
+44590136960. [Draft PR #31](https://github.com/LoneWolf862/lupine/pull/31) targets main.
+Phase 2 intentionally revises RORK to version 2 for new persistent story state;
+no existing save files or game compatibility revisions are changed automatically.
+
+Phase 2 local Windows: 280 tests passed, formatting and strict all-target Clippy
+passed, release build and independent Rust consumer check passed. Native creator,
+manual save/load and independent ZIP launcher acceptance passed (artifacts under
+target/phase4-acceptance-b01994de/). Export regression confirms rules.toml is retained
+byte-for-byte and reloads. CI and native CachyOS acceptance are not yet claimed.

@@ -6,6 +6,7 @@ use lupine::world::{
 
 pub fn fixture_world() -> World {
     World {
+        rules: Default::default(),
         starting_room: "foyer".into(),
         rooms: vec![
             Room {
@@ -95,6 +96,7 @@ pub fn fixture_world() -> World {
             blocked_text: "The northern passage is sealed.".into(),
         }],
         interactions: vec![Interaction {
+            outcomes: Vec::new(),
             item: "brass_key".into(),
             target: "test_panel".into(),
             requires: vec![Condition::FlagUnset("panel_activated".into())],

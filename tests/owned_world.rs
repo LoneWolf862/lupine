@@ -15,6 +15,7 @@ fn dynamic(text: &str) -> String {
 #[test]
 fn accepts_runtime_allocated_names_descriptions_and_ids() {
     let world = World {
+        rules: Default::default(),
         starting_room: dynamic("start"),
         rooms: vec![
             Room {
@@ -66,6 +67,7 @@ fn accepts_runtime_allocated_names_descriptions_and_ids() {
             blocked_text: dynamic("It is locked."),
         }],
         interactions: vec![Interaction {
+            outcomes: Vec::new(),
             item: dynamic("key"),
             target: dynamic("lock"),
             requires: vec![Condition::FlagUnset(dynamic("unlocked"))],

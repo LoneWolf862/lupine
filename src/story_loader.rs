@@ -102,6 +102,8 @@ struct RulesData {
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct InteractionData {
+    #[serde(default)]
+    outcomes: Vec<toml::Value>,
     item: String,
     target: String,
     #[serde(default)]
@@ -159,53 +161,11 @@ fn direction(name: &str) -> Result<Direction, String> {
     }
 }
 
-fn single_entry(value: &toml::Value) -> Result<(&str, &toml::Value), String> {
-    let table = value
-        .as_table()
-        .ok_or("rule must be an inline TOML table")?;
-    if table.len() != 1 {
-        return Err("rule must contain exactly one condition or effect".to_owned());
-    }
-    let (key, value) = table.iter().next().expect("one entry checked above");
-    Ok((key, value))
-}
-
-fn text_value(value: &toml::Value, key: &str) -> Result<String, String> {
-    value
-        .as_str()
-        .map(str::to_owned)
-        .ok_or_else(|| format!("'{key}' must be a string"))
-}
-
 fn condition(value: &toml::Value) -> Result<Condition, String> {
-    let (key, value) = single_entry(value)?;
-    match key {
-        "has_item" => Ok(Condition::HasItem(text_value(value, key)?)),
-        "flag_set" => Ok(Condition::FlagSet(text_value(value, key)?)),
-        "flag_unset" => Ok(Condition::FlagUnset(text_value(value, key)?)),
-        _ => Err(format!("unknown condition '{key}'")),
-    }
+    crate::rules::decode(value)
 }
-
 fn effect(value: &toml::Value) -> Result<Effect, String> {
-    let (key, value) = single_entry(value)?;
-    match key {
-        "set_flag" => Ok(Effect::SetFlag(text_value(value, key)?)),
-        "clear_flag" => Ok(Effect::ClearFlag(text_value(value, key)?)),
-        "move_item_to_room" => {
-            let map = value
-                .as_table()
-                .ok_or("move_item_to_room must be a table")?;
-            if map.len() != 2 || !map.contains_key("item") || !map.contains_key("room") {
-                return Err("move_item_to_room requires exactly 'item' and 'room'".into());
-            }
-            Ok(Effect::MoveItemToRoom {
-                item: text_value(&map["item"], "item")?,
-                room: text_value(&map["room"], "room")?,
-            })
-        }
-        _ => Err(format!("unknown effect '{key}'")),
-    }
+    crate::rules::decode(value)
 }
 
 fn conditions(data: &[toml::Value], origin: &str) -> Result<Vec<Condition>, String> {
@@ -437,6 +397,12 @@ pub fn load_game(directory: impl AsRef<Path>) -> Result<LoadedGame, String> {
             })
             .collect::<Result<Vec<_>, _>>()?;
         interactions.push(Interaction {
+            outcomes: data
+                .outcomes
+                .iter()
+                .map(crate::rules::decode)
+                .collect::<Result<_, _>>()
+                .map_err(|e| format!("{origin}: {e}"))?,
             item: data.item,
             target: data.target,
             requires: conditions(&data.requires, &origin)?,
@@ -456,6 +422,7 @@ pub fn load_game(directory: impl AsRef<Path>) -> Result<LoadedGame, String> {
         });
     }
     let world = World {
+        rules: crate::rules::StoryRules::load(directory)?,
         rooms,
         items,
         interactions,
