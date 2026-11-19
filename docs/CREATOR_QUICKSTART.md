@@ -142,3 +142,5 @@ it with `use <object>`; creating it spends no resources. Failed transactions cha
 I/H open prerequisite item/shop managers before a binding draft; their saves are separate.
 Save/discard an active draft before separately saving prerequisites. Cancel never undoes
 earlier confirmed prerequisite saves or changes player progress.
+
+Current expansion: creator F provides complete-schema multi-file structural/text drafts, repair, duplicate/delete and validation. G edits publication properties; I inspects the room map and typed references. Combat FIG has a dedicated form at 3 > 3. See [PROJECT_EDITOR.md](PROJECT_EDITOR.md) for controls, formatting effects and recovery v2. Individual guided managers remain available.

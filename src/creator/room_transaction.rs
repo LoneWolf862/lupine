@@ -25,7 +25,7 @@ const FILES: &[&str] = &[
     "character.toml",
 ];
 
-fn editable_path(path: &Path, existing: bool) -> bool {
+pub(super) fn editable_path(path: &Path, existing: bool) -> bool {
     let safe = path
         .components()
         .all(|c| matches!(c, std::path::Component::Normal(_)));
@@ -179,7 +179,7 @@ impl Snapshot {
     pub fn source(&self, path: &Path) -> Option<&[u8]> {
         self.files.get(path).map(|o| o.bytes.as_slice())
     }
-    fn check(&self, changes: &BTreeMap<PathBuf, String>) -> Result<(), String> {
+    fn check(&self, changes: &BTreeMap<PathBuf, Option<String>>) -> Result<(), String> {
         // Capture without the transaction directory interfering; it is not content.
         tree::root(&self.root)?;
         let report = tree::inspect(&self.root);
@@ -228,22 +228,74 @@ impl Snapshot {
         self.commit_with(changes, |_| Ok(()))
     }
     pub fn validate(&self, changes: &BTreeMap<PathBuf, String>) -> Result<(), String> {
-        self.stage(changes, true, |_| Ok(()))
+        self.validate_changes(
+            &changes
+                .iter()
+                .map(|(p, t)| (p.clone(), Some(t.clone())))
+                .collect(),
+        )
     }
     fn commit_with(
         &self,
         changes: &BTreeMap<PathBuf, String>,
         before_publish: impl FnMut(usize) -> Result<(), String>,
     ) -> Result<(), String> {
-        self.stage(changes, false, before_publish)
+        self.stage(
+            &changes
+                .iter()
+                .map(|(p, t)| (p.clone(), Some(t.clone())))
+                .collect(),
+            false,
+            before_publish,
+        )
+    }
+    pub fn all_sources(&self) -> impl Iterator<Item = (&PathBuf, &[u8])> {
+        self.files.iter().map(|(p, o)| (p, o.bytes.as_slice()))
+    }
+    pub fn validate_changes(
+        &self,
+        changes: &BTreeMap<PathBuf, Option<String>>,
+    ) -> Result<(), String> {
+        self.stage(changes, true, |_| Ok(()))
+    }
+    pub fn commit_changes(
+        &self,
+        changes: &BTreeMap<PathBuf, Option<String>>,
+    ) -> Result<(), String> {
+        self.stage(changes, false, |_| Ok(()))
     }
     fn stage(
         &self,
-        changes: &BTreeMap<PathBuf, String>,
+        changes: &BTreeMap<PathBuf, Option<String>>,
         validate_only: bool,
         mut before_publish: impl FnMut(usize) -> Result<(), String>,
     ) -> Result<(), String> {
         self.check(changes)?;
+        if changes.is_empty() {
+            return Ok(());
+        }
+        for (path, text) in changes {
+            if text.is_none() && !self.files.contains_key(path) {
+                return Err("Cannot delete a missing file".into());
+            }
+            if text.as_ref().is_some_and(|t| t.len() > 8 * 1024 * 1024) {
+                return Err("Draft exceeds 8 MiB per-file limit".into());
+            }
+        }
+        let total: usize = self
+            .files
+            .iter()
+            .filter(|(p, _)| !changes.contains_key(*p))
+            .map(|(_, o)| o.bytes.len())
+            .sum::<usize>()
+            + changes
+                .values()
+                .filter_map(Option::as_ref)
+                .map(String::len)
+                .sum::<usize>();
+        if total > 64 * 1024 * 1024 {
+            return Err("Draft exceeds 64 MiB snapshot limit".into());
+        }
         let lock = self.root.join(LOCK);
         fs::create_dir(&lock).map_err(|e| {
             format!(
@@ -291,13 +343,17 @@ impl Snapshot {
                 }
             }
             for (path, original) in &self.files {
-                let bytes = changes
-                    .get(path)
-                    .map(|s| s.as_bytes())
-                    .unwrap_or(&original.bytes);
+                let bytes = match changes.get(path) {
+                    Some(Some(text)) => text.as_bytes(),
+                    Some(None) => continue,
+                    None => &original.bytes,
+                };
                 owned.write(&staged.join(path), bytes)?;
             }
             for path in changes.keys() {
+                if changes[path].is_none() {
+                    continue;
+                }
                 if let Some(original) = self.files.get(path) {
                     fs::set_permissions(staged.join(path), original.permissions.clone())
                         .map_err(|e| e.to_string())?;
@@ -314,12 +370,16 @@ impl Snapshot {
             }
             for (path, text) in changes {
                 if !self.files.contains_key(path) {
-                    owned.write(&staged.join(path), text.as_bytes())?;
+                    if let Some(text) = text {
+                        owned.write(&staged.join(path), text.as_bytes())?;
+                    }
                 }
             }
             for (path, text) in changes {
-                if path.starts_with("art") {
-                    crate::story_loader::validate_art(text, &path.display().to_string())?;
+                if let Some(text) = text {
+                    if path.starts_with("art") {
+                        crate::story_loader::validate_art(text, &path.display().to_string())?;
+                    }
                 }
             }
             Adventure::load(&staged)
@@ -352,9 +412,11 @@ impl Snapshot {
                         ));
                     }
                 }
-                fs::hard_link(staged.join(relative), &target)
-                    .map_err(|e| format!("Cannot publish {}: {e}", target.display()))?;
-                published.push((relative.clone(), text.as_bytes()));
+                if let Some(text) = text {
+                    fs::hard_link(staged.join(relative), &target)
+                        .map_err(|e| format!("Cannot publish {}: {e}", target.display()))?;
+                    published.push((relative.clone(), text.as_bytes()));
+                }
             }
             Adventure::load(&self.root)
                 .map_err(|e| format!("Post-write validation failed: {e}"))?;

@@ -56,3 +56,7 @@ Quantity locations accept `{kind="npc",id="guide"}`.
 System scenarios support complete `wallet={coins=10}`, `learned_abilities=["light"]`,
 `equipped={body="coat"}` and player `statuses={poison=2}` assertions, plus `hp=90`
 and `mp=20` (these fail when there is no character). See samples/economy_demo.
+
+## Author debug trace
+
+Append `--trace` to `lupine test PATH SCENARIOS.toml` to print each real-runner transcript, deterministic seed and final mutable state. Hidden state is intentionally visible in this author command; normal gameplay remains unchanged. The same validation and no-player-save restrictions apply.

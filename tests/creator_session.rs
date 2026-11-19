@@ -440,3 +440,94 @@ fn empty_open_path_explains_folder_choice_and_retries() {
     assert!(!output.contains("Cannot open:"));
     assert!(output.contains("Validation successful!"));
 }
+
+#[test]
+fn project_editor_repairs_invalid_syntax_and_publishes_related_files_together() {
+    let f = Fixture::new();
+    fs::write(f.game.join("systems.toml"), "broken [").unwrap();
+    let out=f.run("f\n1\nsystems.toml\n1\n# repaired\n.end\n0\n1\nactions.toml\n1\n[[actions]]\nid='signal'\ncommands=['signal']\nsuccess_text='Signaled.'\nfailure_text='Cannot signal.'\neffects=[{set_flag='signal'}]\n.end\n0\nv\ns\nyes\n0\n0\n");
+    assert!(out.contains("Published and validated"), "{out}");
+    let a = lupine::adventure::Adventure::load(&f.game).unwrap();
+    assert_eq!(a.game.world.actions.len(), 1);
+    assert_eq!(
+        fs::read_to_string(f.game.join("systems.toml")).unwrap(),
+        "# repaired\n"
+    );
+    assert!(!f.saves.exists());
+}
+#[test]
+fn project_editor_duplicate_delete_references_and_cancel() {
+    let f = Fixture::new();
+    let out = f.run("f\n2\nrooms/start.toml\nsecond\ns\nyes\n0\n0\n");
+    assert!(out.contains("Published and validated"), "{out}");
+    let before = snapshot(&f.game);
+    let out = f.run("f\n3\nrooms/start.toml\ns\n0\n0\n");
+    assert!(out.contains("Proposed changes are invalid"), "{out}");
+    assert_eq!(snapshot(&f.game), before);
+    let out = f.run("f\n1\nrooms/second.toml\n2\n/title\n'Changed'\n0\ns\nno\ncancel\n0\n");
+    assert!(!out.contains("Published and validated"));
+    assert_eq!(snapshot(&f.game), before);
+    let out = f.run("f\n3\nrooms/second.toml\ns\nyes\n0\n0\n");
+    assert!(out.contains("Published and validated"), "{out}");
+    assert!(!f.game.join("rooms/second.toml").exists());
+}
+#[test]
+fn project_editor_nested_fields_and_eof_are_safe() {
+    let f = Fixture::new();
+    let out=f.run("f\n1\ngame.toml\n2\n/metadata\n{author='A',credits='C',license='L',instructions='I'}\n0\ns\nyes\n0\n0\n");
+    assert!(out.contains("Published and validated"), "{out}");
+    let a = lupine::adventure::Adventure::load(&f.game).unwrap();
+    assert_eq!(a.game.metadata.author, "A");
+    let before = snapshot(&f.game);
+    f.run("f\n1\ngame.toml\n2\n/title\n'Unpublished'\n0\ns\n");
+    assert_eq!(snapshot(&f.game), before);
+    let out = f.run("f\n1\n../escape.toml\n0\n0\n");
+    assert!(out.contains("Unsupported or unsafe path"));
+}
+#[test]
+fn combat_fig_and_author_inspection_work_through_creator() {
+    let f = Fixture::new();
+    let out = f.run("3\n3\n1\n0\n2\nnone\ns\nyes\n0\ni\n0\n");
+    assert!(out.contains("AUTHORED ROOM MAP"), "{out}");
+    let text = fs::read_to_string(f.game.join("config/combat.fig")).unwrap();
+    assert!(text.contains("minimum_damage = 0"));
+    assert!(text.contains("none"));
+}
+
+#[test]
+fn publication_properties_preserve_game_identity_and_confirmed_text() {
+    let f = Fixture::new();
+    let out = f.run("g\n2\nExample author\n.\ns\nyes\n0\n");
+    let a = lupine::adventure::Adventure::load(&f.game).unwrap();
+    assert_eq!(a.game.id, "session_test");
+    assert_eq!(a.game.metadata.author, "Example author", "{out}");
+    assert_eq!(a.game.save_compatibility_version, 1);
+}
+#[test]
+fn native_author_trace_discloses_debug_state_only_on_request() {
+    let f = Fixture::new();
+    let scenarios = f.root.join("scenarios.toml");
+    fs::write(
+        &scenarios,
+        "format_version=1\n[[scenario]]\nname='trace'\ncommands=['look']\nroom='start'\n",
+    )
+    .unwrap();
+    for trace in [false, true] {
+        let mut command = Command::new(env!("CARGO_BIN_EXE_lupine"));
+        command.arg("test").arg(&f.game).arg(&scenarios);
+        if trace {
+            command.arg("--trace");
+        }
+        let out = command.output().unwrap();
+        assert!(
+            out.status.success(),
+            "{}",
+            String::from_utf8_lossy(&out.stderr)
+        );
+        assert_eq!(
+            String::from_utf8_lossy(&out.stdout).contains("FINAL STATE"),
+            trace
+        );
+    }
+    assert!(!f.saves.exists());
+}

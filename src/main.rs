@@ -6,6 +6,19 @@ fn main() -> std::io::Result<()> {
     let args: Vec<String> = std::env::args().collect();
     let mut input = lupine::terminal::stdin()?;
     match args.as_slice() {
+        [_, command, path, scenarios, flag] if command == "test" && flag == "--trace" => {
+            lupine::scenario::run_with_trace(
+                std::path::Path::new(path),
+                std::path::Path::new(scenarios),
+                &mut std::io::stdout().lock(),
+                true,
+            )
+            .map_err(std::io::Error::other)
+        }
+        [_, command, path] if command == "inspect" => {
+            lupine::creator::inspect::run(std::path::Path::new(path), &mut std::io::stdout().lock())
+                .map_err(std::io::Error::other)
+        }
         [_, command, adventure, scenarios] if command == "test" => lupine::scenario::run(
             std::path::Path::new(adventure),
             std::path::Path::new(scenarios),
@@ -151,7 +164,7 @@ fn main() -> std::io::Result<()> {
             Ok(())
         }
         _ => {
-            eprintln!("Usage: lupine [creator [directory] | new [<directory> <game-id> <title...>] | add <room|item|art> <directory> <id> [--dynamic for art] | play <directory> | validate <directory> | help]");
+            eprintln!("Usage: lupine [creator [directory] | new [<directory> <game-id> <title...>] | add <room|item|art> <directory> <id> [--dynamic for art] | play <directory> | validate <directory> | inspect <directory> | test <directory> <scenarios.toml> [--trace] | help]");
             Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidInput,
                 "invalid arguments",

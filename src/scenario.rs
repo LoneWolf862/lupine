@@ -84,6 +84,15 @@ fn validate_lines(lines: &[String]) -> Result<(), String> {
 /// Execute independent fresh sessions. No author files or player saves are written.
 /// All failures are reported; a failing assertion makes the CLI exit unsuccessfully.
 pub fn run(root: &Path, path: &Path, output: &mut impl Write) -> Result<(), String> {
+    run_with_trace(root, path, output, false)
+}
+/// Author-only transcript and final mutable state; never writes player saves.
+pub fn run_with_trace(
+    root: &Path,
+    path: &Path,
+    output: &mut impl Write,
+    trace: bool,
+) -> Result<(), String> {
     let text = std::fs::read_to_string(path).map_err(|e| format!("{}: {e}", path.display()))?;
     let suite: Suite = toml::from_str(&text).map_err(|e| format!("{}: {e}", path.display()))?;
     if suite.format_version != 1 || suite.scenario.is_empty() || suite.seed == 0 {
@@ -130,6 +139,14 @@ pub fn run(root: &Path, path: &Path, output: &mut impl Write) -> Result<(), Stri
         )
         .map_err(|e| e.to_string())?;
         let transcript = String::from_utf8(transcript).map_err(|e| e.to_string())?;
+        if trace {
+            writeln!(
+                output,
+                "\nTRACE {} (seed {})\n{}\nFINAL STATE\n{state:#?}",
+                case.name, suite.seed, transcript
+            )
+            .map_err(|e| e.to_string())?;
+        }
         let mut errors = Vec::new();
         for expected in &case.contains {
             if !transcript.contains(expected) {

@@ -16,6 +16,7 @@ use crate::world::{
 pub struct LoadedGame {
     pub id: String,
     pub title: String,
+    pub metadata: Metadata,
     pub save_compatibility_version: u32,
     pub world: World,
     pub config: crate::config::GameConfig,
@@ -28,6 +29,8 @@ struct Manifest {
     id: String,
     title: String,
     starting_room: String,
+    #[serde(default)]
+    metadata: Metadata,
     #[serde(default = "default_save_compatibility_version")]
     save_compatibility_version: u32,
     #[serde(default)]
@@ -35,6 +38,41 @@ struct Manifest {
     _currency: Option<toml::Value>,
     #[serde(default, rename = "currencies")]
     _currencies: Vec<toml::Value>,
+}
+
+/// Optional authored publication information; never affects RORK compatibility.
+#[derive(Debug, Default, Clone, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct Metadata {
+    pub author: String,
+    pub description: String,
+    pub version: String,
+    pub credits: String,
+    pub license: String,
+    pub instructions: String,
+}
+impl Metadata {
+    fn validate(&self) -> Result<(), String> {
+        for (name, text) in [
+            ("author", &self.author),
+            ("description", &self.description),
+            ("version", &self.version),
+            ("credits", &self.credits),
+            ("license", &self.license),
+            ("instructions", &self.instructions),
+        ] {
+            if text.len() > 65536
+                || text
+                    .chars()
+                    .any(|c| c.is_control() && !matches!(c, '\n' | '\r' | '\t'))
+            {
+                return Err(format!(
+                    "game.toml metadata.{name}: maximum 64 KiB, no terminal controls"
+                ));
+            }
+        }
+        Ok(())
+    }
 }
 
 fn default_save_compatibility_version() -> u32 {
@@ -484,9 +522,11 @@ pub fn load_game(directory: impl AsRef<Path>) -> Result<LoadedGame, String> {
             errors.join("\n")
         )
     })?;
+    manifest.metadata.validate()?;
     Ok(LoadedGame {
         id: manifest.id,
         title: manifest.title,
+        metadata: manifest.metadata,
         save_compatibility_version: manifest.save_compatibility_version,
         world,
         config,

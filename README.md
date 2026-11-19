@@ -152,3 +152,5 @@ evidence remain a separate obligation; this README does not claim that submissio
 MIT; see LICENSE. THIRD_PARTY_NOTICES.txt contains locked dependency notices, also included
 in exported packages. Regenerate with `python scripts/update_notices.py` after dependency
 updates. Authors supply their own adventure license and credits.
+
+Current development creator: **F** edits/repairs complete multi-file TOML/FIG drafts; **G** edits publication properties; **I** inspects rooms and typed references. Combat settings are in **3 > 3**. See [project editor](docs/PROJECT_EDITOR.md). `lupine inspect PATH` and `lupine test PATH SCENARIOS.toml --trace` provide read-only author diagnostics.

@@ -16,7 +16,7 @@ The baseline is main 451f409, including merged Phase 4 PRs #26â€“#30.
 | 5 | Events, timers, quests, journals, endings | Verified locally; draft PR #35 |
 | 6 | NPCs, conditional dialogue, choices, transfers and movement | Verified locally; draft PR #36 |
 | 7 | Independent economy, shared rewards, world abilities, equipment/status/combat configuration | Verified locally; draft PR #37 |
-| 8 | Wizard coverage, project properties, repair, duplicate/delete/reference migration | Approved, not implemented |
+| 8 | Wizard coverage, project properties, repair, duplicate/delete/reference migration | Implemented candidate; verification in progress |
 | 9 | Consistent controls, draft visibility, search and room-centered navigation | Approved, not implemented |
 
 Validation, debug/scenario support, docs, save round trips, references and export

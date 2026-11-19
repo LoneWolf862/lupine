@@ -155,6 +155,7 @@ fn runtime(path: &Path, target: Target) -> Result<Runtime, String> {
 
 pub struct ExportPlan {
     pub title: String,
+    metadata: crate::story_loader::Metadata,
     pub destination: PathBuf,
     content: BTreeMap<PathBuf, Vec<u8>>,
     runtimes: Vec<Runtime>,
@@ -229,6 +230,7 @@ impl ExportPlan {
         }
         Ok(Self {
             title: adventure.game.title,
+            metadata: adventure.game.metadata,
             destination,
             content,
             runtimes,
@@ -239,6 +241,7 @@ impl ExportPlan {
         for (path, bytes) in &self.content {
             writeln!(output, "  {} ({} bytes)", path.display(), bytes.len())?;
         }
+        writeln!(output,"Author: {}\nGame version: {}\nDescription: {}\nAuthored credits/license/instructions are included when provided in game.toml metadata.",self.metadata.author,self.metadata.version,self.metadata.description)?;
         writeln!(output,"Each platform folder includes the executable, adventure/, START_HERE.txt, a launcher and engine license. Source files stay unchanged.")
     }
     pub fn publish(self) -> Result<PathBuf, String> {
@@ -346,8 +349,25 @@ impl ExportPlan {
                     &package.join("THIRD_PARTY_NOTICES.txt"),
                     include_bytes!("../../THIRD_PARTY_NOTICES.txt"),
                 )?;
-                let instructions=format!("{}\nLupine {} - {}\n\nWindows: double-click Play.cmd, or open a terminal here and run .\\lupine.exe play adventure\nLinux: open a terminal here and run sh Play.sh\nLinux requires a compatible x86_64 Linux system and the runtime's system libraries (official builds use glibc).\nNo Rust, Cargo, account or internet is needed.\n\nThe executable alone opens Lupine's startup menu; choose Play and the included adventure.\nUse help in gameplay. Save only with save <name>; load <name> restores manually.\nPlayer saves live in your user-data directory, outside this package. Nothing autosaves.\n\nShare this complete platform folder, optionally zipped with your normal archive tool.\nDo not mix Windows and Linux executables. Include your own story license/credits as appropriate.\n",self.title,env!("CARGO_PKG_VERSION"),runtime.target.label());
+                let instructions=format!("{}\nLupine {} - {}\n\nWindows: double-click Play.cmd, or open a terminal here and run .\\lupine.exe play adventure\nLinux: open a terminal here and run sh Play.sh\nLinux requires a compatible x86_64 Linux system and the runtime's system libraries (official builds use glibc).\nNo Rust, Cargo, account or internet is needed.\n\nThe executable alone opens Lupine's startup menu; choose Play and the included adventure.\nUse help in gameplay. Save only with save <name>; load <name> restores manually.\nPlayer saves live in your user-data directory, outside this package. Nothing autosaves.\n\nShare this complete platform folder, optionally zipped with your normal archive tool.\nDo not mix Windows and Linux executables. See ABOUT_GAME.txt and any included GAME_CREDITS.txt, GAME_LICENSE.txt and GAME_INSTRUCTIONS.txt.\n",self.title,env!("CARGO_PKG_VERSION"),runtime.target.label());
                 write(&package.join("START_HERE.txt"), instructions.as_bytes())?;
+                let about = format!(
+                    "{}\nAuthor: {}\nVersion: {}\n\n{}\n",
+                    self.title,
+                    self.metadata.author,
+                    self.metadata.version,
+                    self.metadata.description
+                );
+                write(&package.join("ABOUT_GAME.txt"), about.as_bytes())?;
+                for (name, text) in [
+                    ("GAME_CREDITS.txt", &self.metadata.credits),
+                    ("GAME_LICENSE.txt", &self.metadata.license),
+                    ("GAME_INSTRUCTIONS.txt", &self.metadata.instructions),
+                ] {
+                    if !text.is_empty() {
+                        write(&package.join(name), text.as_bytes())?;
+                    }
+                }
             }
             // Publish launchers only after every package has validated.
             for runtime in &self.runtimes {
