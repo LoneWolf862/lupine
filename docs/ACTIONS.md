@@ -66,4 +66,5 @@ RPG disabled no longer advertise combat/spell commands in player help.
 The creator's Snapshot, ID migration, recovery and export inventories include
 `actions.toml`; a guided action editor is phase 8. The scenarios in
 `samples/rules_demo` exercise both interaction and action commands. Actions use
-existing mutable story state. Phase 3 kept RORK 2; phase 4 uses RORK 3 for objects.
+existing mutable story state. Phase 3 kept RORK 2; phase 4 introduced RORK 3 for objects, and phase 5 uses
+RORK 4 for [event progress](EVENTS.md).

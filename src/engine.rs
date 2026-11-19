@@ -23,6 +23,23 @@ fn message(text: impl Into<String>) -> ActionOutcome {
 }
 
 pub fn execute_command(world: &World, state: &mut GameState, command: Command) -> ActionOutcome {
+    execute_command_report(world, state, command).0
+}
+pub fn execute_command_report(
+    world: &World,
+    state: &mut GameState,
+    command: Command,
+) -> (ActionOutcome, bool) {
+    let mut performed = false;
+    let outcome = execute_core(world, state, command, &mut performed);
+    (outcome, performed)
+}
+fn execute_core(
+    world: &World,
+    state: &mut GameState,
+    command: Command,
+    performed: &mut bool,
+) -> ActionOutcome {
     match command {
         Command::Help => message(help()),
         Command::Quit => ActionOutcome::Quit("Goodbye!".into()),
@@ -48,6 +65,7 @@ pub fn execute_command(world: &World, state: &mut GameState, command: Command) -
                 }
             }
             if let Some(next_room) = world.room(destination) {
+                *performed = true;
                 state.current_room = next_room.id.clone();
                 state.story.visited.insert(next_room.id.clone());
                 message(describe_room(world, state, next_room))
@@ -84,17 +102,23 @@ pub fn execute_command(world: &World, state: &mut GameState, command: Command) -
         },
         Command::Take(target) => match resolve(world, state, &target) {
             Err(error) => message(error),
-            Ok(item) => message(
-                crate::objects::manipulate(world, state, "take", &item.id, None, 1)
-                    .unwrap_or_else(|e| e),
-            ),
+            Ok(item) => match crate::objects::manipulate(world, state, "take", &item.id, None, 1) {
+                Ok(text) => {
+                    *performed = true;
+                    message(text)
+                }
+                Err(e) => message(e),
+            },
         },
         Command::Drop(target) => match resolve(world, state, &target) {
             Err(error) => message(error),
-            Ok(item) => message(
-                crate::objects::manipulate(world, state, "drop", &item.id, None, 1)
-                    .unwrap_or_else(|e| e),
-            ),
+            Ok(item) => match crate::objects::manipulate(world, state, "drop", &item.id, None, 1) {
+                Ok(text) => {
+                    *performed = true;
+                    message(text)
+                }
+                Err(e) => message(e),
+            },
         },
         Command::Use { item, target } => {
             let item = match resolve(world, state, &item) {
@@ -131,6 +155,7 @@ pub fn execute_command(world: &World, state: &mut GameState, command: Command) -
                         });
                     match crate::rules::apply(world, state, effects) {
                         Ok(mut lines) => {
+                            *performed = true;
                             lines.insert(0, text.to_owned());
                             message(lines.join("\n"))
                         }

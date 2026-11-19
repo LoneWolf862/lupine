@@ -263,6 +263,16 @@ impl ShopContent {
         wallet: &WalletContent,
         query: &str,
     ) -> Option<String> {
+        self.use_transaction_item_result(world, state, wallet, query)
+            .map(|r| r.unwrap_or_else(|e| e))
+    }
+    pub fn use_transaction_item_result(
+        &self,
+        world: &World,
+        state: &mut GameState,
+        wallet: &WalletContent,
+        query: &str,
+    ) -> Option<Result<String, String>> {
         let visible = self
             .transaction_bindings
             .values()
@@ -290,13 +300,13 @@ impl ShopContent {
             })
             .collect::<Vec<_>>();
         let binding = match accessible.as_slice() {
-            [] => return Some(format!("You cannot use '{query}' here.")),
+            [] => return Some(Err(format!("You cannot use '{query}' here."))),
             [binding] => *binding,
-            _ => return Some(format!("Which '{query}' do you mean?")),
+            _ => return Some(Err(format!("Which '{query}' do you mean?"))),
         };
         match self.transact(state, wallet, &binding.offer, &binding.shop) {
-            Ok(result) => Some(binding.success_text.clone().unwrap_or(result)),
-            Err(error) => Some(binding.failure_text.clone().unwrap_or(error)),
+            Ok(result) => Some(Ok(binding.success_text.clone().unwrap_or(result))),
+            Err(error) => Some(Err(binding.failure_text.clone().unwrap_or(error))),
         }
     }
 

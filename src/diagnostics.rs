@@ -40,6 +40,13 @@ pub fn warnings(a: &Adventure) -> Vec<String> {
                 }
             }
         }
+        for event in &w.events.events {
+            for effect in &event.effects {
+                if let Effect::MovePlayer(to) = effect {
+                    reachable.insert(to.clone());
+                }
+            }
+        }
         if reachable.len() == before {
             break;
         }
@@ -167,6 +174,16 @@ pub fn warnings(a: &Adventure) -> Vec<String> {
                 if let Effect::SetFlag(id) = e {
                     written.insert(id.clone());
                 }
+            }
+        }
+    }
+    for event in &w.events.events {
+        for c in &event.requires {
+            condition(c, &mut read);
+        }
+        for effect in &event.effects {
+            if let Effect::SetFlag(id) = effect {
+                written.insert(id.clone());
             }
         }
     }

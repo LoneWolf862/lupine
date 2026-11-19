@@ -1,0 +1,28 @@
+format_version=1
+[[scenario]]
+name="reading and invalid input do not tick timers"
+commands=["look","journal","help","take missing","xyzzy"]
+turn=0
+timers={deadline=4}
+quests={retrieve="active"}
+journal=["instructions"]
+completed_events=["begin"]
+ended=false
+[[scenario]]
+name="acquisition wins before deadline"
+commands=["north","take token","wait"]
+turn=2
+timers={}
+quests={retrieve="done"}
+ending="success"
+inventory=["token"]
+contains=["ADVENTURE COMPLETE","This adventure has ended"]
+[[scenario]]
+name="deterministic timer produces failure ending"
+commands=["wait","wait","wait","wait","north"]
+turn=4
+timers={}
+quests={retrieve="failed"}
+ending="timeout"
+room="start"
+contains=["ADVENTURE ENDED","Time ran out."]

@@ -43,7 +43,7 @@ pub enum Compare {
     Ge,
 }
 impl Compare {
-    fn met(&self, a: i64, b: i64) -> bool {
+    fn met<T: Ord>(&self, a: T, b: T) -> bool {
         match self {
             Self::Eq => a == b,
             Self::Ne => a != b,
@@ -58,6 +58,16 @@ impl Compare {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case", deny_unknown_fields)]
 pub enum Condition {
+    QuestStage {
+        quest: String,
+        stage: String,
+    },
+    JournalHas(String),
+    TimerRunning(String),
+    Turn {
+        op: Compare,
+        value: u64,
+    },
     HasItem(String),
     ItemVisible(String),
     ContainerOpen(String),
@@ -89,6 +99,10 @@ pub enum Condition {
 impl Condition {
     pub fn met(&self, state: &GameState) -> bool {
         match self {
+            Self::QuestStage { quest, stage } => state.events.quests.get(quest) == Some(stage),
+            Self::JournalHas(id) => state.events.journal.contains(id),
+            Self::TimerRunning(id) => state.events.timers.contains_key(id),
+            Self::Turn { op, value } => op.met(state.events.turn, *value),
             Self::HasItem(id) => state.is_carried(id),
             Self::ItemVisible(id) => state.is_accessible(id),
             Self::ContainerOpen(id) => state.objects.containers.get(id).is_some_and(|c| c.open),
@@ -131,6 +145,10 @@ impl Condition {
             return Err("Conditions exceed 16 nesting levels".into());
         }
         match self {
+            Self::QuestStage { quest, stage } => quest_stage(world, quest, stage),
+            Self::JournalHas(id) => known(&world.events.journal, id, "journal entry"),
+            Self::TimerRunning(id) => known(&world.events.timers, id, "timer"),
+            Self::Turn { .. } => Ok(()),
             Self::HasItem(id) | Self::ItemVisible(id) => item(world, id),
             Self::ContainerOpen(id) | Self::ContainerLocked(id) => {
                 crate::objects::validate_location(world, &ItemLocation::Container(id.clone()))
@@ -168,6 +186,14 @@ impl Condition {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case", deny_unknown_fields)]
 pub enum Effect {
+    StartTimer(String),
+    CancelTimer(String),
+    SetQuestStage {
+        quest: String,
+        stage: String,
+    },
+    AddJournal(String),
+    EndGame(String),
     SetFlag(String),
     ClearFlag(String),
     MoveItemToRoom {
@@ -213,6 +239,12 @@ pub enum Effect {
 impl Effect {
     pub fn validate(&self, world: &World) -> Result<(), String> {
         match self {
+            Self::StartTimer(id) | Self::CancelTimer(id) => {
+                known(&world.events.timers, id, "timer")
+            }
+            Self::SetQuestStage { quest, stage } => quest_stage(world, quest, stage),
+            Self::AddJournal(id) => known(&world.events.journal, id, "journal entry"),
+            Self::EndGame(id) => known(&world.events.endings, id, "ending"),
             Self::SetFlag(id) | Self::ClearFlag(id) => flag(world, id),
             Self::MoveItemToRoom { item: id, room: r } => item(world, id)
                 .and_then(|()| room(world, r))
@@ -277,6 +309,33 @@ impl Effect {
         output: &mut Vec<String>,
     ) -> Result<(), String> {
         match self {
+            Self::StartTimer(id) => crate::events::start_timer(world, state, id)?,
+            Self::CancelTimer(id) => {
+                state.events.timers.remove(id);
+            }
+            Self::SetQuestStage { quest, stage } => {
+                state.events.quests.insert(quest.clone(), stage.clone());
+            }
+            Self::AddJournal(id) => {
+                if !state.events.journal.contains(id) {
+                    state.events.journal.push(id.clone());
+                }
+            }
+            Self::EndGame(id) => {
+                if state.events.ending.is_some() {
+                    return Err("The adventure has already ended".into());
+                }
+                state.events.ending = Some(id.clone());
+                let ending = &world.events.endings[id];
+                output.push(format!(
+                    "{}\n{}",
+                    match ending.kind {
+                        crate::events::EndingKind::Success => "ADVENTURE COMPLETE",
+                        crate::events::EndingKind::Failure => "ADVENTURE ENDED",
+                    },
+                    ending.text
+                ));
+            }
             Self::RevealItem(id) => {
                 state.objects.hidden.remove(id);
             }
@@ -406,10 +465,30 @@ pub fn apply(
         effect.apply(world, &mut draft, &mut text)?;
     }
     crate::objects::validate_state(world, &draft)?;
+    world.events.validate_state(&draft.events)?;
     *state = draft;
     Ok(text)
 }
 
+fn known<T>(map: &BTreeMap<String, T>, id: &str, kind: &str) -> Result<(), String> {
+    if map.contains_key(id) {
+        Ok(())
+    } else {
+        Err(format!("Unknown {kind} '{id}'"))
+    }
+}
+fn quest_stage(world: &World, quest: &str, stage: &str) -> Result<(), String> {
+    if world
+        .events
+        .quests
+        .get(quest)
+        .is_some_and(|q| q.stages.contains_key(stage))
+    {
+        Ok(())
+    } else {
+        Err(format!("Unknown quest/stage '{quest}:{stage}'"))
+    }
+}
 pub fn valid_id(id: &str) -> Result<(), String> {
     if id.is_empty()
         || id.len() > 80

@@ -43,3 +43,8 @@ Object scenarios can assert `hidden = ["note"]` (exact hidden set) and
 `quantities = [{ item = "ration", location = { kind = "inventory" }, quantity = 3 }]`.
 Each quantity assertion checks one location; unknown item IDs fail even for zero.
 See `samples/objects_demo/scenarios.toml` for container and split-stack assertions.
+
+Event scenarios can assert `turn=2`, `timers={deadline=3}` (exact active remaining
+turns), `quests={delivery="active"}` (exact stage map), `journal=["instructions"]`
+(exact acquisition order), `completed_events=["arrival"]` (exact once-event order),
+`ended=false`, or `ending="success"`. See samples/events_demo/scenarios.toml.

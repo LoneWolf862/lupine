@@ -39,6 +39,13 @@ struct Scenario {
     hidden: Option<Vec<String>>,
     #[serde(default)]
     quantities: Vec<QuantityAssertion>,
+    turn: Option<u64>,
+    timers: Option<std::collections::BTreeMap<String, u32>>,
+    quests: Option<std::collections::BTreeMap<String, String>>,
+    journal: Option<Vec<String>>,
+    ending: Option<String>,
+    ended: Option<bool>,
+    completed_events: Option<Vec<String>>,
 }
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -188,6 +195,66 @@ pub fn run(root: &Path, path: &Path, output: &mut impl Write) -> Result<(), Stri
                     state.count_at(&assertion.item, &assertion.location)
                 ));
             }
+        }
+        if case.turn.is_some_and(|n| n != state.events.turn) {
+            errors.push(format!(
+                "expected turn {:?}, got {}",
+                case.turn, state.events.turn
+            ));
+        }
+        if let Some(expected) = &case.timers {
+            let actual = state
+                .events
+                .timers
+                .iter()
+                .map(|(id, t)| (id.clone(), t.remaining))
+                .collect::<std::collections::BTreeMap<_, _>>();
+            if expected != &actual {
+                errors.push(format!("expected timers {expected:?}, got {actual:?}"));
+            }
+        }
+        if case
+            .quests
+            .as_ref()
+            .is_some_and(|q| q != &state.events.quests)
+        {
+            errors.push(format!(
+                "expected quests {:?}, got {:?}",
+                case.quests, state.events.quests
+            ));
+        }
+        if case
+            .journal
+            .as_ref()
+            .is_some_and(|q| q != &state.events.journal)
+        {
+            errors.push(format!(
+                "expected journal {:?}, got {:?}",
+                case.journal, state.events.journal
+            ));
+        }
+        if case
+            .completed_events
+            .as_ref()
+            .is_some_and(|q| q != &state.events.completed)
+        {
+            errors.push(format!(
+                "expected completed events {:?}, got {:?}",
+                case.completed_events, state.events.completed
+            ));
+        }
+        if case
+            .ended
+            .is_some_and(|v| v != state.events.ending.is_some())
+            || case
+                .ending
+                .as_ref()
+                .is_some_and(|e| Some(e) != state.events.ending.as_ref())
+        {
+            errors.push(format!(
+                "expected ending {:?} / ended {:?}, got {:?}",
+                case.ending, case.ended, state.events.ending
+            ));
         }
         if errors.is_empty() {
             writeln!(output, "PASS: {}", case.name).map_err(io_error)?;

@@ -1,8 +1,9 @@
 # RORK Save Format
 
-## Current development: version 3
+## Current development: version 4
 
-Engine expansion phase 4 adds a canonical object ledger (quantities, typed placements,
+Engine expansion phase 5 adds persistent event/turn/timer/quest/journal/ending progress
+(see [EVENTS.md](EVENTS.md)). Phase 4 added a canonical object ledger (quantities, typed placements,
 visibility and containers) alongside the counters and visited rooms introduced in
 phase 2. All round-trip on explicit manual save/load and validate against the current
 world. This is a deliberate structural revision, independent of Cargo

@@ -1,0 +1,5 @@
+id="token"
+name="token"
+description="A demonstration token."
+portable=true
+starting_room="store"

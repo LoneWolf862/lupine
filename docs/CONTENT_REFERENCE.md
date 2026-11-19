@@ -20,6 +20,7 @@ baseline fields below with nested conditions, effects and ordered interaction ou
 | items/*.toml | id, name, description, portable; starting_room or initial | aliases=[]; descriptions=[]; hidden=false; stackable=false; quantity=1; container; consumable. See [object reference](OBJECTS.md) |
 | interactions.toml | none | interactions=[]; exit_rules=[] |
 | actions.toml | actions array; see [actions grammar](ACTIONS.md) | room, target/item bindings, shared rules/outcomes |
+| events.toml | none | events, timers, quests, journal, endings; see [event reference](EVENTS.md) |
 | rules.toml | none | flags={} initial booleans; counters={} initial signed integers |
 | weapons/*.toml | item, damage (positive integer) | damage_type="physical" (descriptive only, no resistance behavior) |
 | spells/*.toml | id, name, mana_cost (nonnegative), kind, power (positive) | description=""; learn_from_item (portable teaching item) |
@@ -47,7 +48,7 @@ north = "workshop"
 
 Each exit is directional; author the reverse separately. Items begin in their
 starting room; fixed items cannot be taken. Shop merchandise and enemy loot are
-reserved out of ordinary starting placement. Items are unique, not stacks.
+reserved out of ordinary starting placement. Items default to unique objects; opt into quantities with stackable=true.
 `{{objects}}` in room prose expands current room objects; static prose remains static.
 
 ```toml

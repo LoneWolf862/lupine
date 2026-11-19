@@ -5,6 +5,7 @@ use lupine::world::{Condition, DescriptionVariant, Effect, ExitRule, Interaction
 
 fn world() -> World {
     World {
+        events: Default::default(),
         object_defs: Default::default(),
         actions: Vec::new(),
         rules: Default::default(),

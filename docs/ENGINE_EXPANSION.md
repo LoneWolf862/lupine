@@ -12,8 +12,8 @@ The baseline is main 451f409, including merged Phase 4 PRs #26â€“#30.
 | 1 | Current format reference, mechanic examples, file-based scenario testing | Verified locally and in CI; draft PR #31 |
 | 2 | Shared nested conditions, typed effects, counters, ordered outcomes | Verified locally; draft PR #32 |
 | 3 | Authored actions/aliases, fixed-object use, player feedback | Verified locally; draft PR #33 |
-| 4 | Hidden/starting inventory, containers, quantities, consumables | Verified locally; draft PR pending |
-| 5 | Events, timers, quests, journals, endings | Approved, not implemented |
+| 4 | Hidden/starting inventory, containers, quantities, consumables | Verified locally and in CI; draft PR #34 |
+| 5 | Events, timers, quests, journals, endings | Verified locally; draft PR pending |
 | 6 | NPCs, conditional dialogue, choices, transfers and movement | Approved, not implemented |
 | 7 | Independent economy, shared rewards, world abilities, equipment/status/combat configuration | Approved, not implemented |
 | 8 | Wizard coverage, project properties, repair, duplicate/delete/reference migration | Approved, not implemented |
@@ -84,3 +84,14 @@ new schema (target/phase4-acceptance-d7a6758c/). Existing object tests were reta
 RORK version 3 deliberately persists the canonical object ledger; no existing save
 files or compatibility revisions are rewritten. CI pending; native CachyOS and
 human beginner acceptance are not claimed.
+
+Phase 4 Windows/Ubuntu CI passed at 9ed2971, Actions run 44599414261.
+[Draft PR #34](https://github.com/LoneWolf862/lupine/pull/34) targets phase 3.
+
+Phase 5 local Windows: all 310 tests, formatting, strict all-target Clippy, release
+build and independent Rust consumer passed. Native creator/manual-save/export/ZIP
+launcher acceptance passed (target/phase4-acceptance-577b6485/). Event regressions
+cover ordering, timer restart/cancel, cycles, atomic failure, acquisition/defeat,
+endings, save/load, migration and native exported hooks. RORK 4 deliberately adds
+event progress; existing save bytes and compatibility revisions are untouched.
+CI, native CachyOS and human beginner acceptance are not yet claimed.
