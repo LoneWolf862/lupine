@@ -6,6 +6,7 @@ use lupine::world::{
 
 pub fn fixture_world() -> World {
     World {
+        actions: Vec::new(),
         rules: Default::default(),
         starting_room: "foyer".into(),
         rooms: vec![

@@ -81,12 +81,12 @@ text = "The door is already open."
 
 The outer requirements run first. The first matching outcome replaces the outer
 effects/success text; no matching outcome uses the outer fallback. Normal `use X on Y`
-still requires carrying X; general fixed-object actions are phase 3, not implied by
-this rule example. New condition/effect vocabulary also works in direct Rust worlds.
+requires carrying portable X; fixed accessible X is allowed. See [authored actions](ACTIONS.md)
+for general verbs and single-object use. New condition/effect vocabulary also works in direct Rust worlds.
 
 ## Diagnostics, migration and saves
 
-Validate reports advisory unreachable-room, never-set flag, fixed-used-item,
+Validate reports advisory unreachable-room, never-set flag,
 contradictory flag and shadowed-outcome warnings. These are conservative aids, not
 a solvability proof. All warnings preserve author content and permit intentional
 offstage rooms. Migration M includes counters, declared flags, nested conditions and

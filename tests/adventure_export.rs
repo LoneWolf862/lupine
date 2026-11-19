@@ -77,6 +77,7 @@ fn snapshot(path: &Path) -> Vec<(PathBuf, Vec<u8>)> {
 fn native_package_is_valid_launchable_and_excludes_saves_and_development_files() {
     let f = Fixture::new();
     fs::write(f.game.join("rules.toml"), "[counters]\nvisits=3\n").unwrap();
+    fs::write(f.game.join("actions.toml"), "[[actions]]\nid='wait_test'\ncommands=['wait']\nsuccess_text='Time passes.'\nfailure_text='Cannot wait.'\n").unwrap();
     for relative in [
         "private.rork",
         "items/private.rork",
@@ -95,6 +96,7 @@ fn native_package_is_valid_launchable_and_excludes_saves_and_development_files()
     let package = path.join(Target::host().unwrap().label());
     let packaged = Adventure::load(&package.join("adventure")).unwrap();
     assert_eq!(packaged.game.world.rules.counters["visits"], 3);
+    assert_eq!(packaged.game.world.actions[0].id, "wait_test");
     assert_eq!(
         fs::read(package.join("adventure/rules.toml")).unwrap(),
         fs::read(f.game.join("rules.toml")).unwrap()

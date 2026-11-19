@@ -66,3 +66,31 @@ pub fn help_with_terms(terms: &crate::config::DisplayTerms) -> String {
         terms.spells
     )
 }
+
+/// Only advertise optional systems actually available in this adventure.
+pub fn help_for_game(config: &crate::config::GameConfig, economy: bool) -> String {
+    let base = help()
+        .lines()
+        .filter(|line| {
+            if line.starts_with("Combat:")
+                || line.starts_with("Spells:")
+                || line.starts_with("Other RPG")
+            {
+                config.character.is_some()
+            } else {
+                true
+            }
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
+    if config.character.is_some() {
+        format!(
+            "{base}\nView your {} with 'spellbook' or 'spells'; lists known {}.",
+            config.terminology.display.spellbook, config.terminology.display.spells
+        )
+    } else if economy {
+        format!("{base}\nEconomy: wallet, shop, buy <offer>, sell <offer>.")
+    } else {
+        base
+    }
+}

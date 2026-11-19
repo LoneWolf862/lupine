@@ -31,3 +31,12 @@ inventory = []
 flags = []
 counters = { unlocks = 0 }
 visited = ["foyer"]
+
+[[scenario]]
+name="authored unlock action uses carried tool"
+commands=["unlock workshop door with brass key", "take brass key", "unlock workshop door with brass key", "north"]
+contains=["must be carrying", "The key turns; the door unlocks."]
+room="workshop"
+flags=["door_open"]
+counters={unlocks=1}
+visited=["foyer", "workshop"]

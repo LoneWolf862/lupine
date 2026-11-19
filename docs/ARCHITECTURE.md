@@ -3,9 +3,9 @@
 Engine expansion: [approved sequence and status](ENGINE_EXPANSION.md). `scenario.rs`
 loads strict TOML test suites and invokes the real runner with an explicit random
 seed, returning final in-memory state for assertions. Existing runner APIs preserve
-their signatures/default randomness. No implicit persistence or RORK changes.
+their signatures/default randomness. Scenarios never save implicitly.
 
-## Current development architecture (0.11.0-dev.1)
+## Current development architecture (0.11.0-dev.2)
 
 Lupine is an offline terminal engine. Immutable TOML content is separate from mutable
 GameState; supported FIG files hold configuration. Manual RORK persistence remains in
@@ -21,6 +21,8 @@ keys are covered by schema-aware migration and Snapshot/export inventory.
 - startup.rs discovers local adventures and reuses existing creator sessions and gameplay.
 - terminal.rs wraps CLI stdin with memory-only terminal editing. Generic BufRead/Write
   APIs and redirected input retain scripted operation.
+- actions.rs loads bounded authored command patterns, resolves immutable object bindings
+  and invokes shared effects. Built-in verbs remain reserved; normal item use retains priority.
 - parser.rs handles ordinary intent grammar. resolution.rs performs pure eligible
   ID/name/alias matching and bounded advisory typo matching. player_input.rs clarifies
   references using immutable state before runner/engine/combat/RPG validation and mutation.

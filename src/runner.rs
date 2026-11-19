@@ -455,6 +455,23 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
             )?;
             continue;
         }
+        if !verb.eq_ignore_ascii_case("use") {
+            match crate::actions::prepare(&line, &world, &state, &mut input, &mut output)? {
+                crate::actions::Prepared::Canceled => continue,
+                crate::actions::Prepared::Action(index) => {
+                    run_authored(
+                        index,
+                        &world,
+                        &mut state,
+                        &encounters,
+                        &mut rng,
+                        &mut output,
+                    )?;
+                    continue;
+                }
+                crate::actions::Prepared::Unhandled => (),
+            }
+        }
         let original_intent = parse_command(&line);
         let requested_bulk = matches!(&original_intent, Ok(crate::commands::Command::Take(target) | crate::commands::Command::Drop(target)) if target == "all");
         let Some(line) = crate::player_input::prepare(
@@ -595,6 +612,21 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
             if let Some(message) = shops.use_transaction_item(&world, &mut state, &wallet, argument)
             {
                 writeln!(output, "{message}\n")?;
+                continue;
+            }
+            if let Some(index) = world.actions.iter().position(|a| {
+                a.in_scope(&state)
+                    && a.target.as_deref() == Some(argument)
+                    && a.commands.iter().any(|p| p == "use {target}")
+            }) {
+                run_authored(
+                    index,
+                    &world,
+                    &mut state,
+                    &encounters,
+                    &mut rng,
+                    &mut output,
+                )?;
                 continue;
             }
         }
@@ -919,11 +951,32 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
                     }
                 }
             }
+            Ok(crate::commands::Command::Examine(ref target))
+                if crate::player_input::enemies(&encounters, &state)
+                    .iter()
+                    .any(|e| &e.id == target) =>
+            {
+                if let Some(enemy) = state
+                    .active_enemies
+                    .iter()
+                    .find(|e| format!("{} #{}", e.enemy_id, e.instance_id) == *target)
+                {
+                    if let Some(definition) = encounters.enemies.get(&enemy.enemy_id) {
+                        writeln!(
+                            output,
+                            "{}\n{}\n",
+                            definition.description,
+                            encounters.describe(std::slice::from_ref(enemy))
+                        )?;
+                    }
+                }
+            }
             Ok(crate::commands::Command::Help) => {
                 writeln!(
                     output,
-                    "{}\n",
-                    crate::render::help_with_terms(&config.terminology.display)
+                    "{}\n{}\n",
+                    crate::render::help_for_game(&config, !wallet.currencies.is_empty()),
+                    crate::actions::help(&world, &state)
                 )?;
             }
             Ok(command) => {
@@ -968,7 +1021,9 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
                     output,
                     "I don't understand '{command}'. Type 'help' for commands."
                 )?;
-                if let Some(suggestion) = suggest_verb(&command) {
+                if let Some(suggestion) = crate::actions::suggestion(&command, &world, &state)
+                    .or_else(|| suggest_verb(&command))
+                {
                     writeln!(output, "Did you mean '{suggestion}'? Type '{suggestion}' to try it; suggestions do not run automatically.")?;
                 }
                 writeln!(output)?;
@@ -986,6 +1041,31 @@ fn is_defeated(state: &GameState) -> bool {
 }
 
 // Lightweight command spelling suggestions. Never execute the suggestion.
+fn run_authored(
+    index: usize,
+    world: &World,
+    state: &mut GameState,
+    encounters: &EncounterContent,
+    rng: &mut EncounterRng,
+    output: &mut impl Write,
+) -> io::Result<()> {
+    let old_room = state.current_room.clone();
+    let text = world.actions[index]
+        .execute(world, state)
+        .unwrap_or_else(|e| e);
+    writeln!(output, "{text}\n")?;
+    if state.current_room != old_room {
+        encounters.leave_room(&old_room, state);
+        let room = state.current_room.clone();
+        encounters.enter_room(&room, state, rng);
+        show_room(world, state, output)?;
+        if !state.active_enemies.is_empty() {
+            writeln!(output, "{}\n", encounters.describe(&state.active_enemies))?;
+        }
+    }
+    Ok(())
+}
+
 fn suggest_verb(command: &str) -> Option<String> {
     const VERBS: &[&str] = &[
         "look",

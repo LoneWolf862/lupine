@@ -34,6 +34,16 @@ impl Adventure {
         let wallet = WalletContent::load(path, enabled)?;
         wallet.validate_encounters(&encounters)?;
         let shops = ShopContent::load(path, &game.world, &wallet, &rpg)?;
+        for action in &game.world.actions {
+            if action.commands.iter().any(|p| p == "use {target}")
+                && action
+                    .target
+                    .as_ref()
+                    .is_some_and(|id| shops.transaction_bindings.contains_key(id))
+            {
+                return Err(format!("actions.toml action '{}': use target already has a transaction binding; choose another verb", action.id));
+            }
+        }
         for table in encounters.tables.values() {
             for entry in &table.enemies {
                 for condition in &entry.requires {

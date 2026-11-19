@@ -19,6 +19,7 @@ baseline fields below with nested conditions, effects and ordered interaction ou
 | rooms/*.toml | id, title, description | exits={} mapping north/south/east/west/up/down to rooms; descriptions=[]; art or art_file; art_variants=[]; encounters |
 | items/*.toml | id, name, description, portable, starting_room | aliases=[]; descriptions=[] |
 | interactions.toml | none | interactions=[]; exit_rules=[] |
+| actions.toml | actions array; see [actions grammar](ACTIONS.md) | room, target/item bindings, shared rules/outcomes |
 | rules.toml | none | flags={} initial booleans; counters={} initial signed integers |
 | weapons/*.toml | item, damage (positive integer) | damage_type="physical" (descriptive only, no resistance behavior) |
 | spells/*.toml | id, name, mana_cost (nonnegative), kind, power (positive) | description=""; learn_from_item (portable teaching item) |

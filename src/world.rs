@@ -73,6 +73,7 @@ pub struct Interaction {
 
 #[derive(Debug)]
 pub struct World {
+    pub actions: Vec<crate::actions::Action>,
     pub rules: crate::rules::StoryRules,
     pub rooms: Vec<Room>,
     pub items: Vec<Item>,
@@ -92,7 +93,7 @@ impl World {
 
     /// Validate an authored world before play; reports all detected problems.
     pub fn validate(&self) -> Result<(), Vec<String>> {
-        let mut errors = Vec::new();
+        let mut errors = crate::actions::validate(self);
         if let Err(e) = self.rules.validate() {
             errors.push(e);
         }

@@ -10,8 +10,8 @@ The baseline is main 451f409, including merged Phase 4 PRs #26â€“#30.
 | Phase | Scope | Status |
 |---|---|---|
 | 1 | Current format reference, mechanic examples, file-based scenario testing | Verified locally and in CI; draft PR #31 |
-| 2 | Shared nested conditions, typed effects, counters, ordered outcomes | Verified locally; draft PR pending |
-| 3 | Authored actions/aliases, fixed-object use, player feedback | Approved, not implemented |
+| 2 | Shared nested conditions, typed effects, counters, ordered outcomes | Verified locally; draft PR #32 |
+| 3 | Authored actions/aliases, fixed-object use, player feedback | Verified locally; draft PR pending |
 | 4 | Hidden/starting inventory, containers, quantities, consumables | Approved, not implemented |
 | 5 | Events, timers, quests, journals, endings | Approved, not implemented |
 | 6 | NPCs, conditional dialogue, choices, transfers and movement | Approved, not implemented |
@@ -60,3 +60,14 @@ passed, release build and independent Rust consumer check passed. Native creator
 manual save/load and independent ZIP launcher acceptance passed (artifacts under
 target/phase4-acceptance-b01994de/). Export regression confirms rules.toml is retained
 byte-for-byte and reloads. CI and native CachyOS acceptance are not yet claimed.
+
+Phase 2 Windows/Ubuntu CI passed at 2d02d3d, Actions run 44592663157.
+[Draft PR #32](https://github.com/LoneWolf862/lupine/pull/32) targets phase 1.
+
+Phase 3 local Windows: 288 tests passed, formatting and strict all-target Clippy
+passed, release build and independent Rust consumer passed. Native creator/manual
+save/export/ZIP launcher acceptance passed (target/phase4-acceptance-57fbc4d5/).
+New tests cover aliases, carried tools, ambiguity/cancellation, atomic failure,
+reserved verbs, migration, fixed source interactions, private enemy inspection and
+authored movement. Export reloads authored actions. CI pending; human beginner
+and native CachyOS acceptance are not claimed.
