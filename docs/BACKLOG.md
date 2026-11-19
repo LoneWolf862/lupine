@@ -1,5 +1,9 @@
 # Lupine Development Backlog
 
+## Current RPG authoring status
+
+Enemy, weapon, shop and currency editors are implemented candidates in PRs #14-#18; see [RPG review](RPG_AUTHORING_DEVELOPMENT.md). Remaining work includes human beginner feedback, stable-ID migrations, transaction-object-binding authoring, guided recovery and further packaging/export tooling. Do not interpret the historical editor backlog below as current implementation status.
+
 Deferred until after standalone distribution.
 
 ## Interactive Startup Menu

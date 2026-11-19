@@ -38,9 +38,9 @@ Phase 1 relocates existing character fields/defaults/calculations without redesi
 - The user prefers collaborative file/patch/ZIP updates and reviews changes before implementation; don't assume Codex automation is the default.
 - Protect CSE 310 requirements and the instructor README-template obligation; do not invent time logs or submission evidence.
 
-## Current creator implementation candidate (2026-11-18)
+## Current RPG creator candidate (2026-11-18)
 
-Phases 2D-A through 2F are implemented on the stacked draft PRs #8–#13, not merged. See docs/CREATOR_COMPLETION_REVIEW.md and docs/CREATOR_QUICKSTART.md for actual capabilities and verification. Preserve shared Snapshot transactions for all editors, stable existing IDs, exact previews and explicit confirmation. Use current schemas, preserve unedited TOML/FIG properties/comments, never autosave player progress. Conditional descriptions/variants are first-match; table source positions must agree with edited order. Item teaching links require portable items. New RPG enablement remains explicit. Enemy/weapon/shop definition editors, ID migrations and automated recovery remain separate work. Every task still requires an isolated branch, checkpoint pushes, reviewable PR and no self-merge.
+Core creator PRs #8-#13 are merged. RPG authoring PRs #14-#18 are stacked drafts, not merged. Read docs/RPG_AUTHORING_DEVELOPMENT.md for actual scope and verification. Preserve Snapshot publication, exact previews, stable IDs and explicit confirmation. Enemies, weapons, shops and currencies have guided editors; currencies remain in game.toml. Pending encounter enemies publish with room drafts. Related-manager prerequisite saves remain separate and explicit. Do not rename IDs or weapon item associations, rewrite saves, change gameplay/versions, or introduce autosaving. Transaction-object bindings, ID migrations and automated recovery remain separate work. Every task requires isolated branches/worktrees, checkpoint pushes, reviewable PRs and no self-merge. The published v0.9.0 release is separate from this development source; do not bump Cargo just for creator work.
 
 ## Historical milestones -- not current instructions
 

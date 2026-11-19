@@ -1,5 +1,9 @@
 # Lupine development roadmap
 
+## Current RPG authoring delivery (2026-11-18)
+
+Creator PRs #8-#13 are merged. Draft #14 enemies, #15 weapons, #16 shops, #17 currencies and #18 integration form the next review stack. Their combined creator supports wizard-authored combat/economy adventures; see [verification and merge order](RPG_AUTHORING_DEVELOPMENT.md). The published v0.9.0 release remains separate from these development changes. Historical milestones below are not the current feature inventory.
+
 > Historical design/stage record: feature-status and compatibility claims below describe earlier development. Current policy and file paths are in [NEXT_PHASE_REQUIREMENTS.md](NEXT_PHASE_REQUIREMENTS.md) and [CONFIG_FIG_SPEC.md](CONFIG_FIG_SPEC.md). Character configuration now belongs in `config/character.fig`.
 
 Milestones are design targets unless marked verified; HOWLBOUND remains a tentative original game without a decided story.

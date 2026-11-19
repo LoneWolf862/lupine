@@ -1,8 +1,8 @@
 //! Physical weapon definitions, keyed by a stable inventory item.
 use super::{
     content_edit::{self, choose, save, Document},
-    enemy_edit::{numeric, text},
     room_transaction::Snapshot,
+    rpg_fields::{numeric, text},
     wizard::Wizard,
 };
 use std::{

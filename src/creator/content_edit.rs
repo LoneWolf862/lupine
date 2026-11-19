@@ -214,6 +214,10 @@ fn item_form<R: BufRead, W: Write>(
         .filter(|a| a.learn_from_item.as_deref() == Some(d.text("id")))
         .map(|a| a.name.clone())
         .collect::<Vec<_>>();
+    let weapon = adventure.rpg.weapons.contains_key(d.text("id"));
+    if weapon {
+        w.say("This item has a weapon definition and must stay portable so players can carry it.")?;
+    }
     if !teaching.is_empty() {
         w.say(&format!("This item teaches: {}. It must remain portable so players can carry and learn from it.", teaching.join(", ")))?;
     }
@@ -228,7 +232,7 @@ fn item_form<R: BufRead, W: Write>(
             "4" => {
                 w.say("Portable objects can be picked up and carried. A teaching scroll must be carried to learn from it. Fixed objects stay in the room.")?;
                 let default = if d.doc["portable"].as_bool() == Some(true) { "yes" } else { "no" };
-                if let Some(s) = w.ask("Portable?", default, "yes permits taking; no makes a fixed object", |s| if ["yes","no"].contains(&s) { Ok(()) } else { Err("Enter yes or no".into()) })? { if s=="no" && !teaching.is_empty() { w.say("Cannot make a teaching item fixed. Remove or change its teaching link in Spell Manager first.")?; } else { d.set("portable", value(s=="yes")); } }
+                if let Some(s) = w.ask("Portable?", default, "yes permits taking; no makes a fixed object", |s| if ["yes","no"].contains(&s) { Ok(()) } else { Err("Enter yes or no".into()) })? { if s=="no" && (!teaching.is_empty() || weapon) { w.say(if weapon {"Cannot make a weapon item fixed. Players must carry it to attack."} else {"Cannot make a teaching item fixed. Remove or change its teaching link in Spell Manager first."})?; } else { d.set("portable", value(s=="yes")); } }
             },
             "5" => { w.say("Starting room affects new play sessions; existing player saves are not rewritten.")?; if let Some(id) = choose(w,"Starting room:",&entries(snapshot,"rooms")?)? { d.set("starting_room",value(id)); } },
             "6" => d.preview(&snapshot.root,w.output)?,
@@ -279,9 +283,30 @@ pub(super) fn manage<R: BufRead, W: Write>(
             w.say(&format!("{}. {name} ({id})", i + 1))?;
         }
         w.say("N. Create new definition\n0. Return to creator")?;
+        if category == "shops" {
+            w.say("I. Prerequisite items\nT. Prerequisite spells\nC. Currencies\nThese managers save separately; return before starting a shop draft.")?;
+        }
         let choice = w.line("Selection:")?.trim().to_ascii_lowercase();
         if matches!(choice.as_str(), "0" | "back") {
             return Ok(());
+        }
+        if category == "shops" {
+            match choice.as_str() {
+                "i" => {
+                    manage(root, "items", w)?;
+                    continue;
+                }
+                "t" => {
+                    manage(root, "spells", w)?;
+                    continue;
+                }
+                "c" => {
+                    super::currency_edit::run(root, w.input, w.output)
+                        .map_err(|e| e.to_string())?;
+                    continue;
+                }
+                _ => (),
+            }
         }
         let mut d = if choice == "n" {
             w.say("Give this definition a stable internal ID; player-facing names can change later. The ID connects authored references and player saves.")?;

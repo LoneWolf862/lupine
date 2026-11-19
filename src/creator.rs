@@ -24,6 +24,7 @@ mod interaction_edit;
 mod room_advanced;
 mod room_edit;
 mod room_transaction;
+mod rpg_fields;
 mod rpg_menu;
 mod rules_ui;
 pub mod session;

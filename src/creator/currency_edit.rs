@@ -1,8 +1,8 @@
 //! Currency drafts preserve the game manifest and stable wallet references.
 use super::{
     content_edit::{save, Document},
-    enemy_edit::numeric,
     room_transaction::Snapshot,
+    rpg_fields::numeric,
     rules_ui,
     wizard::Wizard,
 };

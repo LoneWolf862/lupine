@@ -150,6 +150,7 @@ fn encounter_entry<R: BufRead, W: Write>(
 fn encounters<R: BufRead, W: Write>(
     doc: &mut DocumentMut,
     snapshot: &Snapshot,
+    extra: &mut std::collections::BTreeMap<std::path::PathBuf, String>,
     w: &mut Wizard<'_, R, W>,
 ) -> Result<(), String> {
     if crate::adventure::Adventure::load(&snapshot.root)?
@@ -163,6 +164,7 @@ fn encounters<R: BufRead, W: Write>(
         )?;
         return Ok(());
     }
+    let original_extra = extra.clone();
     let original = doc.get("encounters").cloned();
     let inline = original.as_ref().is_some_and(Item::is_inline_table);
     let table = match original.clone() {
@@ -181,13 +183,15 @@ fn encounters<R: BufRead, W: Write>(
     let mut ed = DocumentMut::from(table);
     let baseline = ed.to_string();
     loop {
-        w.say(&format!("ROOM ENCOUNTERS\n{ed}\n1. Encounter chance (percent)\n2. Minimum enemies\n3. Maximum enemies\n4. Persistence\n5. Add enemy choice\n6. Edit enemy choice\n7. Remove enemy choice\n8. Remove entire encounter table\n0. Keep draft and return\nback discards these encounter edits"))?;
+        w.say(&format!("ROOM ENCOUNTERS\n{ed}\n1. Encounter chance (percent)\n2. Minimum enemies\n3. Maximum enemies\n4. Persistence\n5. Add enemy choice\n6. Edit enemy choice\n7. Remove enemy choice\n8. Remove entire encounter table\nN. Create enemy in this room draft\nE. Edit a pending enemy\n0. Keep draft and return\nback discards these encounter edits"))?;
         match w.line("Selection:")?.trim(){
-            "back"=>return Ok(()),
+            "back"=>{*extra=original_extra;return Ok(());},
+            "e"|"E"=>super::enemy_edit::edit_pending(snapshot,extra,w)?,
             "0"=>{if ed.to_string()!=baseline||original.is_none(){let table=ed.into_table();doc["encounters"]=if inline{value(table.into_inline_table())}else{Item::Table(table)};}return Ok(());},
             s @ ("1"|"2"|"3")=>{let(key,min,max)=match s{"1"=>("chance",0,100),"2"=>("min_enemies",1,12),_=>("max_enemies",1,12)};if let Some(n)=number(w,key,ed.get(key).and_then(Item::as_integer).unwrap_or(min),min,max)?{rules_ui::set(ed.as_table_mut(),key,value(n));}},
             "4"=>if let Some(s)=choose(w,"Persistence:",&[("temporary".into(),"Reroll on re-entry".into()),("room".into(),"Keep living enemy wounds after retreat".into()),("unique".into(),"Stay cleared after defeat".into())])?{rules_ui::set(ed.as_table_mut(),"persistence",value(s));},
-            "5"=>if let Some(id)=choose(w,"Enemy definition:",&entries(snapshot,"enemies")?)?{let mut t=Table::new();t["enemy"]=value(id);t["weight"]=value(1);rules_ui::append(&mut ed,"enemies",t)?;},
+            "n"|"N"=>if let Some(id)=super::enemy_edit::draft_new(snapshot,extra,w)?{let mut t=Table::new();t["enemy"]=value(id);t["weight"]=value(1);rules_ui::append(&mut ed,"enemies",t)?;},
+            "5"=>if let Some(id)=choose(w,"Enemy definition:",&{let mut list=entries(snapshot,"enemies")?;for text in extra.values(){let v:toml::Value=text.parse::<toml::Value>().map_err(|e|e.to_string())?;list.push((v["id"].as_str().unwrap().into(),v["name"].as_str().unwrap().into()));}list})?{let mut t=Table::new();t["enemy"]=value(id);t["weight"]=value(1);rules_ui::append(&mut ed,"enemies",t)?;},
             "6"=>if let Some(i)=rules_ui::select_entry(&ed,"enemies",w)?{encounter_entry(&mut ed,i,snapshot,w)?;},
             "7"=>if let Some(i)=rules_ui::select_entry(&ed,"enemies",w)?{if confirm(w,"Remove this enemy choice?")?{rules_ui::remove(&mut ed,"enemies",i)?;}},
             "8"=>if confirm(w,"Remove this room's entire encounter table?")?{doc.remove("encounters");return Ok(());},
@@ -198,6 +202,7 @@ fn encounters<R: BufRead, W: Write>(
 pub(super) fn edit<R: BufRead, W: Write>(
     doc: &mut DocumentMut,
     snapshot: &Snapshot,
+    extra: &mut std::collections::BTreeMap<std::path::PathBuf, String>,
     w: &mut Wizard<'_, R, W>,
 ) -> Result<(), String> {
     loop {
@@ -206,7 +211,7 @@ pub(super) fn edit<R: BufRead, W: Write>(
         match w.line("Selection:")?.trim() {
             "0" | "back" => return Ok(()),
             "1" => descriptions(doc, snapshot, w)?,
-            "2" => encounters(doc, snapshot, w)?,
+            "2" => encounters(doc, snapshot, extra, w)?,
             _ => w.say("Choose 0-2. Advanced settings use the existing room schema.")?,
         }
     }

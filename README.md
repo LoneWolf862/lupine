@@ -1,8 +1,12 @@
 # Lupine
 
-**Lupine v0.8.4** is a lightweight, offline, terminal-based interactive fiction engine written in Rust. It is inspired by the *command-driven interface* of classic text adventures; no original Zork story content is included. Game creators define their own adventures through TOML files rather than modifying Rust code. **HOWLBOUND** is only a tentative name for a future original adventure.
+## RPG authoring development candidate
 
-> **Status:** Unreleased, pre-1.0 development. Phase 1 introduces FIG configuration; see [configuration contract](docs/CONFIG_FIG_SPEC.md). A manual Windows/Linux packaging workflow exists; this source checkout uses the Rust toolchain. Native Linux and published-release claims require separate verification.
+Main menu **R** now exposes guided enemies, physical weapons, shops and currencies; room encounters can create an enemy in the same confirmed transaction. See [RPG authoring review](docs/RPG_AUTHORING_DEVELOPMENT.md) for schemas, safety, tests, Windows instructions and draft PRs #14-#18. Earlier creator PRs #8-#13 are merged. These new changes are pending review.
+
+**Lupine** is a lightweight, offline, terminal-based interactive fiction engine written in Rust. It is inspired by the *command-driven interface* of classic text adventures; no original Zork story content is included. Game creators define their own adventures through TOML files rather than modifying Rust code. **HOWLBOUND** is only a tentative name for a future original adventure.
+
+> **Status:** The [v0.9.0 standalone release](https://github.com/LoneWolf862/lupine/releases/tag/v0.9.0) is published. This creator development checkout still declares Cargo version 0.8.4; the draft RPG authoring changes are not part of that release.
 
 ## Start here
 
@@ -15,9 +19,9 @@ cargo run -- validate my_adventure
 cargo run -- play my_adventure
 ```
 
-Run `cargo run -- new` for beginner setup, then continue in the persistent **Adventure Creator**. Reopen with `cargo run -- creator "my_adventure"`. Its guided editors cover rooms/connections, items/aliases, spells/teaching items, multiline artwork/variants, interaction puzzles/locked doors, conditional descriptions, existing-enemy encounter tables, and supported FIG settings. Review previews and explicitly confirm Save; validate and play from the same menu. Type `quit` in play to return. Content remains ordinary editable TOML, FIG and text files.
+Run `cargo run -- new` for beginner setup, then continue in the persistent **Adventure Creator**. Reopen with `cargo run -- creator "my_adventure"`. Its guided editors cover rooms/connections, items/aliases, spells/teaching items, multiline artwork/variants, interaction puzzles/locked doors, conditional descriptions, encounter tables and enemy/weapon/shop/currency definitions, and supported FIG settings. Review previews and explicitly confirm Save; validate and play from the same menu. Type `quit` in play to return. Content remains ordinary editable TOML, FIG and text files.
 
-**Creator status:** Phases 2D�2F are implemented candidates in stacked draft PRs, pending human review. See the [creator guide](docs/CREATOR_QUICKSTART.md) and [development report, tests and merge order](docs/CREATOR_COMPLETION_REVIEW.md). The complete guided demonstration requires no manual TOML/FIG editing. Enemy/weapon/shop definition editors and packaging are separate work; existing definitions remain supported and preserved.
+**Creator status:** Core guided authoring is merged. RPG definition editors are implemented candidates in draft PRs #14-#18. See the [current RPG review](docs/RPG_AUTHORING_DEVELOPMENT.md) for exact verification and limitations.
 
 To try prewritten demonstrations:
 
@@ -69,7 +73,7 @@ For sample-level verification, `cargo run -- validate samples/rpg_persistent` an
 - `tests/` — automated integration and regression tests.
 - `docs/` — authoring, architecture, roadmaps and historical stage notes.
 
-**Distribution:** The first standalone builds for Windows and Linux are planned for **v0.9**, not shipped by this source package. The runtime is entirely offline; the Rust/Cargo build process may download crates if not cached.
+**Distribution:** Standalone builds are published separately in **v0.9.0**. These draft creator changes require this source checkout and are not claimed to be in those binaries. The runtime is entirely offline; the Rust/Cargo build process may download crates if not cached.
 
 ## License
 

@@ -62,6 +62,7 @@ impl Room {
 struct Draft {
     snapshot: Snapshot,
     rooms: BTreeMap<String, Room>,
+    extra: BTreeMap<PathBuf, String>,
 }
 impl Draft {
     fn load(root: &Path) -> Result<Self, String> {
@@ -90,7 +91,11 @@ impl Draft {
                 },
             );
         }
-        Ok(Self { snapshot, rooms })
+        Ok(Self {
+            snapshot,
+            rooms,
+            extra: BTreeMap::new(),
+        })
     }
     fn changes(&self) -> BTreeMap<PathBuf, String> {
         self.rooms
@@ -110,6 +115,7 @@ impl Draft {
                     ))
                 }
             })
+            .chain(self.extra.iter().map(|(p, s)| (p.clone(), s.clone())))
             .collect()
     }
     fn preview(&self, selected: &str, output: &mut impl Write) -> Result<(), String> {
@@ -510,6 +516,7 @@ fn edit<R: BufRead, W: Write>(
             "7" => super::room_advanced::edit(
                 &mut draft.rooms.get_mut(id).unwrap().doc,
                 &draft.snapshot,
+                &mut draft.extra,
                 w,
             )?,
             "5" => draft.preview(id, w.output)?,
@@ -526,7 +533,10 @@ fn edit<R: BufRead, W: Write>(
                 }
                 w.say("Choose 5 from Room Options to inspect exact TOML. Saving keeps existing IDs. Changes to connections can affect a saved game's routes; no save files are changed.")?;
                 if confirm(w, "Save all these room changes?")? {
-                    draft.snapshot.commit(&changes)?;
+                    if let Err(e) = draft.snapshot.commit(&changes) {
+                        w.say(&format!("Save needs attention: {e}\nDraft retained. Correct proposed values; external edits/recovery require discarding and reopening."))?;
+                        continue;
+                    }
                     w.heading("ROOM SAVED!")?;
                     w.say(&format!(
                         "Room:\n  {}\n\nFiles saved:",

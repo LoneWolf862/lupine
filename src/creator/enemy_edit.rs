@@ -1,16 +1,16 @@
 //! Enemy authoring uses the runtime schema and shared recoverable publication.
+use super::rpg_fields::{currencies, numeric, text};
 use super::{
     content_edit::{self, choose, confirm, entries, save, Document},
     room_transaction::Snapshot,
     rules_ui,
-    spell_edit::number,
     wizard::Wizard,
 };
 use std::{
     io::{self, BufRead, Write},
     path::Path,
 };
-use toml_edit::{value, Item, Table, TableLike};
+use toml_edit::{value, Table, TableLike};
 
 pub(super) fn defaults(d: &mut Document) {
     d.set("description", value("An opponent."));
@@ -23,42 +23,6 @@ pub(super) fn defaults(d: &mut Document) {
     ] {
         d.set(key, value(n));
     }
-}
-pub(super) fn numeric<R: BufRead, W: Write>(
-    t: &mut dyn TableLike,
-    w: &mut Wizard<'_, R, W>,
-    key: &str,
-    help: &str,
-    default: i64,
-    min: i64,
-    max: i64,
-) -> Result<(), String> {
-    w.say(help)?;
-    let current = t.get(key).and_then(Item::as_integer).unwrap_or(default);
-    if let Some(n) = number(w, key, current, min, max)? {
-        rules_ui::set(t, key, value(n));
-    }
-    Ok(())
-}
-pub(super) fn text<R: BufRead, W: Write>(
-    t: &mut dyn TableLike,
-    w: &mut Wizard<'_, R, W>,
-    key: &str,
-    help: &str,
-) -> Result<(), String> {
-    let current = t.get(key).and_then(Item::as_str).unwrap_or("");
-    if let Some(s) = w.ask(key, current, help, |s| super::validate_text(s, 120))? {
-        rules_ui::set(t, key, value(s));
-    }
-    Ok(())
-}
-pub(super) fn currencies(snapshot: &Snapshot) -> Result<Vec<(String, String)>, String> {
-    Ok(crate::adventure::Adventure::load(&snapshot.root)?
-        .wallet
-        .currencies
-        .into_iter()
-        .map(|(id, c)| (id, c.name))
-        .collect())
 }
 fn edit_entry<R: BufRead, W: Write>(
     t: &mut dyn TableLike,
@@ -162,6 +126,14 @@ pub(super) fn form<R: BufRead, W: Write>(
     snapshot: &Snapshot,
     w: &mut Wizard<'_, R, W>,
 ) -> Result<bool, String> {
+    form_inner(d, snapshot, w, false)
+}
+fn form_inner<R: BufRead, W: Write>(
+    d: &mut Document,
+    snapshot: &Snapshot,
+    w: &mut Wizard<'_, R, W>,
+    deferred: bool,
+) -> Result<bool, String> {
     w.say("Enemies are reusable combat definitions. Add them to a room through Rooms > Advanced > Encounters. Defining an enemy alone does not spawn it. Existing IDs remain fixed. Stat changes can invalidate saved combat HP; saves are never rewritten. No attacks means no counterattack.")?;
     loop {
         w.heading("ENEMY OPTIONS")?;
@@ -195,7 +167,10 @@ pub(super) fn form<R: BufRead, W: Write>(
             "c" => collection(d, "currency_rewards", snapshot, w)?,
             "p" => d.preview(&snapshot.root, w.output)?,
             "s" => {
-                if save(snapshot, d, w)? {
+                if deferred {
+                    d.preview(&snapshot.root, w.output)?;
+                    if confirm(w,"Keep this enemy in the room draft? Room Save will validate and publish both together.")? { return Ok(true); }
+                } else if save(snapshot, d, w)? {
                     return Ok(true);
                 }
             }
@@ -218,6 +193,66 @@ pub(super) fn run<R: BufRead, W: Write>(
     })();
     if let Err(e) = result {
         writeln!(w.output, "Enemy manager stopped: {e}")?;
+    }
+    Ok(())
+}
+
+pub(super) fn draft_new<R: BufRead, W: Write>(
+    snapshot: &Snapshot,
+    extra: &mut std::collections::BTreeMap<std::path::PathBuf, String>,
+    w: &mut Wizard<'_, R, W>,
+) -> Result<Option<String>, String> {
+    let list = entries(snapshot, "enemies")?;
+    let Some(id) = w.ask(
+        "New enemy ID",
+        "",
+        "Stable lowercase ID; this enemy joins the room draft and is saved only with the room",
+        |s| {
+            super::validate_id(s)?;
+            if list.iter().any(|(id, _)| id == s)
+                || extra.contains_key(&std::path::PathBuf::from(format!("enemies/{s}.toml")))
+            {
+                Err("Enemy ID exists".into())
+            } else {
+                Ok(())
+            }
+        },
+    )?
+    else {
+        return Ok(None);
+    };
+    let path = std::path::PathBuf::from(format!("enemies/{id}.toml"));
+    if snapshot.source(&path).is_some() {
+        return Err("Enemy filename exists; retained".into());
+    }
+    let mut d = Document::load(snapshot, path.clone(), "")?;
+    d.set("id", value(id.clone()));
+    d.set("name", value(id.replace('_', " ")));
+    defaults(&mut d);
+    if form_inner(&mut d, snapshot, w, true)? {
+        extra.insert(path, d.contents());
+        Ok(Some(id))
+    } else {
+        Ok(None)
+    }
+}
+
+pub(super) fn edit_pending<R: BufRead, W: Write>(
+    snapshot: &Snapshot,
+    extra: &mut std::collections::BTreeMap<std::path::PathBuf, String>,
+    w: &mut Wizard<'_, R, W>,
+) -> Result<(), String> {
+    let list = extra
+        .keys()
+        .map(|p| (p.to_string_lossy().into_owned(), p.display().to_string()))
+        .collect::<Vec<_>>();
+    let Some(path) = choose(w, "Pending enemy:", &list)? else {
+        return Ok(());
+    };
+    let path = std::path::PathBuf::from(path);
+    let mut d = Document::load(snapshot, path.clone(), &extra[&path])?;
+    if form_inner(&mut d, snapshot, w, true)? {
+        extra.insert(path, d.contents());
     }
     Ok(())
 }
