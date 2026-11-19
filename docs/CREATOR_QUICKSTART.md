@@ -4,7 +4,7 @@
 
 Choose **R** after explicitly enabling RPG in menu 3. Submenu: 1 enemies, 2 weapons, 3 shops, 4 currencies, 5 room encounters, 6 items, 7 spells. N creates; P previews; S saves with explicit confirmation. Room Options still uses 5 for preview and 6 for Save. Encounter settings N creates a pending enemy in the room transaction; E revises it. Shops expose all six current offer types and prerequisite managers. Weapon I opens Item Manager; prerequisite saves are separate and explicit. Currency IDs stay fixed in game.toml; starting balances affect fresh games. See [complete workflow, limits and testing](RPG_AUTHORING_DEVELOPMENT.md).
 
-Status: Phases 2D–2F are implemented candidates in draft PRs #8–#13, pending human review. See [verification and merge guide](CREATOR_COMPLETION_REVIEW.md). Earlier milestone behavior is recorded in CODEX_HANDOFF.md.
+Status: Core creator PRs #8-#13 are merged. RPG authoring PRs #14-#18 are draft candidates; see [current verification and merge guide](RPG_AUTHORING_DEVELOPMENT.md). Earlier milestone behavior is recorded in CODEX_HANDOFF.md.
 
 ## Start or reopen
 

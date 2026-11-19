@@ -30,7 +30,7 @@ Review corrections and evidence:
 
 ## Environment and branches
 
-Primary checkout: `C:\Users\Rex\Code\Lupine`, main at 417b496 when work began. Its branch/files and personal untracked projects were untouched. Local host **Lupa-2**, Windows 10 build **19045**, Rust **1.100.0**, Cargo **1.100.0**, stable x86_64-pc-windows-msvc. GitHub authentication works as LoneWolf862 using the local keyring; restricted sandbox commands initially reported a misleading authentication failure.
+Primary checkout: `C:\Users\Rex\Code\Lupine`, main at 417b496 when work began. Its branch/files and personal untracked projects were untouched. Local host **Lupa-2**, Windows 10 Pro 22H2 build **19045.6466**, Rust **1.100.0**, Cargo **1.100.0**, stable x86_64-pc-windows-msvc. GitHub authentication works as LoneWolf862 using the local keyring; restricted sandbox commands initially reported a misleading authentication failure.
 
 Managed worktrees use `C:\Users\Rex\.codex\worktrees\<name>\Lupine`, outside the primary checkout.
 
@@ -46,7 +46,7 @@ Review the complete experience in the integration worktree. Merge in the listed 
 
 ## Verification
 
-Final results are recorded below after local and CI completion. Scripted executable testing is not human beginner usability certification. Windows Server CI is distinct from local Windows 10; Ubuntu CI is not native CachyOS testing.
+Local final code commit: `a937b65`. **211 tests passed**, `cargo fmt --all -- --check` passed and `cargo clippy --locked --all-targets -- -D warnings` passed in the integration worktree. All six bundled adventures also passed direct executable validation. **CI at `a937b65`: 211 tests passed on each of Windows Server 2022 and Ubuntu 22.04, with formatting and strict Clippy passing.** [Verified run](https://github.com/LoneWolf862/lupine/actions/runs/44425466352). Later documentation-only commits record these results without changing code. Scripted executable testing is not human beginner usability certification. Windows Server CI is distinct from local Windows 10; Ubuntu CI is not native CachyOS testing.
 
 `tests/fixtures/rpg_creator_acceptance.txt` authors the whole demonstration through real CLI menus: three connected rooms, locked door and key, conditional prose/art, portable/fixed items, teaching scroll/spell, two weapons, two enemies with different attacks, XP, item/currency rewards, two currencies and all six shop offer types. No TOML/FIG construction is used by that acceptance test. Gameplay checks ownership, exact configured weapon damage through saved HP, room/unique encounter persistence, XP/level-up, loot collection, currency rewards, shop charges, teaching, healing/mana, and explicit named save/load. Existing bundled samples remain in the full regression suite.
 
@@ -64,6 +64,22 @@ cargo run -- new
 ```
 
 Create a disposable adventure. Enable RPG in 3 > Character > enabled. Use R > 4 for Gold and Tokens, then items/spells, weapons, enemies and shops. In Rooms > 7 > 2, try N to create an enemy and then cancel the room; confirm neither file appeared. Repeat and Save, then edit a pending enemy with E. Preview each category and decline Save once before revising/confirming. Configure a 100-percent unique encounter and a room-persistent encounter in connected rooms. Validate, play, collect/buy weapons, fight, retreat/re-enter, learn a spell, buy healing and explicitly save/load named slots. Reopen the creator and verify no automatic player-save write occurs. In a disposable copy only, change an authored file externally before Save and verify the editor refuses to overwrite it.
+
+## Retained local demonstration
+
+A separately executed walkthrough retained its generated adventure at `target/rpg-review-190e6599/Adventure` in the integration worktree, alongside `walkthrough.txt` and isolated `userdata`. It was created entirely through the real CLI menus. Reopening and validating preserved all authored/save bytes (SHA-256 comparison). These disposable artifacts are ignored, not committed. To open it from that worktree:
+
+```powershell
+$env:APPDATA = Join-Path (Get-Location) 'target/rpg-review-190e6599/userdata'
+$env:XDG_DATA_HOME = $env:APPDATA
+cargo run -- creator 'target/rpg-review-190e6599/Adventure'
+```
+
+Run this in a dedicated PowerShell session; closing it restores the normal environment for other sessions. Existing personal adventures were not used. The automated regression cleans up its own temporary adventure; the retained walkthrough remains available for review.
+
+## Updated documentation
+
+README.md, AGENTS.md, CREATOR_QUICKSTART.md, RPG_CREATOR_GUIDE.md, CREATOR_WIZARD_SPEC.md, CONFIG_FIG_SPEC.md, ARCHITECTURE.md, ROADMAP.md, BACKLOG.md, CODEX_HANDOFF.md, CREATOR_COMPLETION_REVIEW.md and this report. Older milestone sections remain historical; the current sections/report supersede their feature-status claims. The Cargo source version remains 0.8.4 despite the separately published v0.9.0 release.
 
 ## Limits
 
