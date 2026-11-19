@@ -12,48 +12,10 @@ pub enum ActionOutcome {
 /// Resolve player-supplied names against visible objects or inventory.
 /// Exact names/aliases win over partial matches; ambiguity never guesses.
 fn resolve<'a>(world: &'a World, state: &GameState, text: &str) -> Result<&'a Item, String> {
-    let accessible: Vec<&Item> = world
-        .items
-        .iter()
-        .filter(|item| state.is_accessible(&item.id))
-        .collect();
-    let exact: Vec<&Item> = accessible
-        .iter()
-        .copied()
-        .filter(|item| {
-            item.name.to_lowercase() == text
-                || item
-                    .aliases
-                    .iter()
-                    .any(|alias| alias.to_lowercase() == text)
-        })
-        .collect();
-    let candidates = if exact.is_empty() {
-        accessible
-            .into_iter()
-            .filter(|item| {
-                item.name.to_lowercase().contains(text)
-                    || item
-                        .aliases
-                        .iter()
-                        .any(|alias| alias.to_lowercase().contains(text))
-            })
-            .collect::<Vec<_>>()
-    } else {
-        exact
-    };
-    match candidates.as_slice() {
-        [] => Err(format!("You don't see '{text}' here or in your inventory.")),
-        [item] => Ok(item),
-        _ => Err(format!(
-            "Which {text} do you mean: {}?",
-            candidates
-                .iter()
-                .map(|item| item.name.as_str())
-                .collect::<Vec<_>>()
-                .join(" or ")
-        )),
-    }
+    let id = crate::resolution::unique(text, &crate::resolution::items(world, state))?;
+    world
+        .item(&id)
+        .ok_or_else(|| "Resolved item is missing.".into())
 }
 
 fn message(text: impl Into<String>) -> ActionOutcome {

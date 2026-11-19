@@ -403,9 +403,7 @@ pub fn run_configured_with_io<R: BufRead, W: Write>(
             continue;
         }
         let command = line.trim();
-        let (verb, argument) = command
-            .split_once(char::is_whitespace)
-            .map_or((command, ""), |(verb, rest)| (verb, rest.trim()));
+        let verb = command.split_whitespace().next().unwrap_or("");
         // Defeat is terminal for this in-memory run. Only manual load or quit can
         // recover; do not silently heal, autosave or permit paid services.
         if is_defeated(&state)
@@ -419,6 +417,22 @@ pub fn run_configured_with_io<R: BufRead, W: Write>(
             )?;
             continue;
         }
+        let Some(line) = crate::player_input::prepare(
+            &line,
+            &world,
+            &state,
+            &content,
+            &encounters,
+            &mut input,
+            &mut output,
+        )?
+        else {
+            continue;
+        };
+        let command = line.trim();
+        let (verb, argument) = command
+            .split_once(char::is_whitespace)
+            .map_or((command, ""), |(verb, rest)| (verb, rest.trim()));
         if verb.eq_ignore_ascii_case("enemies") && argument.is_empty() {
             writeln!(output, "{}\n", encounters.describe(&state.active_enemies))?;
             continue;
@@ -427,21 +441,6 @@ pub fn run_configured_with_io<R: BufRead, W: Write>(
         // are explicitly free; successful attacks trigger one enemy retaliation phase.
         let physical = if verb.eq_ignore_ascii_case("attack") {
             Some(argument.to_owned())
-        } else if verb.eq_ignore_ascii_case("use") {
-            // Do not hijack ordinary object interactions such as 'use key on door'.
-            argument.split_once(" on ").and_then(|(weapon, target)| {
-                let known_weapon = content.weapons.values().any(|w| {
-                    world.item(&w.item).is_some_and(|item| {
-                        item.id.eq_ignore_ascii_case(weapon.trim())
-                            || item.name.eq_ignore_ascii_case(weapon.trim())
-                            || item
-                                .aliases
-                                .iter()
-                                .any(|a| a.eq_ignore_ascii_case(weapon.trim()))
-                    })
-                });
-                known_weapon.then(|| format!("{} with {}", target.trim(), weapon.trim()))
-            })
         } else {
             None
         };
@@ -970,23 +969,7 @@ fn suggest_verb(command: &str) -> Option<String> {
 }
 
 fn edit_distance_at_most_two(a: &str, b: &str) -> Option<usize> {
-    if a.len().abs_diff(b.len()) > 2 {
-        return None;
-    }
-    let mut previous = (0..=b.len()).collect::<Vec<_>>();
-    for (row, c) in a.bytes().enumerate() {
-        let mut next = vec![row + 1];
-        for (col, other) in b.bytes().enumerate() {
-            let substitution = usize::from(c != other);
-            next.push(
-                (previous[col + 1] + 1)
-                    .min(next[col] + 1)
-                    .min(previous[col] + substitution),
-            );
-        }
-        previous = next;
-    }
-    (previous[b.len()] <= 2).then_some(previous[b.len()])
+    crate::resolution::distance(a, b)
 }
 
 fn prompt<R: BufRead, W: Write>(

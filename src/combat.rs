@@ -45,17 +45,25 @@ fn target_index(
         }
         _ => (query, None),
     };
+    let has_exact = active.iter().any(|instance| {
+        encounters
+            .enemies
+            .get(&instance.enemy_id)
+            .is_some_and(|d| d.name.eq_ignore_ascii_case(name) || d.id.eq_ignore_ascii_case(name))
+    });
     let found: Vec<usize> = active
         .iter()
         .enumerate()
         .filter_map(|(index, instance)| {
             let definition = encounters.enemies.get(&instance.enemy_id)?;
-            let matches = definition.name.eq_ignore_ascii_case(name)
+            let matches = (name.is_empty() && number.is_some())
+                || definition.name.eq_ignore_ascii_case(name)
                 || definition.id.eq_ignore_ascii_case(name)
-                || definition
-                    .name
-                    .split_whitespace()
-                    .any(|part| part.eq_ignore_ascii_case(name));
+                || (!has_exact
+                    && definition
+                        .name
+                        .split_whitespace()
+                        .any(|part| part.eq_ignore_ascii_case(name)));
             (matches && number.is_none_or(|n| n == instance.instance_id)).then_some(index)
         })
         .collect();
@@ -114,23 +122,16 @@ pub fn physical_attack(
     if state.character.as_ref().is_none_or(|c| c.hp == 0) {
         return CombatAction::free("You cannot fight without a living RPG character.");
     }
-    let Some((weapon, item)) = content
-        .weapons
-        .values()
-        .filter_map(|weapon| {
-            let item = world.item(&weapon.item)?;
-            (item.id.eq_ignore_ascii_case(weapon_name.trim())
-                || item.name.eq_ignore_ascii_case(weapon_name.trim())
-                || item
-                    .aliases
-                    .iter()
-                    .any(|a| a.eq_ignore_ascii_case(weapon_name.trim())))
-            .then_some((weapon, item))
-        })
-        .next()
-    else {
-        return CombatAction::free(format!("Unknown weapon '{}'.", weapon_name.trim()));
+    let candidates = crate::resolution::items(world, state)
+        .into_iter()
+        .filter(|i| content.weapons.contains_key(&i.id))
+        .collect::<Vec<_>>();
+    let id = match crate::resolution::unique(weapon_name.trim(), &candidates) {
+        Ok(id) => id,
+        Err(message) => return CombatAction::free(message),
     };
+    let weapon = &content.weapons[&id];
+    let item = world.item(&id).expect("resolved weapon item");
     if state.location(&weapon.item) != Some(ItemLocation::Inventory) {
         return CombatAction::free(format!("You must carry {} to attack with it.", item.name));
     }
@@ -156,11 +157,9 @@ pub fn offensive_spell(
     let Some((spell_name, target)) = input.rsplit_once(" on ") else {
         return CombatAction::free("Try 'cast <spell> on <enemy>'.");
     };
-    let Some(ability) = content.abilities.values().find(|a| {
-        a.id.eq_ignore_ascii_case(spell_name.trim())
-            || a.name.eq_ignore_ascii_case(spell_name.trim())
-    }) else {
-        return CombatAction::free(format!("Unknown ability '{}'.", spell_name.trim()));
+    let ability = match content.resolve_ability(spell_name.trim()) {
+        Ok(ability) => ability,
+        Err(message) => return CombatAction::free(message),
     };
     if !matches!(ability.kind, AbilityKind::Damage) {
         // Non-offensive spells can still use the previous cast command (on self).

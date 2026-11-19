@@ -40,3 +40,26 @@ look with inventory using backspace, and quit worked. This is not human testing.
 Self-review found and fixed a nested stdin-lock deadlock in fixture launch; fixture
 now borrows the CLI reader. Windows locks running executables, so stop walkthroughs
 before rebuilding. Generic input and in-memory history policy have regression tests.
+
+## 3C parser and resolution
+
+Normalization and the existing ordinary intent parser feed a pure name matcher, then
+a read-only terminal preparation stage. Exact IDs take priority, followed by exact
+names/authored item aliases and unambiguous substrings. Take/drop prefer relevant room
+or carried candidates. Numbered clarification accepts a number or ID and cancellation;
+all targets are resolved before existing gameplay validation/mutation. Enemies retain
+instance IDs; explicit attack/cast and unambiguous use weapon/spell forms resolve to
+the same existing mechanics. Item matches and ordinary item targets have priority over
+spell aliases. Spells/enemies have ID/name matching; their existing schemas do not have
+authored alias fields. Unlearned spells and hidden objects are excluded from suggestions.
+
+Bounded edit distance includes adjacent transpositions (`exmain` suggests `examine`).
+No suggestion executes. Reserved save/load arguments and confirmations remain separate.
+RPG library entry points now reject ambiguous weapon/ability/teaching-item names instead
+of selecting whichever HashMap entry happened to appear first. No RORK or gameplay
+arithmetic changes. Pronouns and command chaining remain future work.
+
+Tests cover clarification of both use targets, invalid selection/cancel/EOF, exact/partial
+names, item/spell collisions, multiword aliases and case, transpositions, visibility,
+enemy instances, RPG aliases and immutable preparation. The existing creator ambiguity
+test now uses a noncolliding ID and explicit cancel, reflecting the requested new behavior.
