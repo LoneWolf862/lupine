@@ -16,7 +16,7 @@ fn roundtrip_restores_inventory_flags_and_current_room() {
         execute_command(&game.world, &mut state, parse_command(cmd).unwrap());
     }
     let text = encode_save(&game.world, &state, &game.id, "Forest Camp").unwrap();
-    assert!(text.contains("save_format_version = 3"));
+    assert!(text.contains("save_format_version = 4"));
     assert!(text.contains("save_name = \"Forest Camp\""));
     let restored = decode_save(&game.world, &game.id, &text).unwrap();
     assert_eq!(state, restored);
@@ -53,7 +53,7 @@ fn rejects_bad_schema_and_malformed_toml() {
     let err = decode_save(
         &game.world,
         &game.id,
-        &text.replace("save_format_version = 3", "save_format_version = 99"),
+        &text.replace("save_format_version = 4", "save_format_version = 99"),
     )
     .unwrap_err();
     assert!(err.contains("save_format_version"), "{err}");

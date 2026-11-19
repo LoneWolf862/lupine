@@ -1,0 +1,31 @@
+[[events]]
+id="begin"
+on={enter="start"}
+effects=[{set_quest_stage={quest="retrieve",stage="active"}},{add_journal="instructions"}]
+text="The demonstration has started."
+[[events]]
+id="finish"
+on={take="token"}
+effects=[{set_quest_stage={quest="retrieve",stage="done"}},{cancel_timer="deadline"},{end_game="success"}]
+[[events]]
+id="deadline"
+on={timer="deadline"}
+effects=[{set_quest_stage={quest="retrieve",stage="failed"}},{end_game="timeout"}]
+[timers.deadline]
+turns=4
+start=true
+[quests.retrieve]
+title="Retrieve the token"
+[quests.retrieve.stages]
+active="Find and take the token."
+done="Token retrieved."
+failed="The demonstration deadline passed."
+[journal.instructions]
+title="Instructions"
+text="Go north and take the token, or wait to test the failure ending."
+[endings.success]
+kind="success"
+text="The token was retrieved."
+[endings.timeout]
+kind="failure"
+text="Time ran out."

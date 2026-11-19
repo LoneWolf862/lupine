@@ -1,0 +1,5 @@
+id="store"
+title="Storage"
+description="The demonstration token is here."
+[exits]
+south="start"

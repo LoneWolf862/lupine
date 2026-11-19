@@ -77,6 +77,7 @@ fn snapshot(path: &Path) -> Vec<(PathBuf, Vec<u8>)> {
 fn native_package_is_valid_launchable_and_excludes_saves_and_development_files() {
     let f = Fixture::new();
     fs::write(f.game.join("rules.toml"), "[counters]\nvisits=3\n").unwrap();
+    fs::write(f.game.join("events.toml"),"[[events]]\nid='packaged'\non={enter='start'}\nonce=false\ntext='Packaged event executed.'\n").unwrap();
     fs::write(f.game.join("items/tokens.toml"),"id='tokens'\nname='tokens'\ndescription='Counting tokens'\nportable=true\nstackable=true\nquantity=3\ninitial={kind='inventory'}\n").unwrap();
     fs::write(f.game.join("actions.toml"), "[[actions]]\nid='wait_test'\ncommands=['wait']\nsuccess_text='Time passes.'\nfailure_text='Cannot wait.'\n").unwrap();
     for relative in [
@@ -135,6 +136,7 @@ fn native_package_is_valid_launchable_and_excludes_saves_and_development_files()
     let text = String::from_utf8(result.stdout).unwrap();
     assert!(text.contains("Welcome to Lupine!"));
     assert!(text.contains("Powered by Lupine"), "{text}");
+    assert!(text.contains("Packaged event executed."), "{text}");
 }
 #[test]
 fn preflight_rejects_missing_wrong_or_mismatched_binaries_before_writing() {

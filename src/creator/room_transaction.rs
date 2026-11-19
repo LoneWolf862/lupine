@@ -14,6 +14,7 @@ const DIRS: &[&str] = &[
     "rooms", "items", "config", "art", "spells", "weapons", "enemies", "shops",
 ];
 const FILES: &[&str] = &[
+    "events.toml",
     "actions.toml",
     "rules.toml",
     "game.toml",
@@ -31,6 +32,7 @@ fn editable_path(path: &Path, existing: bool) -> bool {
         path.to_str(),
         Some(
             "game.toml"
+                | "events.toml"
                 | "actions.toml"
                 | "rules.toml"
                 | "interactions.toml"

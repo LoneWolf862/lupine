@@ -6,6 +6,7 @@ use lupine::world::{
 
 pub fn fixture_world() -> World {
     World {
+        events: Default::default(),
         object_defs: Default::default(),
         actions: Vec::new(),
         rules: Default::default(),

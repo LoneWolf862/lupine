@@ -61,7 +61,9 @@ pub fn load(root: &Path) -> Result<Vec<Action>, String> {
 fn reserved(verb: &str) -> bool {
     matches!(
         verb,
-        "save"
+        "journal"
+            | "quests"
+            | "save"
             | "load"
             | "saves"
             | "quit"

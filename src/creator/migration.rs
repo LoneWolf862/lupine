@@ -30,6 +30,7 @@ fn category(file: &Path, path: &[String], scope: &str) -> Option<String> {
             "interactions.*.outcomes.*.when.*",
         ],
         ("", "actions.toml") => vec!["actions.*.requires.*", "actions.*.outcomes.*.when.*"],
+        ("", "events.toml") => vec!["events.*.requires.*"],
         _ => vec![],
     };
     for prefix in condition_roots {
@@ -38,10 +39,11 @@ fn category(file: &Path, path: &[String], scope: &str) -> Option<String> {
             return condition_reference(&path[len..], scope).map(str::to_owned);
         }
     }
-    if parent.is_empty() && matches!(root, "interactions.toml" | "actions.toml") {
+    if parent.is_empty() && matches!(root, "interactions.toml" | "actions.toml" | "events.toml") {
         for prefix in [
             "interactions.*.effects.*",
             "interactions.*.outcomes.*.effects.*",
+            "events.*.effects.*",
             "actions.*.effects.*",
             "actions.*.outcomes.*.effects.*",
         ] {
@@ -98,6 +100,14 @@ fn category(file: &Path, path: &[String], scope: &str) -> Option<String> {
             ]);
         }
         "" => match root {
+            "events.toml" => fields.extend([
+                ("events.*.id", "events"),
+                ("events.*.on.enter", "rooms"),
+                ("events.*.on.take", "items"),
+                ("events.*.on.action", "actions"),
+                ("events.*.on.defeat", "enemies"),
+                ("events.*.on.timer", "timers"),
+            ]),
             "actions.toml" => fields.extend([
                 ("actions.*.id", "actions"),
                 ("actions.*.room", "rooms"),
@@ -156,6 +166,9 @@ fn condition_reference(path: &[String], scope: &str) -> Option<&'static str> {
         | ["item_in_room", "item"] => Some("items"),
         ["flag_set" | "flag_unset"] => Some("flags"),
         ["in_room" | "visited"] | ["item_in_room", "room"] => Some("rooms"),
+        ["quest_stage", "quest"] => Some("quests"),
+        ["journal_has"] => Some("journal"),
+        ["timer_running"] => Some("timers"),
         ["counter", "id"] => Some("counters"),
         ["item_count", "location", "id"] => location_category(scope),
         _ => None,
@@ -164,6 +177,10 @@ fn condition_reference(path: &[String], scope: &str) -> Option<&'static str> {
 fn effect_reference(path: &[String], scope: &str) -> Option<&'static str> {
     let words = path.iter().map(String::as_str).collect::<Vec<_>>();
     match words.as_slice() {
+        ["start_timer" | "cancel_timer"] => Some("timers"),
+        ["set_quest_stage", "quest"] => Some("quests"),
+        ["add_journal"] => Some("journal"),
+        ["end_game"] => Some("endings"),
         ["set_flag" | "clear_flag"] => Some("flags"),
         ["give_item" | "remove_item" | "reveal_item" | "hide_item"]
         | ["move_item_to_room" | "add_item" | "remove_quantity" | "transfer_item"
@@ -264,6 +281,7 @@ fn documents(s: &Snapshot) -> Result<Vec<Document>, String> {
         );
     }
     for name in [
+        "events.toml",
         "actions.toml",
         "rules.toml",
         "game.toml",
@@ -318,6 +336,32 @@ fn inventory(s: &Snapshot) -> Result<BTreeMap<String, BTreeSet<String>>, String>
         "items".into(),
         a.game.world.items.iter().map(|i| i.id.clone()).collect(),
     );
+    all.insert(
+        "events".into(),
+        a.game
+            .world
+            .events
+            .events
+            .iter()
+            .map(|e| e.id.clone())
+            .collect(),
+    );
+    all.insert(
+        "timers".into(),
+        a.game.world.events.timers.keys().cloned().collect(),
+    );
+    all.insert(
+        "quests".into(),
+        a.game.world.events.quests.keys().cloned().collect(),
+    );
+    all.insert(
+        "journal".into(),
+        a.game.world.events.journal.keys().cloned().collect(),
+    );
+    all.insert(
+        "endings".into(),
+        a.game.world.events.endings.keys().cloned().collect(),
+    );
     all.insert("spells".into(), a.rpg.abilities.keys().cloned().collect());
     all.insert(
         "enemies".into(),
@@ -357,7 +401,10 @@ pub(super) fn plan(
     let mut changes = BTreeMap::new();
     let mut refs = Vec::new();
     for mut d in documents(s)? {
-        if d.path == Path::new("rules.toml") && matches!(kind, "flags" | "counters") {
+        if (d.path == Path::new("rules.toml") && matches!(kind, "flags" | "counters"))
+            || (d.path == Path::new("events.toml")
+                && matches!(kind, "timers" | "quests" | "journal" | "endings"))
+        {
             if let Some(entry) = d.doc.get_mut(kind) {
                 let changed = if let Some(table) = entry.as_table_mut() {
                     if let Some((key, value)) = table.remove_entry(old) {
@@ -383,7 +430,10 @@ pub(super) fn plan(
                     return Err("Cannot safely rename this state declaration representation".into());
                 };
                 if changed {
-                    refs.push(format!("rules.toml: {kind}.{old} -> {kind}.{new}"));
+                    refs.push(format!(
+                        "{}: {kind}.{old} -> {kind}.{new}",
+                        d.path.display()
+                    ));
                 }
             }
         }

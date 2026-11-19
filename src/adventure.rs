@@ -31,6 +31,17 @@ impl Adventure {
             .collect::<Vec<_>>();
         let encounters = EncounterContent::load(path, &rooms, enabled)?;
         encounters.validate_loot(&game.world)?;
+        for event in &game.world.events.events {
+            if let crate::events::Trigger::Defeat(id) = &event.on {
+                if !encounters.enemies.contains_key(id) {
+                    return Err(format!(
+                        "events.toml event '{}': unknown enemy '{id}'",
+                        event.id
+                    ));
+                }
+            }
+        }
+
         let wallet = WalletContent::load(path, enabled)?;
         wallet.validate_encounters(&encounters)?;
         let shops = ShopContent::load(path, &game.world, &wallet, &rpg)?;

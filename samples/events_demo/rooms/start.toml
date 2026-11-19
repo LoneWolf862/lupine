@@ -1,0 +1,5 @@
+id="start"
+title="Start"
+description="Retrieve the token to the north before four successful turns pass. Reading and errors are free."
+[exits]
+north="store"

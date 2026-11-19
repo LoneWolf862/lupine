@@ -4,7 +4,7 @@ use std::path::Path;
 
 use crate::combat;
 use crate::encounters::{EncounterContent, EncounterRng};
-use crate::engine::{execute_command, ActionOutcome};
+use crate::engine::ActionOutcome;
 use crate::parser::{parse_command, ParseError};
 use crate::render::describe_room;
 use crate::save_files::{
@@ -415,14 +415,35 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
     writeln!(output, "{title}")?;
     writeln!(output, "Powered by Lupine. Type 'help' for commands.\n")?;
     let mut rng = seed.map_or_else(EncounterRng::from_clock, EncounterRng);
+    for text in crate::events::start(&world, &mut state).map_err(io::Error::other)? {
+        writeln!(output, "{text}\n")?;
+    }
     let room = state.current_room.clone();
-    encounters.enter_room(&room, &mut state, &mut rng);
+    if state.events.ending.is_none() {
+        encounters.enter_room(&room, &mut state, &mut rng);
+    }
     // Starting an encounter is an in-memory state mutation, never an autosave.
     show_room(&world, &state, &mut output)?;
     if !state.active_enemies.is_empty() {
         writeln!(output, "{}\n", encounters.describe(&state.active_enemies))?;
     }
+    let mut pending = None::<crate::events::Step>;
     loop {
+        if let Some(step) = pending.take() {
+            let old_room = state.current_room.clone();
+            match crate::events::finish(&world,&mut state,step){
+                Ok(lines)=>for text in lines{writeln!(output,"{text}\n")?;},
+                Err(e)=>writeln!(output,"Story event could not complete: {e}. The triggering action remains applied; event changes were rolled back.\n")?,
+            }
+            sync_object_room(
+                &old_room,
+                &world,
+                &mut state,
+                &encounters,
+                &mut rng,
+                &mut output,
+            )?;
+        }
         write!(output, "> ")?;
         output.flush()?;
         let mut line = String::new();
@@ -455,22 +476,78 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
             )?;
             continue;
         }
+        if state.events.ending.is_some()
+            && ![
+                "look",
+                "l",
+                "examine",
+                "inspect",
+                "x",
+                "inventory",
+                "i",
+                "inv",
+                "journal",
+                "quests",
+                "save",
+                "saves",
+                "load",
+                "quit",
+                "q",
+                "exit",
+                "help",
+                "h",
+                "?",
+            ]
+            .iter()
+            .any(|v| verb.eq_ignore_ascii_case(v))
+        {
+            writeln!(output,"This adventure has ended. You may inspect, read your journal, manually save/load, or quit.\n")?;
+            continue;
+        }
+        pending = Some(crate::events::Step::new(
+            &state,
+            !["save", "load", "saves"]
+                .iter()
+                .any(|v| verb.eq_ignore_ascii_case(v)),
+        ));
+        if ["journal", "quests"]
+            .iter()
+            .any(|v| verb.eq_ignore_ascii_case(v))
+            && command.split_whitespace().count() == 1
+        {
+            writeln!(output, "{}\n", crate::events::journal(&world, &state))?;
+            continue;
+        }
         if !verb.eq_ignore_ascii_case("use") {
             match crate::actions::prepare(&line, &world, &state, &mut input, &mut output)? {
                 crate::actions::Prepared::Canceled => continue,
                 crate::actions::Prepared::Action(index) => {
-                    run_authored(
+                    if run_authored(
                         index,
                         &world,
                         &mut state,
                         &encounters,
                         &mut rng,
                         &mut output,
-                    )?;
+                    )? {
+                        if let Some(step) = pending.as_mut() {
+                            step.performed = true;
+                            step.triggers.push(crate::events::Trigger::Action(
+                                world.actions[index].id.clone(),
+                            ));
+                        }
+                    }
                     continue;
                 }
                 crate::actions::Prepared::Unhandled => (),
             }
+        }
+        if verb.eq_ignore_ascii_case("wait") && command.split_whitespace().count() == 1 {
+            if let Some(step) = pending.as_mut() {
+                step.performed = true;
+            }
+            writeln!(output, "Time passes.\n")?;
+            continue;
         }
         match crate::objects::prepare(&line, &world, &state, &mut input, &mut output)? {
             crate::objects::Prepared::Unhandled => (),
@@ -482,15 +559,20 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
                 quantity,
             } => {
                 let old_room = state.current_room.clone();
-                let text = crate::objects::manipulate(
+                let result = crate::objects::manipulate(
                     &world,
                     &mut state,
                     &verb,
                     &item,
                     target.as_deref(),
                     quantity,
-                )
-                .unwrap_or_else(|e| e);
+                );
+                if result.is_ok() {
+                    if let Some(step) = pending.as_mut() {
+                        step.performed = true;
+                    }
+                }
+                let text = result.unwrap_or_else(|e| e);
                 writeln!(output, "{text}\n")?;
                 sync_object_room(
                     &old_room,
@@ -545,6 +627,10 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
             state.active_enemies = current;
             writeln!(output, "{}\n", action.message)?;
             if let Some(defeated) = &action.defeated {
+                if let Some(step) = pending.as_mut() {
+                    step.triggers
+                        .push(crate::events::Trigger::Defeat(defeated.enemy_id.clone()));
+                }
                 encounters.record_defeat(&mut state);
                 let reward = combat::award_defeat(
                     &encounters,
@@ -563,6 +649,9 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
                 }
             }
             if action.turn_spent {
+                if let Some(step) = pending.as_mut() {
+                    step.performed = true;
+                }
                 let surviving = state.active_enemies.clone();
                 let retaliation = combat::retaliate(&encounters, &mut state, &surviving, &mut rng);
                 if !retaliation.is_empty() {
@@ -591,6 +680,10 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
             state.active_enemies = current;
             writeln!(output, "{}\n", action.message)?;
             if let Some(defeated) = &action.defeated {
+                if let Some(step) = pending.as_mut() {
+                    step.triggers
+                        .push(crate::events::Trigger::Defeat(defeated.enemy_id.clone()));
+                }
                 encounters.record_defeat(&mut state);
                 let reward = combat::award_defeat(
                     &encounters,
@@ -609,6 +702,9 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
                 }
             }
             if action.turn_spent {
+                if let Some(step) = pending.as_mut() {
+                    step.performed = true;
+                }
                 let surviving = state.active_enemies.clone();
                 let retaliation = combat::retaliate(&encounters, &mut state, &surviving, &mut rng);
                 if !retaliation.is_empty() {
@@ -640,8 +736,15 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
             && !argument.is_empty()
             && !argument.to_ascii_lowercase().contains(" on ")
         {
-            if let Some(message) = shops.use_transaction_item(&world, &mut state, &wallet, argument)
+            if let Some(result) =
+                shops.use_transaction_item_result(&world, &mut state, &wallet, argument)
             {
+                if result.is_ok() {
+                    if let Some(step) = pending.as_mut() {
+                        step.performed = true;
+                    }
+                }
+                let message = result.unwrap_or_else(|e| e);
                 writeln!(output, "{message}\n")?;
                 continue;
             }
@@ -650,14 +753,21 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
                     && a.target.as_deref() == Some(argument)
                     && a.commands.iter().any(|p| p == "use {target}")
             }) {
-                run_authored(
+                if run_authored(
                     index,
                     &world,
                     &mut state,
                     &encounters,
                     &mut rng,
                     &mut output,
-                )?;
+                )? {
+                    if let Some(step) = pending.as_mut() {
+                        step.performed = true;
+                        step.triggers.push(crate::events::Trigger::Action(
+                            world.actions[index].id.clone(),
+                        ));
+                    }
+                }
                 continue;
             }
         }
@@ -668,8 +778,14 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
                 .is_some_and(|d| d.consumable.is_some())
         {
             let old_room = state.current_room.clone();
-            let text = crate::objects::manipulate(&world, &mut state, "consume", argument, None, 1)
-                .unwrap_or_else(|e| e);
+            let result =
+                crate::objects::manipulate(&world, &mut state, "consume", argument, None, 1);
+            if result.is_ok() {
+                if let Some(step) = pending.as_mut() {
+                    step.performed = true;
+                }
+            }
+            let text = result.unwrap_or_else(|e| e);
             writeln!(output, "{text}\n")?;
             sync_object_room(
                 &old_room,
@@ -694,6 +810,11 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
             } else {
                 // Sell offers are creator-defined; the verb is convenience syntax.
                 let result = shops.transact(&mut state, &wallet, offer, shop);
+                if result.is_ok() {
+                    if let Some(step) = pending.as_mut() {
+                        step.performed = true;
+                    }
+                }
                 writeln!(
                     output,
                     "{}\n",
@@ -1043,7 +1164,17 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
             Ok(command) => {
                 let old_room = state.current_room.clone();
                 let is_look = matches!(&command, crate::commands::Command::Look);
-                match execute_command(&world, &mut state, command) {
+                let entering = matches!(&command, crate::commands::Command::Move(_));
+                let (result, performed) =
+                    crate::engine::execute_command_report(&world, &mut state, command);
+                if let Some(step) = pending.as_mut() {
+                    step.performed |= performed;
+                    if entering && performed {
+                        step.triggers
+                            .push(crate::events::Trigger::Enter(state.current_room.clone()));
+                    }
+                }
+                match result {
                     ActionOutcome::Message(message) => {
                         writeln!(output, "{message}\n")?;
                         if state.current_room != old_room {
@@ -1113,7 +1244,9 @@ fn sync_object_room(
     if state.current_room != old_room {
         encounters.leave_room(old_room, state);
         let room = state.current_room.clone();
-        encounters.enter_room(&room, state, rng);
+        if state.events.ending.is_none() {
+            encounters.enter_room(&room, state, rng);
+        }
         show_room(world, state, output)?;
         if !state.active_enemies.is_empty() {
             writeln!(output, "{}\n", encounters.describe(&state.active_enemies))?;
@@ -1128,22 +1261,24 @@ fn run_authored(
     encounters: &EncounterContent,
     rng: &mut EncounterRng,
     output: &mut impl Write,
-) -> io::Result<()> {
+) -> io::Result<bool> {
     let old_room = state.current_room.clone();
-    let text = world.actions[index]
-        .execute(world, state)
-        .unwrap_or_else(|e| e);
+    let result = world.actions[index].execute(world, state);
+    let performed = result.is_ok();
+    let text = result.unwrap_or_else(|e| e);
     writeln!(output, "{text}\n")?;
     if state.current_room != old_room {
         encounters.leave_room(&old_room, state);
         let room = state.current_room.clone();
-        encounters.enter_room(&room, state, rng);
+        if state.events.ending.is_none() {
+            encounters.enter_room(&room, state, rng);
+        }
         show_room(world, state, output)?;
         if !state.active_enemies.is_empty() {
             writeln!(output, "{}\n", encounters.describe(&state.active_enemies))?;
         }
     }
-    Ok(())
+    Ok(performed)
 }
 
 fn suggest_verb(command: &str) -> Option<String> {
@@ -1173,6 +1308,9 @@ fn suggest_verb(command: &str) -> Option<String> {
         "load",
         "quit",
         "help",
+        "wait",
+        "journal",
+        "quests",
         "north",
         "south",
         "east",

@@ -7,6 +7,7 @@ fn bundled_story_samples_pass_all_content_validators() {
         "rpg_spellbook",
         "rules_demo",
         "objects_demo",
+        "events_demo",
         "rpg_rewards",
         "rpg_transactions",
         "rpg_persistent",

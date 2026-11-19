@@ -7,6 +7,7 @@ const DIRS: &[&str] = &[
     "config", "rooms", "items", "spells", "weapons", "enemies", "shops", "art",
 ];
 const FILES: &[&str] = &[
+    "events.toml",
     "actions.toml",
     "rules.toml",
     "game.toml",

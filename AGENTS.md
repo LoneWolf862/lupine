@@ -9,7 +9,7 @@
 
 ## Current pre-release policy (2026-11-18)
 
-Lupine is pre-1.0. The published v0.9.0 standalone release remains unchanged; current development uses 0.11.0-dev.3. No known external games require development-version compatibility. Justified breaking API and format changes are allowed. Do not add obsolete-format loaders or unnecessary compatibility layers. Update bundled samples, templates, tests and current documentation together; preserve gameplay unless a change is intentional.
+Lupine is pre-1.0. The published v0.9.0 standalone release remains unchanged; current development uses 0.11.0-dev.4. No known external games require development-version compatibility. Justified breaking API and format changes are allowed. Do not add obsolete-format loaders or unnecessary compatibility layers. Update bundled samples, templates, tests and current documentation together; preserve gameplay unless a change is intentional.
 
 File responsibilities:
 

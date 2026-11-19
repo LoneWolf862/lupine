@@ -18,6 +18,7 @@ pub enum ItemLocation {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct GameState {
+    pub events: crate::events::Progress,
     pub story: crate::rules::StoryState,
     pub current_room: RoomId,
     pub objects: crate::objects::ObjectState,
@@ -40,6 +41,7 @@ pub struct GameState {
 impl GameState {
     pub fn new(world: &World) -> Self {
         Self {
+            events: crate::events::Progress::new(&world.events),
             story: crate::rules::StoryState {
                 counters: world.rules.counters.clone(),
                 visited: [world.starting_room.clone()].into_iter().collect(),

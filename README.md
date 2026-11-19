@@ -5,7 +5,7 @@ RPG engine. Authors build adventures with editable TOML content, FIG configurati
 the guided Adventure Creator. HOWLBOUND is only the tentative name of a future original
 adventure; no original story is prescribed by this engine.
 
-**Development version: 0.11.0-dev.3.** Creator work through Phase 2I and Phase 3
+**Development version: 0.11.0-dev.4.** Creator work through Phase 2I and Phase 3
 startup, history, parser and export improvements (#20–#24) are merged.
 They are not a published release. The existing
 [v0.9.0 standalone release](https://github.com/LoneWolf862/lupine/releases/tag/v0.9.0)
@@ -15,7 +15,8 @@ The unmerged [engine expansion](docs/ENGINE_EXPANSION.md) adds file-authored sce
 tests and [shared rules](docs/RULES.md): nested conditions, counters, ordered outcomes
 and atomic effects. [Authored actions](docs/ACTIONS.md) add custom commands and fixed-object use. Try `lupine test samples/rules_demo samples/rules_demo/scenarios.toml`.
 [Containers, quantities, hidden items and consumables](docs/OBJECTS.md) are implemented.
-This development build writes RORK format 3 for the object ledger and story state;
+[Events, timers, quests, journals and endings](docs/EVENTS.md) are implemented.
+This development build writes RORK format 4 for object, story and event progress;
 older saves need their matching engine/game build and are never rewritten automatically.
 
 ## Players: start here
