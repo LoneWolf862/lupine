@@ -1,5 +1,9 @@
 # Lupine — Current Project Handoff
 
+> Historical handoff below. For current authoring, start with
+> [CONTENT_REFERENCE.md](CONTENT_REFERENCE.md), [SCENARIO_TESTING.md](SCENARIO_TESTING.md)
+> and [ENGINE_EXPANSION.md](ENGINE_EXPANSION.md). Phase 4 is merged through PR #30.
+
 **Updated:** 2026-11-16  
 **Repository:** `LoneWolf862/lupine` (public)  
 **Engine:** Lupine (Rust, Cargo)  

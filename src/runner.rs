@@ -338,9 +338,45 @@ pub fn run_configured_with_io<R: BufRead, W: Write>(
     encounters: EncounterContent,
     wallet: WalletContent,
     shops: ShopContent,
+    input: R,
+    output: W,
+) -> io::Result<()> {
+    run_session_with_io(
+        world,
+        title,
+        game_id,
+        root,
+        compatibility_version,
+        config,
+        content,
+        encounters,
+        wallet,
+        shops,
+        input,
+        output,
+        None,
+    )
+    .map(|_| ())
+}
+
+/// The normal player command path with an optional repeatable random seed and
+/// final in-memory state for author scenario assertions. This never saves implicitly.
+#[allow(clippy::too_many_arguments)]
+pub fn run_session_with_io<R: BufRead, W: Write>(
+    world: World,
+    title: &str,
+    game_id: &str,
+    root: &Path,
+    compatibility_version: u32,
+    config: crate::config::GameConfig,
+    content: crate::rpg_content::RpgContent,
+    encounters: EncounterContent,
+    wallet: WalletContent,
+    shops: ShopContent,
     mut input: R,
     mut output: W,
-) -> io::Result<()> {
+    seed: Option<u64>,
+) -> io::Result<GameState> {
     let progression = &config.character;
     if compatibility_version == 0 {
         return Err(io::Error::new(
@@ -378,7 +414,7 @@ pub fn run_configured_with_io<R: BufRead, W: Write>(
     let mut current_save: Option<String> = None;
     writeln!(output, "{title}")?;
     writeln!(output, "Powered by Lupine. Type 'help' for commands.\n")?;
-    let mut rng = EncounterRng::from_clock();
+    let mut rng = seed.map_or_else(EncounterRng::from_clock, EncounterRng);
     let room = state.current_room.clone();
     encounters.enter_room(&room, &mut state, &mut rng);
     // Starting an encounter is an in-memory state mutation, never an autosave.
@@ -939,7 +975,7 @@ pub fn run_configured_with_io<R: BufRead, W: Write>(
             }
         }
     }
-    Ok(())
+    Ok(state)
 }
 
 fn is_defeated(state: &GameState) -> bool {

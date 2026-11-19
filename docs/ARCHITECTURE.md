@@ -1,5 +1,10 @@
 # Lupine architecture
 
+Engine expansion: [approved sequence and status](ENGINE_EXPANSION.md). `scenario.rs`
+loads strict TOML test suites and invokes the real runner with an explicit random
+seed, returning final in-memory state for assertions. Existing runner APIs preserve
+their signatures/default randomness. No implicit persistence or RORK changes.
+
 ## Current development architecture (0.10.0-dev.1)
 
 Lupine is an offline terminal engine. Immutable TOML content is separate from mutable

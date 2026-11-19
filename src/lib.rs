@@ -15,6 +15,7 @@ pub mod rpg_content;
 pub mod runner;
 pub mod save;
 pub mod save_files;
+pub mod scenario;
 pub mod shops;
 pub mod startup;
 pub mod state;

@@ -1,5 +1,9 @@
 # Creating your first Lupine adventure (TOML format 1)
 
+> Historical introductory tutorial below. Guided editing is implemented; its old
+> future-work statement is superseded. Direct file authoring is the primary workflow:
+> use [the current reference](CONTENT_REFERENCE.md) and [scenario tests](SCENARIO_TESTING.md).
+
 **This guide uses v0.5.0-C candidate features.** No graphical interface or Rust game code is required.
 
 ## 1. Copy the starter project

@@ -31,6 +31,10 @@ Character/progression and terminology FIGs, the guided creator and Phase 3 parse
 
 ## Development workflow
 
+- Approved 2026-11-19: implement docs/ENGINE_EXPANSION.md in order. File-based TOML/FIG
+  authoring is primary; engine capability precedes wizard coverage and usability.
+  Use isolated phase branches, checkpoint pushes and stacked draft PRs. Do not merge.
+
 - Read `README.md`, `docs/REQUIREMENTS.md`, `docs/ARCHITECTURE.md`, `docs/ROADMAP.md`, and `docs/CREATOR_VISION.md` before architectural changes.
 - Work in small, reviewable increments. Add tests for parser ambiguity, missing objects, invalid worlds, and state transitions as features arrive.
 - Before a milestone is marked verified, run `cargo test`, `cargo fmt --all -- --check`, and `cargo clippy --all-targets -- -D warnings` on an available Rust toolchain.
@@ -68,7 +72,7 @@ exported engines; regenerate them from Cargo.lock after dependency changes. Vers
 comes from Cargo; keep the published v0.9.0 tag immutable. Official release publication is
 separate from development CI artifacts.
 
-Phase 4 remains an unmerged development stack; read docs/PHASE_4_REVIEW.md for verification.
+Phase 4 is merged through PR #30; read docs/PHASE_4_REVIEW.md for historical verification.
 Recovery extends .lupine-room-edit with hashed baseline/proposal evidence. Never overwrite
 external edits or guess through missing/corrupt/older records. Export supports stored ZIPs
 and folders, private staging and an incomplete publication marker. Cleanup may delete only
