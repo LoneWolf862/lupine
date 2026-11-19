@@ -5,7 +5,13 @@ mod fixture_world;
 fn main() -> std::io::Result<()> {
     let args: Vec<String> = std::env::args().collect();
     match args.as_slice() {
-        [_] => lupine::runner::run_with_game_id(
+        [_] => lupine::startup::run(
+            &mut std::io::stdin().lock(),
+            &mut std::io::stdout().lock(),
+            &lupine::save_files::default_save_root()?,
+            &lupine::startup::search_roots()?,
+        ),
+        [_, command] if command == "fixture" => lupine::runner::run_with_game_id(
             fixture_world::fixture_world(),
             "LUPINE v0.8.4 — Engine Test Adventure",
             "lupine_fixture",
@@ -120,7 +126,8 @@ fn main() -> std::io::Result<()> {
             println!("  lupine add art <directory> <art-id> [--dynamic]");
             println!("  lupine validate <directory>");
             println!("  lupine play <directory>");
-            println!("Running `lupine` without arguments launches the test adventure.");
+            println!("  lupine fixture                   (development test adventure)");
+            println!("Running `lupine` without arguments opens the startup menu.");
             Ok(())
         }
         _ => {
