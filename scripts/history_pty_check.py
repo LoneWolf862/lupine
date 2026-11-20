@@ -40,7 +40,9 @@ try:
     expect(b"> ")
     # Recall at the oldest boundary, move inside the line, delete one o, submit lok.
     os.write(fd, b"\x1b[A\x1b[A\x1b[D\x1b[D\x7f\x1b[C\x1b[C\n")
-    expect(b"Did you mean 'look'?")
+    # With container verbs, lok ties look/lock; ambiguous suggestions stay silent.
+    # The diagnostic still proves the history/cursor/backspace edit submitted lok.
+    expect(b"I don't understand 'lok'.")
     expect(b"> ")
     # Edit the recalled typo back into look.
     os.write(fd, b"\x1b[A\x1b[Do\x1b[C\n")

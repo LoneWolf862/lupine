@@ -31,6 +31,9 @@ Changes are reviewed in an isolated branch and draft PR; no automatic merge/rele
   transcript for 14 days, including after a later step fails. Player saves are not
   uploaded as evidence. Development packages remain a separate manually requested
   artifact; normal PR verification does not publish a release.
+- The formerly manual-only PTY check now expects the ambiguous `lok` typo to be
+  rejected without a suggestion (`look` and `lock` tie). It still checks the actual
+  history/cursor/backspace edit, prompt visibility and manual-save behavior.
 
 ## Verification
 
