@@ -60,7 +60,7 @@ fn learn_scroll_cast_restore_and_save() {
     assert_eq!(state.location("brass_key"), Some(ItemLocation::Consumed));
     assert!(content
         .spellbook(&state, &Default::default())
-        .contains("Heal (8 MP)"));
+        .contains("Heal — cast heal [8 MP]"));
     state.character.as_mut().unwrap().hp = 50;
     assert!(content.cast(&mut state, "heal").contains("HP: 70/100"));
     assert_eq!(state.character.as_ref().unwrap().mp, 22);

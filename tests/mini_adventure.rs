@@ -205,6 +205,23 @@ fn ambiguous_shop_offers_cancel_without_spending() {
 }
 
 #[test]
+fn prepared_offer_and_shop_ids_cannot_be_intercepted_by_display_names() {
+    let mut a = mini();
+    let trader = a.shops.shops.get_mut("trader").unwrap();
+    trader.offers[0].name = "sword".into(); // sell display name collides with buy ID
+    trader.offers[1].price = 1;
+    let mut other = trader.clone();
+    other.id = "aaa".into();
+    other.name = "trader".into(); // sorted first, but cannot intercept trader's ID
+    other.offers[1].price = 99;
+    a.shops.shops.insert("aaa".into(), other);
+    let (state, text) = play(a, "east\nbuy sword from the trader\n");
+    assert_eq!(state.wallet["coins"], 1, "{text}");
+    assert!(state.is_carried("sword"));
+    assert_eq!(state.shop_purchases["trader:sword"], 1);
+}
+
+#[test]
 fn startup_events_do_not_produce_a_false_unsaved_warning() {
     for a in [
         mini(),
@@ -224,4 +241,9 @@ fn player_menu_prioritizes_adventures_and_browse_still_finds_fixtures() {
     assert_eq!(choices.len(), 1);
     assert!(choices[0].title.contains("Mini Adventure"));
     assert!(lupine::startup::discover(&[root.join("samples")]).len() > 1);
+    let direct = root.join("samples/economy_demo");
+    let choices = lupine::startup::discover(&[root.to_owned(), direct.clone()]);
+    assert!(choices
+        .iter()
+        .any(|c| c.path == direct.canonicalize().unwrap()));
 }

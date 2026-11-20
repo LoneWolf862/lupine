@@ -448,7 +448,13 @@ impl ShopContent {
                 )?;
                 return Ok(None);
             }
-            let Some(id) = crate::player_input::choose(shop_query, &shops, input, output)? else {
+            let Some(id) = crate::player_input::choose(
+                &crate::parser::clean_target(shop_query),
+                &shops,
+                input,
+                output,
+            )?
+            else {
                 return Ok(None);
             };
             id
@@ -489,8 +495,14 @@ impl ShopContent {
         if name.is_empty() {
             return (here.len() == 1).then(|| here[0]);
         }
-        here.into_iter()
-            .find(|s| s.id.eq_ignore_ascii_case(name) || s.name.eq_ignore_ascii_case(name))
+        if let Some(shop) = here.iter().find(|s| s.id.eq_ignore_ascii_case(name)) {
+            return Some(shop);
+        }
+        let named = here
+            .into_iter()
+            .filter(|s| s.name.eq_ignore_ascii_case(name))
+            .collect::<Vec<_>>();
+        (named.len() == 1).then(|| named[0])
     }
     pub fn transact(
         &self,
@@ -503,13 +515,28 @@ impl ShopContent {
         let shop = self
             .resolve_shop(state, shop_query)
             .ok_or("No such shop is available here.")?;
-        let offer = shop
+        // Player preparation and object bindings return stable IDs. A display name
+        // on another offer must never intercept that ID (including across directions).
+        let offer = if let Some(offer) = shop
             .offers
             .iter()
-            .find(|o| {
-                o.id.eq_ignore_ascii_case(offer_query) || o.name.eq_ignore_ascii_case(offer_query)
-            })
-            .ok_or_else(|| format!("No offer '{offer_query}' at {}.", shop.name))?;
+            .find(|o| o.id.eq_ignore_ascii_case(offer_query))
+        {
+            offer
+        } else {
+            let named = shop
+                .offers
+                .iter()
+                .filter(|o| o.name.eq_ignore_ascii_case(offer_query))
+                .collect::<Vec<_>>();
+            if named.len() != 1 {
+                return Err(format!(
+                    "No unique offer '{offer_query}' at {}. Use an offer ID from shop.",
+                    shop.name
+                ));
+            }
+            named[0]
+        };
         let key = format!("{}:{}", shop.id, offer.id);
         if offer
             .stock

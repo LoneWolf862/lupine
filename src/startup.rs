@@ -51,7 +51,12 @@ pub fn discover(roots: &[PathBuf]) -> Vec<Choice> {
         .cloned()
         .collect::<std::collections::BTreeSet<_>>();
     if !preferred.is_empty() {
-        paths = preferred;
+        paths.retain(|p| {
+            roots.contains(p)
+                || !roots
+                    .iter()
+                    .any(|r| p.starts_with(r.join("samples")) || *p == r.join("story_example"))
+        });
     }
     let mut unique = std::collections::BTreeSet::new();
     paths
