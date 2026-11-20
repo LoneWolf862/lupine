@@ -1,6 +1,8 @@
 id="chest"
 name="sturdy chest"
-description="Unlock chest with chest key, then open chest. Look in chest lists its contents."
+description="""
+A sturdy chest with a small lock. Unlock it with the chest key.
+"""
 portable=false
 starting_room="storeroom"
 hidden=true

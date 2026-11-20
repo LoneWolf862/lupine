@@ -1,6 +1,8 @@
 id="gate"
 name="iron gate"
-description="Its brass key is in the storeroom chest. Unlock gate with brass key."
+description="""
+An iron gate with a brass lock. Unlock gate with brass key.
+"""
 portable=false
 starting_room="gate"
 aliases=["gate","door"]

@@ -459,21 +459,20 @@ pub fn journal(w: &World, state: &GameState) -> String {
     for (id, stage) in &state.events.quests {
         if let Some(q) = w.events.quests.get(id) {
             lines.push(format!(
-                "{} [{}]: {}",
+                "{}\n{}",
                 q.title,
-                stage,
                 q.stages.get(stage).map_or("", String::as_str)
             ));
         }
     }
     for id in &state.events.journal {
         if let Some(entry) = w.events.journal.get(id) {
-            lines.push(format!("{}: {}", entry.title, entry.text));
+            lines.push(format!("{}\n{}", entry.title, entry.text));
         }
     }
     if lines.is_empty() {
         "Your journal is empty.".into()
     } else {
-        lines.join("\n")
+        lines.join("\n\n")
     }
 }

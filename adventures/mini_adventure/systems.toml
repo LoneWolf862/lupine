@@ -3,5 +3,5 @@ slot="body"
 defense=2
 [statuses.focus]
 name="Focus"
-turns=4
+turns=8
 attack_percent=120

@@ -9,4 +9,39 @@ failure_text="The gate is already unlocked. Go east."
 from="gate"
 direction="east"
 requires=[{flag_set="gate_open"}]
-blocked_text="The iron gate is locked. Find the brass key in the storeroom chest; unlock gate with brass key."
+blocked_text="""
+The iron gate is locked. Find the brass key in the storeroom chest;
+unlock gate with brass key.
+"""
+
+[[interactions]]
+item="shop_key"
+target="shop_door"
+requires=[{flag_unset="shop_open"}]
+effects=[{set_flag="shop_open"},{remove_item="shop_key"}]
+success_text="""
+The shop unlocks. The key stays in the door.
+  +-----------+
+  |     /     |
+  |   OPEN    |
+  +-----------+
+"""
+failure_text="The shop is already unlocked. Go west."
+[[interactions]]
+item="chest_key"
+target="chest"
+requires=[{container_locked="chest"}]
+effects=[{set_container={item="chest",locked=false}},{remove_item="chest_key"}]
+success_text="The chest unlocks. The small key remains in its lock."
+failure_text="The chest is already unlocked."
+[[exit_rules]]
+from="camp"
+direction="west"
+requires=[{flag_set="shop_open"}]
+blocked_text="""
+The shop door is locked. The guide has its key.
+  +-----------+
+  |     X     |
+  |   LOCKED  |
+  +-----------+
+"""

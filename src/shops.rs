@@ -391,30 +391,55 @@ impl ShopContent {
             return "No such shop is available here.".into();
         };
         let mut lines = vec![format!("{}:", shop.name)];
-        for offer in &shop.offers {
-            let currency = &wallet.currencies[&offer.currency];
-            let key = format!("{}:{}", shop.id, offer.id);
-            let count = state.shop_purchases.get(&key).copied().unwrap_or(0);
-            let remaining = offer.stock.map(|stock| stock.saturating_sub(count));
-            let stock = match remaining {
-                Some(0) => " (sold out)".to_owned(),
-                Some(n) => format!(" ({n} left)"),
-                None => String::new(),
-            };
-            let quantity = if matches!(offer.kind.as_str(), "item" | "sell_item") {
-                format!(" (quantity: {})", offer.quantity)
-            } else {
-                String::new()
-            };
-            let verb = if offer.kind == "sell_item" {
-                "sell"
-            } else {
-                "buy"
-            };
-            lines.push(format!(
-                "  {}{} — {}: {}{} | {} {} from {}",
-                offer.name, quantity, currency.name, offer.price, stock, verb, offer.id, shop.id
-            ));
+        for selling in [true, false] {
+            let offers = shop
+                .offers
+                .iter()
+                .filter(|o| (o.kind == "sell_item") == selling)
+                .collect::<Vec<_>>();
+            if offers.is_empty() {
+                continue;
+            }
+            lines.push(
+                if selling {
+                    "\nTrader buys from you:"
+                } else {
+                    "\nTrader sells to you:"
+                }
+                .into(),
+            );
+            for offer in offers {
+                let currency = &wallet.currencies[&offer.currency];
+                let key = format!("{}:{}", shop.id, offer.id);
+                let count = state.shop_purchases.get(&key).copied().unwrap_or(0);
+                let remaining = offer.stock.map(|stock| stock.saturating_sub(count));
+                let stock = match remaining {
+                    Some(0) => " (sold out)".to_owned(),
+                    Some(n) => format!(" ({n} left)"),
+                    None => String::new(),
+                };
+                let quantity = if matches!(offer.kind.as_str(), "item" | "sell_item") {
+                    format!(" (quantity: {})", offer.quantity)
+                } else {
+                    String::new()
+                };
+                let verb = if offer.kind == "sell_item" {
+                    "sell"
+                } else {
+                    "buy"
+                };
+                lines.push(format!(
+                    "  {}{} — {}: {}{}\n    {} {} from {}",
+                    offer.name,
+                    quantity,
+                    currency.name,
+                    offer.price,
+                    stock,
+                    verb,
+                    offer.id,
+                    shop.id
+                ));
+            }
         }
         lines.join("\n")
     }

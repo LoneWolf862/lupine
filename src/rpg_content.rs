@@ -267,7 +267,7 @@ impl RpgContent {
             }
             for effect in &spell.effects {
                 if let crate::rules::Effect::Debit { currency, amount } = effect {
-                    costs.push(format!("{} {}", amount, currency));
+                    costs.push(format!("{}: {}", currency, amount));
                 }
             }
             let cost = if costs.is_empty() {

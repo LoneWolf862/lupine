@@ -81,6 +81,8 @@ fn execute_core(
                 .map(|item| {
                     if crate::objects::definition(world, &item.id).stackable {
                         format!("{} ({})", item.name, state.carried_quantity(&item.id))
+                    } else if state.systems.equipped.values().any(|id| id == &item.id) {
+                        format!("{} (equipped)", item.name)
                     } else {
                         item.name.clone()
                     }
@@ -89,7 +91,7 @@ fn execute_core(
             if carried.is_empty() {
                 message("You are carrying nothing.")
             } else {
-                message(format!("You are carrying: {}", carried.join(", ")))
+                message(format!("You are carrying:\n  {}", carried.join("\n  ")))
             }
         }
         Command::Examine(target) => match resolve(world, state, &target) {

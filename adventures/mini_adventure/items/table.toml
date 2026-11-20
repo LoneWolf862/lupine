@@ -1,0 +1,5 @@
+id="table"
+name="table"
+description="A sturdy training table. Look lists the supplies still here."
+portable=false
+starting_room="camp"

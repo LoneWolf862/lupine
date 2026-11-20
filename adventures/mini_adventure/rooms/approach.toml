@@ -1,0 +1,10 @@
+id="approach"
+title="Vault Approach"
+description="""
+The stone golem waits beyond the eastern doorway. This quiet passage is
+a safe place to prepare or save. The workshop is west.
+"""
+
+[exits]
+west="workshop"
+east="vault"

@@ -2,9 +2,9 @@ format_version=1
 id="lupine_mini_adventure"
 title="Lupine Mini Adventure — Start Here"
 starting_room="camp"
-save_compatibility_version=1
+save_compatibility_version=2
 [currency]
 id="coins"
 name="Coins"
 symbol="c"
-starting_amount=2
+starting_amount=0

@@ -57,10 +57,14 @@ Opening a conversation shows the NPC description and the current node text. The
 first matching variant replaces the default text. Only choices whose requirements
 match are listed. Select a number or exact choice ID, or cancel with 0/back/cancel.
 Invalid input asks again; EOF and cancellation change nothing. No choices means
-the conversation is read-only. There is no automatic branch selection.
+the conversation is read-only. Automatic name prompts require the explicit
+opt-in described below.
 
-Each confirmed response applies one atomic transaction and returns to the main
-prompt. It spends one successful action turn, including a response with no effects.
+Each confirmed response applies one atomic transaction. By default it returns
+to the main prompt; `keep_open = true` on the NPC reopens its current node after
+the entire turn settles. L/leave, 0/back/cancel or EOF leaves the conversation.
+Leaving does not undo earlier confirmed responses. Continuation stops after a
+failed choice/turn, an unavailable NPC, player defeat or an ending. It spends one successful action turn, including a response with no effects.
 The next node is remembered for the next `talk`. Timers and event hooks run after
 the response. The declared `next` transition is staged before effects; an explicit
 `set_dialogue` effect may override it. If an effect fails, the response, transition
@@ -99,7 +103,8 @@ through the same effects. No separate dialogue scripting language is introduced.
 
 ## Persistence, tests and author tools
 
-RORK **6** retains NPC progress and adds [combat/equipment progress](SYSTEMS.md).
+RORK **7** retains NPC and [combat/equipment progress](SYSTEMS.md), plus the
+player name. Session-only menus and prompts do not add saved state.
 The NPC schema persists exact NPC IDs, locations and node IDs, plus NPC object placements.
 Unknown/missing NPCs, nodes and rooms are rejected before replacing live progress.
 Offstage locations round-trip. Saving remains exclusively manual; loading does not
@@ -117,7 +122,8 @@ references pointing to their original targets; review explicit self-references
 and item ownership before publishing. Migration M offers `npcs` and
 `nodes:<npc_id>` categories, updating typed references and table keys while preserving
 prose and RORK bytes. Choice IDs are local input labels; no persistent state refers
-to them. F is the complete-schema file/structural editor; no separate NPC form
+to them. A node's `prompt_choice` references a choice in that node; update this
+reference when changing a choice ID in the structural editor. F is the complete-schema file/structural editor; no separate NPC form
 or automatic behavior generator is implied.
 
 ## Moving an existing development adventure
@@ -146,7 +152,7 @@ Shared flags, events, quests, items and shops retain their own definitions and
 are referenced by ID. This layout does not add NPC combat, pathfinding, schedules,
 or a direct NPC-to-shop binding.
 
-## Asking the player's name (dev.11 candidate)
+## Asking the player's name
 
 A choice may set `ask_name = true` (default false). After selecting it, the runner
 asks for a name of 1–40 characters, preserving case and Unicode. Leading/trailing
@@ -165,3 +171,18 @@ it without the required input. Scenarios can assert `player_name = "Ada"`.
 
 Names are only in memory until an explicit manual save. RORK 7 includes the optional
 name and validates it before replacing current state. No existing saves are rewritten.
+
+## Immediate introductions (dev.12)
+
+An NPC can set `keep_open = true` and its introduction node can set
+`prompt_choice = "introduce"`. That must reference a choice in that node with
+`ask_name = true`; validation rejects missing or non-name choices. If its
+requirements are met, talking to the NPC asks for the name immediately instead
+of asking the player to select the introduction first. If unavailable, the
+normal menu of eligible choices is shown. No hidden choice runs automatically.
+
+A valid name confirms that choice's ordinary atomic turn. Cancel/EOF commits
+neither the name nor gifts/effects. Set `next = "topics"` to move to a regular
+menu afterwards. Keep the introduction's gift out of repeatable welcome choices.
+The mini adventure demonstrates this using existing node progress, not a new
+save field. Both new fields are optional; existing NPCs keep their old flow.

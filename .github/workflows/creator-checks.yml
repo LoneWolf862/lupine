@@ -38,6 +38,8 @@ jobs:
         run: python scripts/history_pty_check.py
       - name: Verify portable development package
         run: python scripts/package_development.py
+      - name: Complete packaged mini adventure and export
+        run: python scripts/mini_adventure_acceptance.py
       - name: Retain acceptance evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -47,5 +49,7 @@ jobs:
             target/phase4-acceptance-*/*.txt
             target/phase4-acceptance-*/summary.json
             target/history-pty-transcript.bin
+            target/mini-package-acceptance-*/*.txt
+            target/mini-package-acceptance-*/summary.json
           if-no-files-found: warn
           retention-days: 14

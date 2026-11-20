@@ -1,6 +1,8 @@
 id="woods"
 title="Goblin Woods"
-description="A hollow stump stands beside the path. Search stump to check inside it. North returns to camp; enemies do not prevent retreat."
+description="""
+A hollow stump stands beside the path. North returns to camp.
+"""
 [encounters]
 chance=100
 persistence="unique"

@@ -1,0 +1,5 @@
+id="shop_key"
+name="shop key"
+description="A heavy key for the armored shop door west of camp."
+portable=true
+initial={kind="npc",id="guide"}

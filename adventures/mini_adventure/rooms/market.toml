@@ -1,6 +1,8 @@
 id="market"
-title="Market"
-description="A trader buys goblin trophies and sells a steel sword. Use shop to see prices and quantities. After defeating the goblin, take its trophy, then sell trophy and buy sword here. The sword costs 10 coins; the trophy sells for 8. West returns to camp. Purchases are optional: the dagger and Fireball can also finish the adventure."
+title="Shop"
+description="""
+A trader waits behind the counter. The shop door leads east to camp.
+"""
 
 [exits]
-west="camp"
+east="camp"

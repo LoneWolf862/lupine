@@ -1,0 +1,21 @@
+id="shop_door"
+name="armored shop door"
+description="""
+The shop door is locked. Use shop key on door to unlock it.
+  +-----------+
+  |     X     |
+  |   LOCKED  |
+  +-----------+
+"""
+portable=false
+starting_room="camp"
+aliases=["shop door","door"]
+[[descriptions]]
+when=[{flag_set="shop_open"}]
+text="""
+The shop door stands open; its key remains in the lock.
+  +-----------+
+  |     /     |
+  |   OPEN    |
+  +-----------+
+"""

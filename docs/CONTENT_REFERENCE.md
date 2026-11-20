@@ -19,8 +19,8 @@ baseline fields below with nested conditions, effects and ordered interaction ou
 | rooms/*.toml | id, title, description | exits={} mapping north/south/east/west/up/down to rooms; descriptions=[]; art or art_file; art_variants=[]; encounters |
 | items/*.toml | id, name, description, portable; starting_room or initial | aliases=[]; descriptions=[]; hidden=false; stackable=false; quantity=1; container; consumable. See [object reference](OBJECTS.md) |
 | interactions.toml | none | interactions=[]; exit_rules=[] |
-| actions.toml | actions array; see [actions grammar](ACTIONS.md) | room, target/item bindings, shared rules/outcomes |
-| NPCs/*.toml | id, name, description, start, nodes | One NPC per file; aliases=[], room omitted means offstage, requires=[]; conditional nodes/choices and transfers. See [dialogue reference](DIALOGUE.md) |
+| actions.toml | actions array; see [actions grammar](ACTIONS.md) | room, target/item bindings, shared rules/outcomes, offer_on_enter |
+| NPCs/*.toml | id, name, description, start, nodes | One NPC per file; aliases=[], room omitted means offstage, requires=[], keep_open=false; nodes may set prompt_choice; conditional nodes/choices and transfers. See [dialogue reference](DIALOGUE.md) |
 | systems.toml | none | equipment and statuses maps; see [systems reference](SYSTEMS.md) |
 | config/combat.fig | none | minimum_damage=1, retaliation="combat"; implemented defaults |
 | events.toml | none | events, timers, quests, journal, endings; see [event reference](EVENTS.md) |
@@ -143,3 +143,28 @@ encounter persistence. These are engine fixtures, not HOWLBOUND story content.
 ## Publication metadata and complete creator coverage
 
 Optional `game.toml [metadata]` supports `author`, `description`, `version`, `credits`, `license`, and `instructions` strings (64 KiB each, no terminal controls except newline/tab). Export includes authored publication texts. Creator F edits every current schema through multi-file structural/text drafts; G edits properties. See [PROJECT_EDITOR.md](PROJECT_EDITOR.md) for exact preview, duplicate/delete, repair and recovery contracts.
+
+## Writing for terminal width
+
+As an authoring convention, aim for 72–76 displayed columns for prose, allowing
+for any indentation the renderer adds. Use real newlines and blank paragraphs
+inside TOML multiline strings. Avoid backslash-newline folding when intending a
+line break. This is guidance, not a validation requirement or a global wrapping
+rule. Narrower terminals and long substituted names can still wrap.
+
+```toml
+description = """
+The lamp casts a steady glow over the chest.
+The doorway to camp is south.
+
+A quiet draft moves through the room.
+"""
+```
+
+Room titles, prose, art and exit/object blocks have whitespace between them.
+Inventory and chest contents are vertical; long generated room object lists
+also become vertical. Journal objectives precede titled, paragraph-based entries.
+Shops display on entry and look, grouping what the trader buys from the player
+and sells to the player, with quantities, prices and finite stock/sold-out state.
+ASCII art and authored line breaks remain intact. Put route instructions in
+dialogue and the journal, and keep room prose truthful after items are removed.

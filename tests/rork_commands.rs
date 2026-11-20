@@ -102,7 +102,7 @@ fn failed_load_preserves_live_state_and_unsaved_prompt() {
     assert!(response.contains("Load failed"), "{response}");
     assert!(response.contains("Unsaved progress"), "{response}");
     assert!(
-        response.matches("You are carrying: brass key").count() >= 2,
+        response.matches("You are carrying:\n  brass key").count() >= 2,
         "{response}"
     );
     assert!(!root.exists()); // no implicit writes
@@ -185,7 +185,7 @@ fn confirmation_questions_are_complete_lines_and_declines_preserve_state() {
         assert!(result.contains(text), "{result}");
     }
     assert!(result.contains("Please answer yes or no."));
-    assert!(result.contains("You are carrying: brass key"));
+    assert!(result.contains("You are carrying:\n  brass key"));
     assert_eq!(
         fs::read(slot_path(&root, "fixture", "camp").unwrap()).unwrap(),
         original

@@ -1,6 +1,9 @@
 id="goblin"
 name="Goblin"
-description="The first training opponent. Attack goblin with dagger, or cast fireball on goblin."
+description="""
+The first training opponent. Attack goblin with dagger, or cast fireball
+on goblin.
+"""
 level=1
 max_hp=18
 experience=15
@@ -14,5 +17,5 @@ chance=100
 [[currency_rewards]]
 currency="coins"
 chance=100
-min=2
-max=2
+min=3
+max=3

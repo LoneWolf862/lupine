@@ -29,7 +29,12 @@ pub fn describe_room(world: &World, state: &GameState, room: &Room) -> String {
     let mut visible = if objects.is_empty() {
         "Objects: none".to_string()
     } else {
-        format!("Objects: {}", objects.join(", "))
+        let inline = format!("Objects: {}", objects.join(", "));
+        if inline.chars().count() > 76 {
+            format!("Objects:\n  {}", objects.join("\n  "))
+        } else {
+            inline
+        }
     };
     if !crate::dialogue::candidates(world, state).is_empty() {
         visible.push_str(&format!("\n{}", crate::dialogue::people(world, state)));
@@ -52,7 +57,7 @@ pub fn describe_room(world: &World, state: &GameState, room: &Room) -> String {
         .filter(|art| !art.is_empty());
     match art {
         Some(art) => format!(
-            "{}\n{}\n{}\nExits: {}\n{}",
+            "{}\n\n{}\n\n{}\n\nExits: {}\n{}",
             room.title,
             description,
             art,
@@ -64,7 +69,7 @@ pub fn describe_room(world: &World, state: &GameState, room: &Room) -> String {
             visible
         ),
         None => format!(
-            "{}\n{}\nExits: {}\n{}",
+            "{}\n\n{}\n\nExits: {}\n{}",
             room.title,
             description,
             if exits.is_empty() {
