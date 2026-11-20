@@ -94,7 +94,7 @@ try:
     os.write(fd, b"nox\x7f\n")
     expect(b"> ")
     os.write(fd, b"inventory\n")
-    expect(b"You are carrying: brass key")
+    expect(b"You are carrying:\r\n  brass key")
     expect(b"> ")
     assert slots[0].read_bytes() == saved, "Declines must preserve the saved snapshot"
     os.write(fd, b"save\n")
@@ -124,6 +124,61 @@ try:
     print("Linux PTY: history/editing, visible prompts, current-slot overwrite/save-as, declines and EOF passed.")
 finally:
     (root / "target/history-pty-transcript.bin").write_bytes(transcript)
+    os.close(fd)
+    if pid:
+        os.kill(pid, signal.SIGTERM)
+        os.waitpid(pid, 0)
+
+# Exercise the new immediate naming and persistent menu with real terminal editing,
+# then run the complete mini-adventure route through the same PTY.
+import tomllib
+
+userdata = root / "target" / f"mini-pty-{uuid.uuid4().hex}"
+game = root / "adventures/mini_adventure"
+route = tomllib.loads((game / "scenarios.toml").read_text(encoding="utf-8"))["scenario"][0]["commands"]
+pending = b""
+transcript = bytearray()
+pid, fd = pty.fork()
+if pid == 0:
+    env = dict(os.environ, TERM="xterm", XDG_DATA_HOME=str(userdata))
+    os.execve(binary, [str(binary), "play", str(game)], env)
+
+try:
+    expect(b"> ")
+    os.write(fd, b"talk to the guide\n")
+    expect(b"What is your name? (1-40 characters; 0/back/cancel cancels):\r\n")
+    expect(b"> ")
+    os.write(fd, b"cancel\n")
+    expect(b"Conversation canceled. Nothing changed.")
+    expect(b"> ")
+    os.write(fd, b"talk guide\n")
+    expect(b"What is your name? (1-40 characters; 0/back/cancel cancels):\r\n")
+    expect(b"> ")
+    os.write(fd, "Zoë O'Neilx".encode() + b"\x7f\n")
+    expect("Good to meet you, Zoë O'Neil.".encode())
+    expect(b"Choose a response")
+    expect(b"> ")
+    os.write(fd, b"shop\n")
+    expect(b"The shop is west of camp.")
+    expect(b"Choose a response")
+    expect(b"> ")
+    os.write(fd, b"L\n")
+    expect(b"Conversation closed. Back to gameplay.")
+    expect(b"> ")
+    commands = route[route.index("take dagger"):]
+    os.write(fd, ("\n".join(commands) + "\n").encode())
+    expect(b"Mini adventure complete!")
+    expect("Name: Zoë O'Neil".encode())
+    expect(b"> ")
+    os.write(fd, b"quit\nyes\n")
+    expect(b"Goodbye!")
+    _, status = os.waitpid(pid, 0)
+    assert os.waitstatus_to_exitcode(status) == 0
+    pid = 0
+    assert not userdata.exists(), "Mini adventure must never save implicitly"
+    print("Linux PTY: immediate naming, Unicode editing, persistent dialogue and full mini-adventure victory passed.")
+finally:
+    (root / "target/mini-pty-transcript.bin").write_bytes(transcript)
     os.close(fd)
     if pid:
         os.kill(pid, signal.SIGTERM)

@@ -105,7 +105,10 @@ save/restart and content-revision rejection without changing existing save bytes
 Required checks are cargo test, formatting, strict Clippy, the independent Rust
 consumer, documentation links, creator/export acceptance and portable packaging.
 Package assembly validates all bundled games and runs their scenarios against
-the copied executable. Exact results belong in the PR and CI runs.
+the copied executable. The packaged acceptance script checks full manual
+save/restart and exported-launcher victory. Linux CI additionally exercises the
+name prompt, persistent conversation and complete route in a real PTY. Exact
+results belong in the PR and CI runs.
 
 The creator reported a real dev.11 playthrough; that is baseline evidence.
 Human acceptance of these dev.12 changes and native CachyOS testing remain

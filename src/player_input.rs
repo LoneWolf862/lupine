@@ -188,7 +188,7 @@ pub fn prepare(
     if argument == "all" && matches!(verb, "learn" | "use" | "cast" | "read" | "search") {
         writeln!(
             output,
-            "Bulk '{verb} all' is not supported. Name one object or ability; nothing changed.\n"
+            "Bulk '{verb} all' is not supported.\nName one object or ability; nothing changed.\n"
         )?;
         if verb == "learn" {
             for item in &carried {

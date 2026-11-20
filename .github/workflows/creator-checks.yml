@@ -49,6 +49,7 @@ jobs:
             target/phase4-acceptance-*/*.txt
             target/phase4-acceptance-*/summary.json
             target/history-pty-transcript.bin
+            target/mini-pty-transcript.bin
             target/mini-package-acceptance-*/*.txt
             target/mini-package-acceptance-*/summary.json
           if-no-files-found: warn

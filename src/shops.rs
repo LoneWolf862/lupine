@@ -429,7 +429,7 @@ impl ShopContent {
                     "buy"
                 };
                 lines.push(format!(
-                    "  {}{} — {}: {}{}\n    {} {} from {}",
+                    "  {}{} — {}: {}{}\n    {} {} {} {}",
                     offer.name,
                     quantity,
                     currency.name,
@@ -437,6 +437,7 @@ impl ShopContent {
                     stock,
                     verb,
                     offer.id,
+                    if selling { "to" } else { "from" },
                     shop.id
                 ));
             }
