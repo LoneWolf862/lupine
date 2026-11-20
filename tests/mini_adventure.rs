@@ -526,3 +526,31 @@ fn filtered_bulk_and_a_later_dialogue_choice_roll_back_independently() {
     assert_eq!(state, baseline, "{text}");
     assert_eq!(text.matches("Here is the shop key").count(), 1);
 }
+
+#[test]
+fn loading_a_locked_gate_checkpoint_never_replays_the_entry_offer() {
+    let saves = temp();
+    let setup = route_before("yes");
+    let (saved, text) = play_at(mini(), &format!("{setup}no\nsave locked-gate\n"), &saves);
+    assert!(text.contains("Saved: locked-gate"));
+    assert!(!saved.flags.contains("gate_open"));
+    let (loaded, text) = play_at(mini(), "load locked-gate\nlook\n", &saves);
+    assert_eq!(loaded, saved, "{text}");
+    assert!(
+        !text.contains("Use your brass key to unlock the gate?"),
+        "{text}"
+    );
+    std::fs::remove_dir_all(saves).unwrap();
+}
+
+#[test]
+fn persistent_conversations_preserve_exact_npc_ids_that_are_articles() {
+    let mut a = mini();
+    let npc = a.game.world.dialogue.npcs["guide"].clone();
+    a.game.world.dialogue.npcs.insert("a".into(), npc);
+    let (state, text) = play(a, "talk a\nRex\nshop\nL\n");
+    assert_eq!(state.player_name.as_deref(), Some("Rex"), "{text}");
+    assert_eq!(state.dialogue.npcs["a"].node, "topics");
+    assert_eq!(state.dialogue.npcs["guide"].node, "introduction");
+    assert_eq!(state.events.turn, 2);
+}

@@ -165,12 +165,20 @@ try:
     os.write(fd, b"L\n")
     expect(b"Conversation closed. Back to gameplay.")
     expect(b"> ")
+    # Wait for the editor's completed redraw, not the runner's preliminary >.
+    # Each readline changes terminal modes; bulk queued lines can be flushed.
+    expect(b"\x1b[?2026l")
     commands = route[route.index("take dagger"):]
-    os.write(fd, ("\n".join(commands) + "\n").encode())
-    expect(b"Mini adventure complete!")
-    expect("Name: Zoë O'Neil".encode())
+    for command in commands:
+        os.write(fd, (command + "\n").encode())
+        expect(b"\x1b[?2004l\r\n")  # submitted line, editor leaves raw input
+        expect(b"\x1b[?2026l")       # next input line is ready
+    assert b"Mini adventure complete!" in transcript
+    assert "Name: Zoë O'Neil".encode() in transcript
+    os.write(fd, b"quit\n")
+    expect(b"Unsaved progress. Quit without saving? (yes/no):\r\n")
     expect(b"> ")
-    os.write(fd, b"quit\nyes\n")
+    os.write(fd, b"yes\n")
     expect(b"Goodbye!")
     _, status = os.waitpid(pid, 0)
     assert os.waitstatus_to_exitcode(status) == 0

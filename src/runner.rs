@@ -651,7 +651,14 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
         if verb.eq_ignore_ascii_case("talk") {
             let query = crate::resolution::normalize(command[verb.len()..].trim());
             let query = query.strip_prefix("to ").unwrap_or(&query);
-            let query = crate::parser::clean_target(query);
+            let query = if crate::dialogue::candidates(&world, &state)
+                .iter()
+                .any(|c| c.id == query)
+            {
+                query.to_owned()
+            } else {
+                crate::parser::clean_target(query)
+            };
             if query.is_empty() {
                 writeln!(output, "Talk to whom? Use talk <name>.\n")?;
                 continue;
@@ -1281,8 +1288,6 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
                 Ok(path) => {
                     last_saved = state.clone();
                     current_save = Some(name.clone());
-                    displayed_room = state.current_room.clone();
-                    offers.clear();
                     writeln!(
                         output,
                         "Saved: {}\n",
@@ -1382,6 +1387,8 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
                     // never reroll on load, since that could regenerate defeated enemies.
                     last_saved = state.clone();
                     current_save = Some(name.clone());
+                    displayed_room = state.current_room.clone();
+                    offers.clear();
                     writeln!(output, "Loaded: {name}\n")?;
                     show_room(&world, &state, &mut output)?;
                     show_shops(&shops, &wallet, &state, &mut output)?;
