@@ -2,9 +2,11 @@
 
 ## Current handoff
 
-Development through PR #42 is merged. Continue from current main using an isolated
-branch/worktree and a draft PR. See [STABILIZATION.md](STABILIZATION.md) for the
-approved scope, actual verification and remaining human/platform acceptance.
+Development through PR #43 is merged. Continue from current main using an isolated
+branch/worktree and a draft PR. [STABILIZATION.md](STABILIZATION.md) records the
+merged verification. Current approved work is status-documentation correction and
+the [acceptance plan](ACCEPTANCE_PLAN.md), including automated verification and
+a handoff for human Windows/CachyOS testing.
 Do not resume the retired branches or worktrees named below. No merge or release
 is authorized. Published v0.9.0 and manual-only RORK remain unchanged.
 

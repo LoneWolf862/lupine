@@ -1,9 +1,9 @@
 # Lupine development backlog
 
-## Current priorities after PR #42
+## Current priorities after PR #43
 
-- Review the [stabilization candidate](STABILIZATION.md): current docs, verified
-  offline packages, CI coverage/evidence and consumable reachability diagnostics.
+- Complete the [adventure and platform acceptance plan](ACCEPTANCE_PLAN.md).
+  [Stabilization](STABILIZATION.md) is merged and its main CI passed.
 - Human Windows beginner walkthrough, original-player retest and native CachyOS terminal/export acceptance.
 - A complete small creator-directed adventure, with scenarios for intended and failed paths.
 - Broader beginner usability testing, particularly prerequisites and recovery guidance.
@@ -12,7 +12,7 @@
 - More targeted history scope; current memory-only history spans a CLI invocation.
 - Human-reviewed official release readiness; never rewrite v0.9.0 automatically.
 
-All development through PR #42 is merged: startup/history, parser clarification,
+All development through PR #43 is merged: startup/history, parser clarification,
 bindings/migration/recovery, exports, engine expansion, per-file NPCs and whole-turn
 rollback. [Engine expansion](ENGINE_EXPANSION.md) preserves original verification.
 There is no remaining Phase 4/expansion merge stack. Keep the runtime lightweight,

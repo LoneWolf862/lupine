@@ -1,20 +1,27 @@
 # Post-expansion stabilization
 
-## Baseline and scope
+## Merged status and original baseline
 
-All development through PR #42 is merged at main 8f9782f, development version
+PR #43 merged as 7bcaa2429687d49f09cb80326ab006667287f3ad.
+[Merge-commit Windows/Ubuntu CI passed](https://github.com/LoneWolf862/lupine/actions/runs/44663495551),
+including tests, formatting, strict Clippy, the independent Rust consumer, docs,
+release builds, native acceptance and package verification; Linux PTY also passed.
+The next milestone is [complete-adventure and platform acceptance](ACCEPTANCE_PLAN.md).
+
+The original baseline was development through PR #42 at main 8f9782f, version
 0.11.0-dev.10. Its source tree is identical to final PR #42, which passed Windows
 and Ubuntu checks, including the 374-test suite, strict Clippy, formatting, release
 builds and native package acceptance. [Original CI evidence](https://github.com/LoneWolf862/lupine/actions/runs/44632403701).
 The [engine expansion record](ENGINE_EXPANSION.md) preserves the original milestones.
 
-This stabilization candidate updates current status and UTF-8 documentation, adds
-offline documentation/templates to native development packages, strengthens routine
-CI and corrects the consumable movement reachability warning. It does not change
+Stabilization updated current status and UTF-8 documentation, added
+offline documentation/templates to native development packages, strengthened routine
+CI and corrected the consumable movement reachability warning. It did not change
 gameplay, RORK 6, game compatibility revisions or the published v0.9.0 release.
-Changes are reviewed in an isolated branch and draft PR; no automatic merge/release.
+Changes were reviewed in an isolated branch and merged with explicit creator approval.
+No release was published.
 
-## Implemented in this candidate
+## Delivered in PR #43
 
 - Author diagnostics recognize MovePlayer effects on consumables and continue
   following exits from those destinations. Truly disconnected rooms still warn.
@@ -50,9 +57,10 @@ existing destinations are refused without changed bytes, and missing/non-UTF-8
 documentation is detected (target/package-probes-f352e0ab/summary.json). These are
 scripted checks, not human beginner acceptance. Markdown anchors are not checked.
 
-Final-head Windows/Ubuntu CI results are recorded on [draft PR #43](https://github.com/LoneWolf862/lupine/pull/43).
-Native CachyOS and human beginner acceptance remain unverified. No public release
-or merge is part of this work.
+Final-head Windows/Ubuntu CI results are recorded on [merged PR #43](https://github.com/LoneWolf862/lupine/pull/43).
+Native CachyOS and human beginner acceptance remain unverified. The merge did not
+authorize a public release. Original local evidence paths above identify that run;
+retired-worktree transcripts/summaries were preserved separately with SHA-256 hashes.
 
 Maintainer commands (Python 3.12; Rust toolchain with rustfmt and Clippy):
 

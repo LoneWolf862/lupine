@@ -31,9 +31,10 @@ Character/progression and terminology FIGs, the guided creator and Phase 3 parse
 
 ## Development workflow
 
-- Engine expansion and follow-ups through PR #42 are merged. Current approved work
-  is post-expansion stabilization: docs, packaging/CI and consumable reachability
-  diagnostics; see docs/STABILIZATION.md. File-based TOML/FIG authoring is primary.
+- Engine expansion and stabilization through PR #43 are merged. Current approved work
+  is status-documentation correction and the complete-adventure/platform acceptance
+  plan, with automated verification and human Windows/CachyOS handoff; see
+  docs/ACCEPTANCE_PLAN.md and docs/STABILIZATION.md. File-based TOML/FIG authoring is primary.
   Use isolated branches/worktrees, checkpoint pushes and draft PRs targeting main
   (or their immediate dependency when stacked). Do not merge or publish a release.
 

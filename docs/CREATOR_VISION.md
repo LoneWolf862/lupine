@@ -3,9 +3,10 @@
 Current direction (2026-11-19): direct TOML/FIG authoring is the primary development
 workflow. Engine capability takes priority over wizard coverage, which takes priority
 over wizard convenience. See [current reference](CONTENT_REFERENCE.md) and
-[merged expansion](ENGINE_EXPANSION.md). Current work is [stabilization](STABILIZATION.md).
+[merged expansion](ENGINE_EXPANSION.md). Stabilization is merged; current work is
+[complete-adventure and platform acceptance](ACCEPTANCE_PLAN.md).
 
-**Status:** Engine and terminal creator implemented through PR #42; final
+**Status:** Engine and terminal creator implemented through PR #43; final
 nontechnical accessibility remains unverified and is **not an MVP/course acceptance gate**.
 Advanced features use direct files or structural/text editing, not bespoke beginner forms.
 **Project:** Lupine (engine); HOWLBOUND (tentative first game and authoring-system test case).

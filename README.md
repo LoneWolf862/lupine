@@ -5,9 +5,10 @@ RPG engine. Authors build adventures with editable TOML content, FIG configurati
 the guided Adventure Creator. HOWLBOUND is only the tentative name of a future original
 adventure; no original story is prescribed by this engine.
 
-**Development version: 0.11.0-dev.10.** All development through PR #42 is merged,
+**Development version: 0.11.0-dev.10.** All development through PR #43 is merged,
 including the engine expansion, per-file NPC definitions and whole-turn rollback.
-Current work is [post-expansion stabilization](docs/STABILIZATION.md).
+[Post-expansion stabilization](docs/STABILIZATION.md) is merged. Next is
+[complete-adventure and platform acceptance](docs/ACCEPTANCE_PLAN.md).
 These changes are not a published release. The existing
 [v0.9.0 standalone release](https://github.com/LoneWolf862/lupine/releases/tag/v0.9.0)
 and its tag remain unchanged. See [development verification](docs/ENGINE_EXPANSION.md).
