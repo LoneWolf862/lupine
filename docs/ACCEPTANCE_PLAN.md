@@ -5,7 +5,11 @@
 Stabilization is merged through PR #43 at 7bcaa24, version 0.11.0-dev.10.
 This plan covers documentation, automated verification and a human test handoff.
 It does not authorize merging this follow-up or publishing a release. v0.9.0,
-RORK 6 and game save-compatibility revisions remain unchanged.
+game save-compatibility revisions remain unchanged. The later dev.11 candidate
+uses RORK 7 because player naming adds persistent state; RORK 6 files require
+their matching build. PRs #44 and #45 are now merged. Current human testing should
+use the [combined mini-adventure plan](MINI_ADVENTURE.md), rather than replay every
+mechanic fixture below. Older sections remain useful developer coverage.
 
 The next product milestone is one small, complete creator-directed adventure
 authored, revised, tested and exported using public Lupine features. Its content
@@ -23,7 +27,7 @@ multiple development commits share the same version string.
 |---|---|---|
 | Engine correctness | Rust tests, formatting, strict Clippy, independent Rust consumer | Unexpected behavior found during real play |
 | File-authored behavior | Bundled scenario suites through the real player runner | A complete creator-directed adventure and intended/failed paths |
-| Native packaging | Runtime digest/target/version, 10 bundled adventure validations, ZIP extraction and launcher | Actual Windows 10 and CachyOS terminal/desktop environment |
+| Native packaging | Runtime digest/target/version, all bundled adventure validations and packaged scenarios, ZIP extraction and launcher | Actual Windows 10 and CachyOS terminal/desktop environment |
 | Persistence | Manual-save/restart checks and no unexpected saves in isolated test data | Visible naming, overwrite and unsaved-progress prompts in a real terminal |
 | Authoring | Scripted creator, migration, export and recovery regressions | Beginner comprehension, assistance needed and useful error messages |
 | Documentation | UTF-8 and local file links in checkout and package | Instructions understandable without Rust; heading anchors need manual review |
@@ -65,7 +69,7 @@ transcripts and summary. Do not upload personal saves.
 Also run every bundled `scenarios.toml` using the packaged native executable:
 `lupine test ADVENTURE ADVENTURE/scenarios.toml`. Current suites are in
 story_example and samples/rules_demo, objects_demo, events_demo, dialogue_demo,
-economy_demo. Scenario tests cannot read/write player saves. They assert final
+economy_demo, plus adventures/mini_adventure. Package assembly runs them all. Scenario tests cannot read/write player saves. They assert final
 state and transcript substrings, not every intermediate state or output ordering.
 Use several short scenarios rather than interpreting one pass as general solvability.
 

@@ -59,13 +59,6 @@ pub fn matches<'a>(query: &str, candidates: &'a [Candidate]) -> Vec<&'a Candidat
     if !exact.is_empty() {
         return exact;
     }
-    let partial = candidates
-        .iter()
-        .filter(|c| c.labels().any(|label| normalize(label).contains(&query)))
-        .collect::<Vec<_>>();
-    if !partial.is_empty() {
-        return partial;
-    }
     // Ordered word prefixes allow "fire scroll" -> "fireball scroll".
     // Every query word must match a distinct word; spelling errors never execute.
     candidates
@@ -119,7 +112,18 @@ pub fn suggestion<'a>(query: &str, candidates: &'a [Candidate]) -> Option<&'a Ca
         .filter_map(|c| {
             c.labels()
                 .chain(std::iter::once(c.id.as_str()))
-                .filter_map(|s| distance(&query, &normalize(s)))
+                .filter_map(|s| {
+                    let label = normalize(s);
+                    let prefix = label
+                        .split_whitespace()
+                        .take(query.split_whitespace().count())
+                        .collect::<Vec<_>>()
+                        .join(" ");
+                    distance(&query, &label)
+                        .into_iter()
+                        .chain(distance(&query, &prefix))
+                        .min()
+                })
                 .min()
                 .map(|d| (d, c))
         })

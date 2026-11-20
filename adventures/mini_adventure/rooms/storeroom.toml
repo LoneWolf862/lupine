@@ -1,0 +1,10 @@
+id="storeroom"
+title="Dark Storeroom"
+description="An unlit lamp leaves a bulky shape in shadow. The guide teaches Light: cast light on lamp costs 1 coin and reveals the chest. Its small key is hidden in the hollow stump south of camp. South returns to camp. East leads to the locked gate."
+[[descriptions]]
+when=[{flag_set="lit"}]
+text="The lamp lights a sturdy chest. Unlock chest with chest key, then open chest and look in chest. Take brass key from chest for the eastern gate. A padded coat and two rations are also inside. South: camp. East: gate."
+
+[exits]
+south="camp"
+east="gate"

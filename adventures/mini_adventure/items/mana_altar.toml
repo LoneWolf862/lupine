@@ -1,0 +1,6 @@
+id="mana_altar"
+name="mana altar"
+description="A free training aid. Use mana altar restores HP and MP, without coins."
+portable=false
+starting_room="workshop"
+aliases=["altar"]

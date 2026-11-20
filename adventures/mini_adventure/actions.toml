@@ -1,0 +1,33 @@
+[[actions]]
+id="search_stump"
+commands=["search stump","search hollow stump","search the stump","search room","search around","search"]
+room="woods"
+effects=[{reveal_item="chest_key"}]
+failure_text="The stump cannot be searched now."
+success_text="Inside the hollow stump you find a small chest key. Take chest key."
+[[actions]]
+id="unlock_gate"
+commands=["unlock {target} with {item}"]
+room="gate"
+target="gate"
+item="brass_key"
+requires=[{flag_unset="gate_open"}]
+effects=[{set_flag="gate_open"}]
+success_text="The gate unlocks. Go east to the workshop."
+failure_text="The gate is already unlocked. Go east."
+[[actions]]
+id="open_gate"
+commands=["open gate","open door","open iron gate"]
+room="gate"
+requires=[{flag_set="gate_open"}]
+success_text="The gate is open. Go east."
+failure_text="The gate is locked. Unlock gate with brass key."
+
+[[actions]]
+id="rest"
+commands=["use {target}"]
+room="workshop"
+target="mana_altar"
+effects=[{restore_hp=80},{restore_mp=30}]
+success_text="The altar restores your strength and mana. There is no charge."
+failure_text="You cannot rest now."

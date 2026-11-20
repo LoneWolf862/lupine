@@ -1,0 +1,18 @@
+id="trader"
+name="Market Trader"
+room="market"
+[[offers]]
+id="trophy"
+name="Goblin trophy"
+type="sell_item"
+item="trophy"
+currency="coins"
+price=8
+[[offers]]
+id="sword"
+name="Steel sword"
+type="item"
+item="sword"
+currency="coins"
+price=10
+stock=1

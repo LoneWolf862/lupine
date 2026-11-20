@@ -1,0 +1,9 @@
+id="ration"
+name="ration"
+description="Eat ration restores 15 HP. There are two in the chest."
+portable=true
+initial={kind="container",id="chest"}
+stackable=true
+quantity=2
+aliases=["rations"]
+consumable={failure_text="You cannot eat that now.",text="You eat a ration and recover strength.",effects=[{restore_hp=15}]}

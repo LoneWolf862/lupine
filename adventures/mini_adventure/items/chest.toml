@@ -1,0 +1,8 @@
+id="chest"
+name="sturdy chest"
+description="Unlock chest with chest key, then open chest. Look in chest lists its contents."
+portable=false
+starting_room="storeroom"
+hidden=true
+container={locked=true,key="chest_key",capacity=8}
+aliases=["chest"]

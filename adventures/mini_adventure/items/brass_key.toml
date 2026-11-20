@@ -1,0 +1,6 @@
+id="brass_key"
+name="brass gate key"
+description="Use this key on the iron gate east of the storeroom."
+portable=true
+initial={kind="container",id="chest"}
+aliases=["brass key","gate key"]

@@ -1,5 +1,6 @@
 id='light'
 name='Light'
+description='Light the lamp for 1 coin. This demonstrates an ability with a currency cost.'
 kind='world'
 target='lamp'
 requires=[{flag_unset='lit'}]

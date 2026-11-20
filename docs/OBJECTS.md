@@ -131,7 +131,7 @@ the container both open and locked. `give_item`, `remove_item` and
 `move_item_to_room` retain whole-object semantics, affecting all active units of an
 ID; relocating an unavailable ID restores one unit. Use quantity effects for stacks.
 
-RORK format **6** retains object, event, NPC and equipment/status progress.
+RORK format **7** adds the player name and retains object, event, NPC and equipment/status progress.
 The object schema persists the canonical placement/quantity ledger, hidden items
 and container state. Every save validates the full ledger; unsupported older
 formats require their matching engine/game build. No save files are automatically

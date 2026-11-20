@@ -1,0 +1,7 @@
+id="chest_key"
+name="small chest key"
+description="A small key fitting the storeroom chest."
+portable=true
+starting_room="woods"
+hidden=true
+aliases=["chest key","small key"]

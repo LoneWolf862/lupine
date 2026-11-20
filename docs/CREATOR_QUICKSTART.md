@@ -1,6 +1,6 @@
 # Lupine Adventure Creator
 
-This guide describes 0.11.0-dev.10 development, including the engine expansion
+This guide describes 0.11.0-dev.11 development, including the engine expansion
 and stabilization merged through PR #43. Published v0.9.0 binaries do not contain
 these features. [Stabilization verification](STABILIZATION.md) and the
 [acceptance plan](ACCEPTANCE_PLAN.md) distinguish automated results from pending

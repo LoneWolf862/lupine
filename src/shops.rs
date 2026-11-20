@@ -401,12 +401,90 @@ impl ShopContent {
                 Some(n) => format!(" ({n} left)"),
                 None => String::new(),
             };
+            let quantity = if matches!(offer.kind.as_str(), "item" | "sell_item") {
+                format!(" (quantity: {})", offer.quantity)
+            } else {
+                String::new()
+            };
+            let verb = if offer.kind == "sell_item" {
+                "sell"
+            } else {
+                "buy"
+            };
             lines.push(format!(
-                "  {} — {} {}{}",
-                offer.name, offer.price, currency.name, stock
+                "  {}{} — {}: {}{} | {} {} from {}",
+                offer.name, quantity, currency.name, offer.price, stock, verb, offer.id, shop.id
             ));
         }
         lines.join("\n")
+    }
+    /// Read-only player selection: a sell command can never execute a buy offer.
+    pub fn prepare_transaction(
+        &self,
+        world: &World,
+        state: &GameState,
+        verb: &str,
+        query: &str,
+        input: &mut impl std::io::BufRead,
+        output: &mut impl std::io::Write,
+    ) -> std::io::Result<Option<(String, String)>> {
+        let (offer_query, shop_query) = query
+            .split_once(" from ")
+            .or_else(|| query.split_once(" to "))
+            .map_or((query, ""), |(o, s)| (o.trim(), s.trim()));
+        let shops = self
+            .shops
+            .values()
+            .filter(|s| s.room == state.current_room)
+            .map(|s| crate::resolution::Candidate::new(&s.id, &s.name))
+            .collect::<Vec<_>>();
+        let shop_id = if shop_query.is_empty() && shops.len() == 1 {
+            shops[0].id.clone()
+        } else {
+            if shop_query.is_empty() {
+                writeln!(
+                    output,
+                    "Specify a shop using '{verb} <offer> from <shop>'. Use shop to list shops.\n"
+                )?;
+                return Ok(None);
+            }
+            let Some(id) = crate::player_input::choose(
+                &crate::parser::clean_target(shop_query),
+                &shops,
+                input,
+                output,
+            )?
+            else {
+                return Ok(None);
+            };
+            id
+        };
+        let selling = verb.eq_ignore_ascii_case("sell");
+        let mut offers = self.shops[&shop_id]
+            .offers
+            .iter()
+            .filter(|o| (o.kind == "sell_item") == selling)
+            .map(|o| {
+                let mut c = crate::resolution::Candidate::new(&o.id, &o.name);
+                if let Some(item) = o.item.as_ref().and_then(|id| world.item(id)) {
+                    c.aliases.extend([item.id.clone(), item.name.clone()]);
+                    c.aliases.extend(item.aliases.clone());
+                }
+                c
+            })
+            .collect::<Vec<_>>();
+        offers.sort_by(|a, b| a.id.cmp(&b.id));
+        let Some(offer) = crate::player_input::choose(
+            &crate::parser::clean_target(offer_query),
+            &offers,
+            input,
+            output,
+        )?
+        else {
+            writeln!(output, "No {verb} transaction occurred. Use shop to see offered commands and quantities.\n")?;
+            return Ok(None);
+        };
+        Ok(Some((offer, shop_id)))
     }
     fn resolve_shop<'a>(&'a self, state: &GameState, name: &str) -> Option<&'a Shop> {
         let here = self
@@ -417,8 +495,14 @@ impl ShopContent {
         if name.is_empty() {
             return (here.len() == 1).then(|| here[0]);
         }
-        here.into_iter()
-            .find(|s| s.id.eq_ignore_ascii_case(name) || s.name.eq_ignore_ascii_case(name))
+        if let Some(shop) = here.iter().find(|s| s.id.eq_ignore_ascii_case(name)) {
+            return Some(shop);
+        }
+        let named = here
+            .into_iter()
+            .filter(|s| s.name.eq_ignore_ascii_case(name))
+            .collect::<Vec<_>>();
+        (named.len() == 1).then(|| named[0])
     }
     pub fn transact(
         &self,
@@ -431,13 +515,28 @@ impl ShopContent {
         let shop = self
             .resolve_shop(state, shop_query)
             .ok_or("No such shop is available here.")?;
-        let offer = shop
+        // Player preparation and object bindings return stable IDs. A display name
+        // on another offer must never intercept that ID (including across directions).
+        let offer = if let Some(offer) = shop
             .offers
             .iter()
-            .find(|o| {
-                o.id.eq_ignore_ascii_case(offer_query) || o.name.eq_ignore_ascii_case(offer_query)
-            })
-            .ok_or_else(|| format!("No offer '{offer_query}' at {}.", shop.name))?;
+            .find(|o| o.id.eq_ignore_ascii_case(offer_query))
+        {
+            offer
+        } else {
+            let named = shop
+                .offers
+                .iter()
+                .filter(|o| o.name.eq_ignore_ascii_case(offer_query))
+                .collect::<Vec<_>>();
+            if named.len() != 1 {
+                return Err(format!(
+                    "No unique offer '{offer_query}' at {}. Use an offer ID from shop.",
+                    shop.name
+                ));
+            }
+            named[0]
+        };
         let key = format!("{}:{}", shop.id, offer.id);
         if offer
             .stock
@@ -553,10 +652,10 @@ impl ShopContent {
         }
         *state = draft;
         Ok(format!(
-            "Transaction complete: {} ({} {}).{}",
+            "Transaction complete: {} ({}: {}).{}",
             offer.name,
-            offer.price,
             wallet.currencies[&offer.currency].name,
+            offer.price,
             if extra.is_empty() {
                 String::new()
             } else {

@@ -1,0 +1,6 @@
+id="dagger"
+name="rusty dagger"
+description="Your starting weapon. Take dagger, then attack goblin with dagger."
+portable=true
+starting_room="camp"
+aliases=["dagger"]

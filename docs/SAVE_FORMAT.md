@@ -1,6 +1,13 @@
 # RORK Save Format
 
-## Current development: version 6
+## Current development: version 7
+
+Development 0.11.0-dev.11 adds optional `player_name` to mutable progress.
+The guide can collect it through an authored `ask_name` dialogue choice.
+It is validated on save/load, preserves case and Unicode, and is written only
+when the player explicitly saves. RORK 6 requires its matching older build;
+there is no conversion, automatic rewrite or compatibility promise. This is
+a real state-schema change, not a metadata-only version bump.
 
 Engine expansion phase 7 adds equipped slots, player statuses and per-enemy statuses
 (see [SYSTEMS.md](SYSTEMS.md)). Phase 6 added NPC locations, conversation nodes and NPC object ownership

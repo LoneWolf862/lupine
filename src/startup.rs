@@ -40,6 +40,24 @@ pub fn discover(roots: &[PathBuf]) -> Vec<Choice> {
             }
         }
     }
+    // Packaged adventures form the player menu; fixtures remain available through Browse.
+    let preferred = paths
+        .iter()
+        .filter(|p| {
+            roots
+                .iter()
+                .any(|r| p.parent() == Some(r.join("adventures").as_path()))
+        })
+        .cloned()
+        .collect::<std::collections::BTreeSet<_>>();
+    if !preferred.is_empty() {
+        paths.retain(|p| {
+            roots.contains(p)
+                || !roots
+                    .iter()
+                    .any(|r| p.starts_with(r.join("samples")) || *p == r.join("story_example"))
+        });
+    }
     let mut unique = std::collections::BTreeSet::new();
     paths
         .into_iter()
@@ -127,7 +145,7 @@ fn play_menu(
                 "  {}. {}\n     {}",
                 index + 1,
                 choice.title,
-                choice.path.display()
+                display_path(&choice.path)
             )?;
         }
         if choices.is_empty() {
@@ -138,7 +156,7 @@ fn play_menu(
         }
         writeln!(
             output,
-            "  B. Browse to an adventure or a folder of adventures"
+            "  B. Browse to another adventure or developer fixtures in samples/"
         )?;
         let Some(choice) = answer(input, output)? else {
             return Ok(());
@@ -196,5 +214,14 @@ fn play_menu(
                 path.display()
             )?,
         }
+    }
+}
+
+fn display_path(path: &Path) -> String {
+    let text = path.to_string_lossy();
+    if let Some(unc) = text.strip_prefix(r"\\?\UNC\") {
+        format!(r"\\{unc}")
+    } else {
+        text.strip_prefix(r"\\?\").unwrap_or(&text).to_owned()
     }
 }

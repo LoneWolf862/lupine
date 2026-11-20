@@ -9,7 +9,7 @@
 
 ## Current pre-release policy (2026-11-18)
 
-Lupine is pre-1.0. The published v0.9.0 standalone release remains unchanged; current development uses 0.11.0-dev.10. No known external games require development-version compatibility. Justified breaking API and format changes are allowed. Do not add obsolete-format loaders or unnecessary compatibility layers. Update bundled samples, templates, tests and current documentation together; preserve gameplay unless a change is intentional.
+Lupine is pre-1.0. The published v0.9.0 standalone release remains unchanged; current development uses 0.11.0-dev.11. No known external games require development-version compatibility. Justified breaking API and format changes are allowed. Do not add obsolete-format loaders or unnecessary compatibility layers. Update bundled samples, templates, tests and current documentation together; preserve gameplay unless a change is intentional.
 
 File responsibilities:
 
@@ -31,12 +31,12 @@ Character/progression and terminology FIGs, the guided creator and Phase 3 parse
 
 ## Development workflow
 
-- Engine expansion and stabilization through PR #43 are merged. Current approved work
-  is status-documentation correction and the complete-adventure/platform acceptance
-  plan, with automated verification and human Windows/CachyOS handoff; see
-  docs/ACCEPTANCE_PLAN.md and docs/STABILIZATION.md. File-based TOML/FIG authoring is primary.
-  Use isolated branches/worktrees, checkpoint pushes and draft PRs targeting main
-  (or their immediate dependency when stacked). Do not merge or publish a release.
+- Engine expansion, stabilization and acceptance/parser follow-ups through PR #45
+  are merged. Current approved work is the guided mini adventure, dialogue-based
+  player naming and human-playthrough/parser fixes; see docs/MINI_ADVENTURE.md.
+  RORK 7 adds actual name state. Historical stabilization is in docs/STABILIZATION.md.
+  File-based TOML/FIG authoring is primary. Use isolated branches/worktrees,
+  checkpoint pushes and draft PRs. Do not merge or publish without human approval.
 
 - Read `README.md`, `docs/REQUIREMENTS.md`, `docs/ARCHITECTURE.md`, `docs/ROADMAP.md`, and `docs/CREATOR_VISION.md` before architectural changes.
 - Work in small, reviewable increments. Add tests for parser ambiguity, missing objects, invalid worlds, and state transitions as features arrive.
@@ -154,11 +154,11 @@ Read `docs/SELF_DOCUMENTING_CONFIG_SPEC.md` before changing new-adventure scaffo
 Phases 1-9 and follow-ups are merged through PR #42. Read
 `docs/ENGINE_EXPANSION.md` for historical verification and `docs/STABILIZATION.md`
 for current work. The original review worktrees are retired. Current RORK is
-6 for added engine state; metadata/editor changes do not revise it. Recovery journal
+7 for added player-name state; metadata/editor changes do not revise it. Recovery journal
 v2 supports deletion and an explicitly recorded invalid baseline; never guess through
 older, corrupt or externally changed evidence. Project Files F supplies complete-schema
 structural/text editing, with exact previews and confirmed multi-file publication;
 ordinary guided forms retain stable IDs. Room navigation does not share hidden drafts.
 Keep runtime discovery bounded, offline and subject to target/version/digest checks.
 
-NPC file organization: NPCs/*.toml now holds one NPC per file with a top-level id. Preserve exact NPCs directory casing and stable IDs independent of filenames. Root dialogue.toml is rejected, not loaded; it remains an explicit editor repair/deletion target. Keep definitions separate from RORK 6 runtime progress. See docs/DIALOGUE.md.
+NPC file organization: NPCs/*.toml now holds one NPC per file with a top-level id. Preserve exact NPCs directory casing and stable IDs independent of filenames. Root dialogue.toml is rejected, not loaded; it remains an explicit editor repair/deletion target. Keep definitions separate from RORK 7 runtime progress. See docs/DIALOGUE.md.

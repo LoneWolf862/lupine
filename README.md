@@ -5,10 +5,12 @@ RPG engine. Authors build adventures with editable TOML content, FIG configurati
 the guided Adventure Creator. HOWLBOUND is only the tentative name of a future original
 adventure; no original story is prescribed by this engine.
 
-**Development version: 0.11.0-dev.10.** All development through PR #43 is merged,
+**Development version: 0.11.0-dev.11.** Development through PR #45 is merged,
 including the engine expansion, per-file NPC definitions and whole-turn rollback.
 [Post-expansion stabilization](docs/STABILIZATION.md) is merged. Next is
-[complete-adventure and platform acceptance](docs/ACCEPTANCE_PLAN.md).
+[mini-adventure playtesting](docs/MINI_ADVENTURE.md) and
+[platform acceptance](docs/ACCEPTANCE_PLAN.md). The new mini adventure, naming and
+parser changes are development candidates pending human acceptance.
 These changes are not a published release. The existing
 [v0.9.0 standalone release](https://github.com/LoneWolf862/lupine/releases/tag/v0.9.0)
 and its tag remain unchanged. See [development verification](docs/ENGINE_EXPANSION.md).
@@ -21,7 +23,7 @@ and atomic effects. [Authored actions](docs/ACTIONS.md) add custom commands and 
 [NPCs and conditional dialogue](docs/DIALOGUE.md) use one NPCs/*.toml file per NPC,
 including its choices, transfers and movement.
 [Independent economy, world abilities, equipment and statuses](docs/SYSTEMS.md) are implemented.
-This development build writes RORK format 6 for objects, story/events, NPC dialogue and equipment/status progress;
+This development build writes RORK format 7, adding the player name to objects, story/events, NPC dialogue and equipment/status progress;
 older saves need their matching engine/game build and are never rewritten automatically.
 
 [Documentation by audience and file type](docs/README.md) provides current player,
@@ -38,8 +40,13 @@ and run `sh Play.sh`. Or launch `lupine.exe` / `./lupine` without arguments for:
 3. Help
 4. Exit
 
-Play lists adventures in the current/executable folders and their `adventures/` and
-`samples/` collections. Choose a number, or B to enter another adventure/collection folder.
+Start with **Play an Adventure > Lupine Mini Adventure — Start Here**. It combines
+seven rooms, a guide who asks your name, locks, a chest, trading, spells and a final
+stone golem. [Directions and optional walkthrough](docs/MINI_ADVENTURE.md).
+
+When an `adventures/` collection is present, Play prioritizes it. Otherwise it lists
+local adventures and samples. B browses another adventure/collection, including
+the smaller developer fixtures in `samples/`.
 Every selection validates and starts fresh; `quit` returns to startup. Nothing silently
 loads a save. See [installation and distribution](docs/INSTALLATION.md).
 

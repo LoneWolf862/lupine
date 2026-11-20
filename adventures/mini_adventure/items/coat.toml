@@ -1,0 +1,6 @@
+id="coat"
+name="padded coat"
+description="Equip padded coat to reduce incoming damage."
+portable=true
+initial={kind="container",id="chest"}
+aliases=["coat"]

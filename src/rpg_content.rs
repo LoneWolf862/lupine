@@ -252,10 +252,36 @@ impl RpgContent {
         }
         let mut output = format!("Known {}:\n", terms.spells);
         for spell in spells {
+            let target = match spell.kind {
+                AbilityKind::Damage => " on <enemy>".to_owned(),
+                AbilityKind::World => spell
+                    .target
+                    .as_ref()
+                    .map(|t| format!(" on {t}"))
+                    .unwrap_or_default(),
+                _ => String::new(),
+            };
+            let mut costs = Vec::new();
+            if spell.mana_cost > 0 {
+                costs.push(format!("{} MP", spell.mana_cost));
+            }
+            for effect in &spell.effects {
+                if let crate::rules::Effect::Debit { currency, amount } = effect {
+                    costs.push(format!("{} {}", amount, currency));
+                }
+            }
+            let cost = if costs.is_empty() {
+                "no direct cost".to_owned()
+            } else {
+                costs.join(", ")
+            };
             output.push_str(&format!(
-                "  {} ({} MP) — {}\n",
-                spell.name, spell.mana_cost, spell.description
+                "  {} — cast {}{} [{}]\n",
+                spell.name, spell.id, target, cost
             ));
+            if !spell.description.is_empty() {
+                output.push_str(&format!("    {}\n", spell.description));
+            }
         }
         output.trim_end().to_owned()
     }

@@ -1,0 +1,47 @@
+[[events]]
+id="arrival"
+on={enter="camp"}
+effects=[{set_quest_stage={quest="challenge",stage="prepare"}},{add_journal="route"},{start_timer="reminder"}]
+text="Start with talk guide. You can read journal or help at any time without spending a turn."
+[[events]]
+id="goblin_defeated"
+on={defeat="goblin"}
+effects=[{set_quest_stage={quest="challenge",stage="chest"}}]
+text="The goblin drops a trophy and 2 coins. Take trophy; search stump and take chest key. Sell the trophy at the market east of camp to buy a sword."
+[[events]]
+id="gate_unlocked"
+on="turn"
+requires=[{flag_set="gate_open"}]
+effects=[{set_quest_stage={quest="challenge",stage="boss"}}]
+[[events]]
+id="focus"
+on={enter="workshop"}
+effects=[{apply_status="focus"}]
+text="Preparation gives you Focus for a few actions. Status shows its remaining duration. Use mana altar for free rest."
+[[events]]
+id="reminder"
+on={timer="reminder"}
+effects=[{add_journal="save_hint"}]
+text="Reminder: save NAME keeps progress only when you ask. Journal contains the route. There is no deadline."
+[[events]]
+id="victory"
+on={defeat="stone_golem"}
+effects=[{set_quest_stage={quest="challenge",stage="done"}},{end_game="victory"}]
+[timers.reminder]
+turns=6
+[quests.challenge]
+title="Complete the mini adventure"
+[quests.challenge.stages]
+prepare="Introduce yourself to the guide. Take and learn the scrolls, take dagger, then defeat the goblin south of camp."
+chest="Take trophy and search stump for chest key. Sell trophy and buy sword at the market. Light the storeroom lamp, then unlock and open the chest for the brass key."
+boss="The gate is open. Rest at the workshop, then defeat the stone golem to the east."
+done="You defeated the stone golem and completed the adventure."
+[journal.route]
+title="Route and commands"
+text="Camp: talk guide; take dagger; take fireball scroll; learn fireball scroll; take healing scroll; learn healing scroll. South: attack goblin with dagger or cast fireball on goblin; take trophy; search stump; take chest key. Return north, then east: shop; sell trophy; buy sword. West to camp, north: cast light on lamp; unlock chest with chest key; open chest; look in chest; take brass key from chest; take padded coat from chest; equip padded coat; take 2 ration from chest. East: unlock gate with brass key; east: use mana altar. Save NAME if desired, then east and attack stone golem with steel sword until defeated. Retreat west to rest if needed."
+[journal.save_hint]
+title="Manual saving"
+text="Save NAME creates a manual checkpoint; load NAME restores it. Your name, inventory, coins and world progress are included. Nothing autosaves."
+[endings.victory]
+kind="success"
+text="The stone golem settles into stillness. Mini adventure complete! You can inspect your inventory, read journal, check stats, or save NAME. Quit returns to startup."

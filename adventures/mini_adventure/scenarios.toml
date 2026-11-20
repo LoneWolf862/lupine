@@ -1,0 +1,50 @@
+format_version=1
+[[scenario]]
+name="Complete guided route"
+commands=["talk guide", "introduce", "Rex", "take dagger", "take fireball scroll", "learn fireball scroll", "take healing scroll", "learn healing scroll", "south", "cast fireball on goblin", "take trophy", "search stump", "take chest key", "north", "east", "shop", "sell trophy", "buy sword", "west", "north", "cast light on lamp", "unlock chest with chest key", "open chest", "look in chest", "take brass key from chest", "take padded coat from chest", "equip padded coat", "take 2 ration from chest", "east", "unlock gate with brass key", "open gate", "east", "interact with mana altar", "east", "attack stone golem with steel sword", "attack stone golem with steel sword", "attack stone golem with steel sword", "attack stone golem with steel sword", "read journal", "stats", "abilities"]
+player_name="Rex"
+ending="victory"
+quests={challenge="done"}
+wallet={coins=1}
+contains=["Good to meet you, Rex", "Mini adventure complete!", "Route and commands"]
+
+[[scenario]]
+name="Cancel introduction without progress"
+commands=["talk guide", "introduce", "cancel", "abilities", "read journal"]
+turn=0
+wallet={coins=2}
+learned_abilities=[]
+flags=[]
+ended=false
+
+[[scenario]]
+name="Wrong trade direction never spends"
+commands=["east", "sell sword", "buy trophy", "buy sword"]
+turn=1
+wallet={coins=2}
+contains=["No sell transaction occurred", "No buy transaction occurred"]
+
+[[scenario]]
+name="Locked routes give guidance"
+commands=["north", "east", "east", "open gate", "unlock gate"]
+room="gate"
+turn=2
+flags=[]
+contains=["The iron gate is locked", "Unlock gate with brass key"]
+
+[[scenario]]
+name="Light is charged once and a wrong key cannot unlock chest"
+commands=["talk guide", "introduce", "Ada", "north", "cast light on lamp", "cast light on lamp", "open chest", "unlock chest with brass key", "look in chest"]
+turn=3
+player_name="Ada"
+wallet={coins=1}
+flags=["introduced","lit"]
+contains=["It is locked."]
+excludes=["Contents: brass gate key"]
+
+[[scenario]]
+name="Sword purchase is optional"
+commands=["talk guide", "introduce", "Rex", "take dagger", "take fireball scroll", "learn fireball scroll", "take healing scroll", "learn healing scroll", "south", "cast fireball on goblin", "take trophy", "search stump", "take chest key", "north", "north", "cast light on lamp", "unlock chest with chest key", "open chest", "look in chest", "take brass key from chest", "take padded coat from chest", "equip padded coat", "take 2 ration from chest", "east", "unlock gate with brass key", "open gate", "east", "interact with mana altar", "east", "cast fireball on stone golem", "cast fireball on stone golem", "cast fireball on stone golem", "attack stone golem with dagger", "attack stone golem with dagger"]
+ending="victory"
+wallet={coins=3}
+contains=["Mini adventure complete!"]

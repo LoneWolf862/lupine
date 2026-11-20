@@ -1,6 +1,6 @@
 # Lupine documentation
 
-These entry points describe development 0.11.0-dev.10, merged through PR #43.
+These entry points describe development 0.11.0-dev.11, with development through PR #45 merged. The mini-adventure follow-up is a candidate.
 The published v0.9.0 executable has fewer features. [Stabilization](STABILIZATION.md)
 records merged verification; the [acceptance plan](ACCEPTANCE_PLAN.md) describes
 remaining human/platform checks. [Engine expansion](ENGINE_EXPANSION.md)
@@ -9,7 +9,7 @@ include this directory for offline reading in any text/Markdown editor.
 
 | Audience | Start here | Next reference |
 |---|---|---|
-| Player | [Player instructions](../README.md#players-start-here) | [Installation and packages](INSTALLATION.md), [manual saves](SAVE_FORMAT.md) |
+| Player | [Player instructions](../README.md#players-start-here) | [Mini adventure and playtest](MINI_ADVENTURE.md), [Installation and packages](INSTALLATION.md), [manual saves](SAVE_FORMAT.md) |
 | Creator | [File-first quickstart and optional creator menus](CREATOR_QUICKSTART.md) | [Current content fields](CONTENT_REFERENCE.md), [scenario testing](SCENARIO_TESTING.md) |
 | Engine developer | [Current architecture](ARCHITECTURE.md) | [Turn transactions and embedding](TURN_TRANSACTIONS.md), [requirements](REQUIREMENTS.md) |
 

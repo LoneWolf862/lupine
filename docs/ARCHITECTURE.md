@@ -5,11 +5,11 @@ loads strict TOML test suites and invokes the real runner with an explicit rando
 seed, returning final in-memory state for assertions. Existing runner APIs preserve
 their signatures/default randomness. Scenarios never save implicitly.
 
-## Current development architecture (0.11.0-dev.10)
+## Current development architecture (0.11.0-dev.11)
 
 Lupine is an offline terminal engine. Immutable TOML content is separate from mutable
 GameState; supported FIG files hold configuration. Manual RORK persistence remains in
-save.rs/save_files.rs; expansion phase 7 uses serialization version 6 for objects, story, NPCs and combat progress.
+save.rs/save_files.rs; serialization version 7 adds the optional player name to objects, story, NPCs and combat progress.
 `systems.rs` assembles resource definitions, equipment/status content and combat settings.
 World owns the immutable rule context (RPG definitions, wallet and progression) so shared
 effects validate across modules. story_loader loads it before world validation; Adventure
@@ -17,7 +17,9 @@ reuses it. Rust callers supplying optional content to the runner have it install
 that context before validation. Direct save/rule callers must populate world.systems
 with their definitions too; no player state is used as an implicit content registry.
 `dialogue.rs` loads NPC definitions, resolves visible characters and applies one atomic
-choice at a time. NPC placements and conversation nodes are saved separately from content.
+choice at a time. An authored `ask_name` choice collects and validates input before
+committing the name and effects together; cancellation and failed turn hooks roll back.
+NPC placements and conversation nodes are saved separately from content.
 `events.rs` owns deterministic bounded hooks, action turns, timers, quests and endings.
 The runner processes successful action hooks before timer ticks, then turn hooks;
 reading, cancellation and manual save/load are free. runner/turn.rs settles status
@@ -114,6 +116,6 @@ Room-centered navigation (`creator/room_hub.rs`) holds no mutable draft between 
 
 NPC definition files (0.11.0-dev.9): dialogue::Content loads one strict definition
 per NPCs/*.toml, removing its top-level id into the existing NPC map. Runtime and
-RORK 6 state remain keyed by authored NPC/node IDs, never paths. Snapshot, export,
+RORK 7 state remain keyed by authored NPC/node IDs, never paths. Snapshot, export,
 inspection and schema-aware migration include these files. The old dialogue.toml
 is rejected by the loader but retained as an editor repair/deletion target.

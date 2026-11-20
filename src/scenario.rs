@@ -30,6 +30,7 @@ struct Scenario {
     contains: Vec<String>,
     #[serde(default)]
     excludes: Vec<String>,
+    player_name: Option<String>,
     room: Option<String>,
     /// When present, assert the entire inventory, not merely a subset.
     inventory: Option<Vec<String>>,
@@ -148,6 +149,14 @@ pub fn run_with_trace(
             .map_err(|e| e.to_string())?;
         }
         let mut errors = Vec::new();
+        if let Some(expected) = &case.player_name {
+            if state.player_name.as_ref() != Some(expected) {
+                errors.push(format!(
+                    "expected player name {expected:?}, got {:?}",
+                    state.player_name
+                ));
+            }
+        }
         for expected in &case.contains {
             if !transcript.contains(expected) {
                 errors.push(format!("missing output {expected:?}"));

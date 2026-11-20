@@ -134,9 +134,10 @@ explicit migration error rather than silently dropping NPCs. To split it:
    your scenarios. In F, stage all new files and deletion of dialogue.toml in
    one batch; validate, preview and explicitly confirm publication.
 
-No user adventure is converted automatically. This file-only move leaves the
-runtime model and RORK 6 schema unchanged, and needs no save-compatibility bump.
-Existing RORK 6 saves remain usable with otherwise identical content and IDs;
+No user adventure is converted automatically. The historical file-only move left
+the then-current RORK 6 schema unchanged and needed no save-compatibility bump.
+The separate player-name feature in dev.11 uses RORK 7; old RORK 6 saves require
+their matching build. Within a matching schema, filenames do not affect progress;
 changing NPC/node IDs or other gameplay definitions still needs a separate save
 compatibility decision. Never edit the saved progress to perform this split.
 
@@ -144,3 +145,23 @@ All currently supported NPC-specific definition fields live in its file.
 Shared flags, events, quests, items and shops retain their own definitions and
 are referenced by ID. This layout does not add NPC combat, pathfinding, schedules,
 or a direct NPC-to-shop binding.
+
+## Asking the player's name (dev.11 candidate)
+
+A choice may set `ask_name = true` (default false). After selecting it, the runner
+asks for a name of 1–40 characters, preserving case and Unicode. Leading/trailing
+spaces are trimmed at input; empty names, control characters and directional
+control marks are rejected. `0`, `back`, `cancel` or EOF cancels the entire choice
+without changing the name, node, effects or turn. Entering a valid name commits it
+with the choice and participates in normal whole-turn rollback.
+
+Use `{{player_name}}` in node text, conditional node text and choice response text.
+Before naming it displays `traveler`. This is literal substitution, not scripting;
+other content fields do not expand the placeholder. `stats` displays the name.
+Authors can condition the naming choice on a flag to offer it only once. The mini
+adventure's [guide definition](../adventures/mini_adventure/NPCs/guide.toml) demonstrates
+this. Direct Rust callers use `select_with_name` for such a choice; `select` rejects
+it without the required input. Scenarios can assert `player_name = "Ada"`.
+
+Names are only in memory until an explicit manual save. RORK 7 includes the optional
+name and validates it before replacing current state. No existing saves are rewritten.

@@ -33,7 +33,7 @@ def package(binary, destination=None):
     if destination.exists():
         raise ValueError(f"Destination already exists: {destination}")
     tracked = subprocess.check_output(["git", "ls-files", "-z"], cwd=root).decode("utf-8").split("\0")
-    games = {Path(p).parent.as_posix() for p in tracked if p.startswith("samples/") and p.endswith("/game.toml")}
+    games = {Path(p).parent.as_posix() for p in tracked if p.startswith(("samples/", "adventures/")) and p.endswith("/game.toml")}
     paths = []
     for entry in filter(None, tracked):
         path = Path(entry)
@@ -67,7 +67,8 @@ def package(binary, destination=None):
         "Startup offers Play, Create or Edit, Help and Exit.\n"
         "Offline documentation: README.md and docs/README.md. Open Markdown in a text editor.\n"
         "Creator guide: docs/CREATOR_QUICKSTART.md; formats: docs/CONTENT_REFERENCE.md.\n"
-        "Playable examples: story_example/ and samples/; starter files: templates/starter/.\n"
+        "Start with Play > Lupine Mini Adventure, or play adventures/mini_adventure.\n"
+        "Walkthrough: docs/MINI_ADVENTURE.md. Developer fixtures: samples/ (Browse).\n"
         "Saves are manual: save <name>, saves, load <name>. Never autosaves.\n"
         "Creator E exports ZIPs or folders using matching local runtimes.\n"
         "Keep lupine.runtime.toml beside this executable for offline cross-platform export.\n"
@@ -82,6 +83,10 @@ def package(binary, destination=None):
                                 cwd=destination, capture_output=True, text=True, encoding="utf-8", timeout=30)
         if result.returncode or "Valid story:" not in result.stdout:
             raise ValueError(f"Packaged {game} failed validation: {result.stdout}{result.stderr}")
+        scenarios = destination / game / "scenarios.toml"
+        if scenarios.is_file():
+            subprocess.run([str(executable), "test", str(destination / game), str(scenarios)],
+                           cwd=destination, check=True, capture_output=True, text=True, encoding="utf-8", timeout=90)
     marker.unlink()
     return dict(name=name, path=str(destination), target=native, version=version,
                 documents=documents, examples=1 + len(games), sha256=metadata["sha256"])
