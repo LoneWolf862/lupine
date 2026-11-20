@@ -109,11 +109,11 @@ fn name_cancellation_eof_and_invalid_input_are_read_only() {
     }
     let (state, text) = play(
         mini(),
-        "talk guide\nintroduce\nZoÃ« O'Neil\nstats\ntalk guide\ncancel\n",
+        "talk guide\nintroduce\nZoë O'Neil\nstats\ntalk guide\ncancel\n",
     );
-    assert_eq!(state.player_name.as_deref(), Some("ZoÃ« O'Neil"));
-    assert!(text.contains("Good to meet you, ZoÃ« O'Neil"));
-    assert!(text.contains("Welcome, ZoÃ« O'Neil"));
+    assert_eq!(state.player_name.as_deref(), Some("Zoë O'Neil"));
+    assert!(text.contains("Good to meet you, Zoë O'Neil"));
+    assert!(text.contains("Welcome back, Zoë O'Neil"));
     assert_eq!(state.events.turn, 1);
 }
 

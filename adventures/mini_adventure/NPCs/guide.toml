@@ -5,6 +5,9 @@ room="camp"
 start="welcome"
 [nodes.welcome]
 text="Welcome, {{player_name}}. Introduce yourself, then prepare for the goblin south of camp."
+[[nodes.welcome.variants]]
+when=[{flag_set="introduced"}]
+text="Welcome back, {{player_name}}. Read journal for your current goal, or ask me for the route."
 [[nodes.welcome.choices]]
 id="introduce"
 label="Introduce myself and learn Light"
