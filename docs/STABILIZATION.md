@@ -34,9 +34,22 @@ Changes are reviewed in an isolated branch and draft PR; no automatic merge/rele
 
 ## Verification
 
-Candidate verification is in progress. Do not infer passing checks from the
-baseline above. Local Windows and final-head CI results will be recorded here
-after execution. Native CachyOS and human beginner acceptance remain unverified.
+Local Windows verification passed: all 375 tests (including the new consumable
+route regression), formatting, strict all-target Clippy, the locked independent
+Rust consumer and a locked release build. Native creator/manual-save/ZIP-launch
+acceptance passed with eight explicitly saved slots and unchanged source content
+(target/phase4-acceptance-466d29b5). No automatic saves occurred.
+
+The native development package passed runtime digest/version checks, all 10 bundled
+adventure validations and UTF-8/local-file-link checks across 66 Markdown documents.
+Additional probes confirmed that an untracked synthetic RORK file is excluded,
+existing destinations are refused without changed bytes, and missing/non-UTF-8
+documentation is detected (target/package-probes-f352e0ab/summary.json). These are
+scripted checks, not human beginner acceptance. Markdown anchors are not checked.
+
+Final-head Windows/Ubuntu CI results are recorded on [draft PR #43](https://github.com/LoneWolf862/lupine/pull/43).
+Native CachyOS and human beginner acceptance remain unverified. No public release
+or merge is part of this work.
 
 Maintainer commands (Python 3.12; Rust toolchain with rustfmt and Clippy):
 
