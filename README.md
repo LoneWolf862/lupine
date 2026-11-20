@@ -68,6 +68,12 @@ Optional RPG adventures add `stats`, `weapons`, `spellbook`/`spells`, `learn <sc
 ordinary visible item targets retain priority. Use an enemy's `#instance` when needed.
 Exact enemy HP stays private. `help` explains commands in the game.
 
+`read <object>`, `search <object>`, and `look in/inside/into <object>` can inspect
+accessible objects. Authored read/search actions keep priority. Closed containers
+keep their contents hidden; unlock and open them explicitly. `use <key> on
+<container>` unlocks with its authored key when no item interaction handles that
+pair. See [container parser feedback](docs/CONTAINER_PARSER_FEEDBACK.md).
+
 `hit`, `strike`, `stab`, and `slash` are attack aliases. `attack <enemy>` asks which carried
 weapon to use, even with only one; cancel to spend no turn. `cast fireball at goblin` and
 `attack goblin with fireball` work for a learned spell when no carried weapon matches.

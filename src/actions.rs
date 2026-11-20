@@ -331,7 +331,10 @@ pub fn prepare(
     output: &mut impl Write,
 ) -> io::Result<Prepared> {
     let line = crate::resolution::normalize(line);
-    if crate::parser::parse_command(&line).is_ok() {
+    // Read/search have a non-mutating examination fallback, but authored actions
+    // may intentionally attach effects. Preserve their matching/failure semantics.
+    let verb = line.split_whitespace().next().unwrap_or("");
+    if crate::parser::parse_command(&line).is_ok() && !matches!(verb, "read" | "search") {
         return Ok(Prepared::Unhandled);
     }
     let patterns = world

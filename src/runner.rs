@@ -1438,6 +1438,8 @@ fn suggest_verb(command: &str) -> Option<String> {
         "look",
         "inventory",
         "examine",
+        "read",
+        "search",
         "take",
         "drop",
         "use",
@@ -1505,6 +1507,18 @@ fn suggest_verb(command: &str) -> Option<String> {
         .iter()
         .filter_map(|candidate| {
             let remainder = command.strip_prefix(verb).unwrap_or("").trim();
+            if !remainder.is_empty()
+                && matches!(
+                    *candidate,
+                    "go" | "move" | "walk" | "travel" | "run" | "head"
+                )
+                && !matches!(
+                    parse_command(&format!("{candidate} {remainder}")),
+                    Ok(crate::commands::Command::Move(_))
+                )
+            {
+                return None;
+            }
             if !remainder.is_empty()
                 && matches!(
                     *candidate,

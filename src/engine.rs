@@ -137,6 +137,30 @@ fn execute_core(
                 .iter()
                 .find(|rule| rule.item == item.id && rule.target == target.id)
             {
+                None if crate::objects::definition(world, &target.id)
+                    .container
+                    .and_then(|c| c.key)
+                    .as_deref()
+                    == Some(item.id.as_str()) =>
+                {
+                    // An explicit authored interaction always wins, even when its
+                    // requirements fail. Otherwise using this container's key
+                    // means unlock, never toggle the lock or silently open it.
+                    match crate::objects::manipulate(
+                        world,
+                        state,
+                        "unlock",
+                        &target.id,
+                        Some(&item.id),
+                        1,
+                    ) {
+                        Ok(text) => {
+                            *performed = true;
+                            message(text)
+                        }
+                        Err(error) => message(error),
+                    }
+                }
                 None => message(format!(
                     "Using the {} on the {} has no effect.",
                     item.name, target.name
