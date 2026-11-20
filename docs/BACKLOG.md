@@ -1,19 +1,26 @@
 # Lupine development backlog
 
-## Remaining work after Phase 4 development
+## Current priorities after PR #42
 
-- Human Windows beginner walkthrough and native CachyOS terminal/export acceptance.
-- Human review/merge of the five Phase 4 drafts; [scope and evidence](PHASE_4_REVIEW.md).
+- Review the [stabilization candidate](STABILIZATION.md): current docs, verified
+  offline packages, CI coverage/evidence and consumable reachability diagnostics.
+- Human Windows beginner walkthrough, original-player retest and native CachyOS terminal/export acceptance.
+- A complete small creator-directed adventure, with scenarios for intended and failed paths.
 - Broader beginner usability testing, particularly prerequisites and recovery guidance.
 - Optional pronouns/chained commands with explicit validation and cancellation.
 - Optional ZIP compression; built-in export currently uses standard stored ZIP entries.
 - More targeted history scope; current memory-only history spans a CLI invocation.
 - Human-reviewed official release readiness; never rewrite v0.9.0 automatically.
 
-Startup, terminal history, numbered player clarification, suggestions and offline export
-are implemented. Bindings, supported ID migration, evidence-based recovery and ZIP export
-are Phase 4 development candidates. See [verification](PHASE_4_REVIEW.md). Keep the
-runtime lightweight, offline, terminal-only and story-independent. Never autosave.
+All development through PR #42 is merged: startup/history, parser clarification,
+bindings/migration/recovery, exports, engine expansion, per-file NPCs and whole-turn
+rollback. [Engine expansion](ENGINE_EXPANSION.md) preserves original verification.
+There is no remaining Phase 4/expansion merge stack. Keep the runtime lightweight,
+offline, terminal-only and story-independent. Never autosave.
+
+Later engineering candidates: simplify the Rust session API, add per-step scenario
+assertions and measure larger adventures. Prioritize observed needs; these are not
+implemented or prerequisites for this stabilization patch.
 
 ## Historical roadmap/backlog entries
 

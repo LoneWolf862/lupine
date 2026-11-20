@@ -254,3 +254,42 @@ fn diagnostics_warn_without_rejecting_intentional_storage_and_shadowed_branches(
     assert!(warnings.contains("shadowed"));
     assert!(warnings.contains("blocked"));
 }
+
+#[test]
+fn consumable_movement_is_a_known_route_in_author_diagnostics() {
+    let f = Fixture::new();
+    for id in ["destination", "beyond", "storage"] {
+        let exits = if id == "destination" {
+            "[exits]\nnorth='beyond'\n"
+        } else {
+            ""
+        };
+        fs::write(
+            f.0.join(format!("rooms/{id}.toml")),
+            format!("id='{id}'\ntitle='{id}'\ndescription='Fixture'\n{exits}"),
+        )
+        .unwrap();
+    }
+    fs::write(
+        f.0.join("items/token.toml"),
+        "id='token'\nname='token'\ndescription='Movement fixture'\nportable=true\n\
+         initial={kind='inventory'}\n\
+         consumable={text='Moved.',failure_text='Blocked.',effects=[{move_player='destination'}]}\n",
+    )
+    .unwrap();
+    let adventure = Adventure::load(&f.0).unwrap();
+    let warnings = lupine::diagnostics::warnings(&adventure).join("\n");
+    assert!(!warnings.contains("Room 'destination'"), "{warnings}");
+    assert!(!warnings.contains("Room 'beyond'"), "{warnings}");
+    assert!(warnings.contains("Room 'storage' has no known route"));
+
+    // Confirm the route works through the real player path, not just the graph scan.
+    let suite = f.0.join("scenarios.toml");
+    fs::write(
+        &suite,
+        "format_version=1\n[[scenario]]\nname='consumable route'\n\
+         commands=['consume token','north']\nroom='beyond'\ninventory=[]\n",
+    )
+    .unwrap();
+    lupine::scenario::run(&f.0, &suite, &mut Vec::new()).unwrap();
+}

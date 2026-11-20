@@ -2,6 +2,8 @@ name: Creator checks
 
 on:
   pull_request:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -25,5 +27,25 @@ jobs:
       - run: cargo fmt --all -- --check
       - run: cargo test --locked
       - run: cargo clippy --locked --all-targets -- -D warnings
+      - name: Check independent Rust consumer
+        run: cargo check --locked --manifest-path samples/independent_game/Cargo.toml --target-dir target/independent-consumer
+      - name: Check offline documentation
+        run: python scripts/check_docs.py
       - run: cargo build --locked --release
       - run: python scripts/phase4_acceptance.py
+      - name: Linux interactive history acceptance
+        if: runner.os == 'Linux'
+        run: python scripts/history_pty_check.py
+      - name: Verify portable development package
+        run: python scripts/package_development.py
+      - name: Retain acceptance evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verification-${{ matrix.os }}
+          path: |
+            target/phase4-acceptance-*/*.txt
+            target/phase4-acceptance-*/summary.json
+            target/history-pty-transcript.bin
+          if-no-files-found: warn
+          retention-days: 14

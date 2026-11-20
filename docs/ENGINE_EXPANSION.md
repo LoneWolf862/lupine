@@ -1,29 +1,36 @@
 # Approved engine expansion
 
+## Current status
+
+All nine phases and follow-ups through PR #42 are merged into main at
+8f9782febf68bb7374fa66cbee95a5f5a9e70725 (0.11.0-dev.10). Its tree matches the
+final PR #42 tree verified by [Windows/Ubuntu CI run 44632403701](https://github.com/LoneWolf862/lupine/actions/runs/44632403701).
+The published v0.9.0 release is unchanged. Current work and remaining acceptance
+are in [STABILIZATION.md](STABILIZATION.md). The old review worktrees are retired.
+
 Approved by the creator on 2026-11-19. Primary workflow: directly author TOML
 content and FIG configuration. Engine capability precedes wizard coverage, which
 precedes wizard usability. This is engine work, not HOWLBOUND story development.
-The baseline is main 451f409, including merged Phase 4 PRs #26â€“#30.
+The original baseline was main 451f409, including merged Phase 4 PRs #26–#30.
 
 ## Ordered delivery and status
 
 | Phase | Scope | Status |
 |---|---|---|
-| 1 | Current format reference, mechanic examples, file-based scenario testing | Verified locally and in CI; draft PR #31 |
-| 2 | Shared nested conditions, typed effects, counters, ordered outcomes | Verified locally and in CI; draft PR #32 |
-| 3 | Authored actions/aliases, fixed-object use, player feedback | Verified locally and in CI; draft PR #33 |
-| 4 | Hidden/starting inventory, containers, quantities, consumables | Verified locally and in CI; draft PR #34 |
-| 5 | Events, timers, quests, journals, endings | Verified locally and in CI; draft PR #35 |
-| 6 | NPCs, conditional dialogue, choices, transfers and movement | Verified locally and in CI; draft PR #36 |
-| 7 | Independent economy, shared rewards, world abilities, equipment/status/combat configuration | Verified locally and in CI; draft PR #37 |
-| 8 | Wizard coverage, project properties, repair, duplicate/delete/reference migration | Verified locally and in CI; draft PR #38 |
-| 9 | Consistent controls, draft visibility, search and room-centered navigation | Verified locally; draft PR #39 |
+| 1 | Current format reference, mechanic examples, file-based scenario testing | Merged #31; verified locally and in CI |
+| 2 | Shared nested conditions, typed effects, counters, ordered outcomes | Merged #32; verified locally and in CI |
+| 3 | Authored actions/aliases, fixed-object use, player feedback | Merged #33; verified locally and in CI |
+| 4 | Hidden/starting inventory, containers, quantities, consumables | Merged #34; verified locally and in CI |
+| 5 | Events, timers, quests, journals, endings | Merged #35; verified locally and in CI |
+| 6 | NPCs, conditional dialogue, choices, transfers and movement | Merged #36; verified locally and in CI |
+| 7 | Independent economy, shared rewards, world abilities, equipment/status/combat configuration | Merged #37; verified locally and in CI |
+| 8 | Wizard coverage, project properties, repair, duplicate/delete/reference migration | Merged #38; verified locally and in CI |
+| 9 | Consistent controls, draft visibility, search and room-centered navigation | Merged #39; verified locally and in CI |
 
 Validation, debug/scenario support, docs, save round trips, references and export
-coverage accompany each phase. Each major phase uses an isolated feature branch,
-checkpoint commits/pushes and a draft PR targeting its immediate dependency.
-Nothing is merged or released by the agent. The owner's primary checkout and
-personal untracked adventures remain untouched.
+coverage accompanied each phase. Delivery used isolated branches and stacked draft
+PRs; the owner subsequently merged them. #40 added per-file NPC definitions, #41
+whole-turn rollback and #42 current authoring references. No public release followed.
 
 ## Required contracts
 
@@ -41,9 +48,12 @@ personal untracked adventures remain untouched.
 - Preserve editor Snapshot confirmation, exact previews, stale-file protection,
   evidence-based recovery, confined export and no saved progress in packages.
 
-## Verification
+## Historical verification
 
-Entries below record verification as it happened; later CI results supersede earlier pending statements.
+Entries below record verification as it happened; later CI results supersede earlier
+pending statements. Draft/merge instructions, old branch/worktree paths and primary
+checkout descriptions below refer only to those historical sessions. Do not resume
+the retired review stack. See Current status above for today's baseline.
 
 Phase 1 local Windows: 273 tests passed, formatting and strict all-target Clippy
 passed, release build passed. `scripts/phase4_acceptance.py` authored the full RPG
@@ -141,7 +151,7 @@ RORK remains 6. [Draft PR #39](https://github.com/LoneWolf862/lupine/pull/39) ta
 phase 8. Final-head Windows/Ubuntu CI status is tracked on PR #39; native CachyOS and human
 beginner acceptance are not claimed.
 
-## Review handoff
+## Historical review handoff (before the owner's merges)
 
 Review draft PRs #31 through #39 in order. Each targets its immediate dependency;
 none is merged or published. The final stack is 0.11.0-dev.8. Engine state additions

@@ -3,11 +3,11 @@
 Current direction (2026-11-19): direct TOML/FIG authoring is the primary development
 workflow. Engine capability takes priority over wizard coverage, which takes priority
 over wizard convenience. See [current reference](CONTENT_REFERENCE.md) and
-[approved expansion](ENGINE_EXPANSION.md). The final accessibility goal remains.
+[merged expansion](ENGINE_EXPANSION.md). Current work is [stabilization](STABILIZATION.md).
 
-> Historical design/stage record: feature-status and compatibility claims below describe earlier development. Current policy and file paths are in [NEXT_PHASE_REQUIREMENTS.md](NEXT_PHASE_REQUIREMENTS.md) and [CONFIG_FIG_SPEC.md](CONFIG_FIG_SPEC.md). Character configuration now belongs in `config/character.fig`.
-
-**Status:** Final-release product goal; design direction, **not implemented** and **not an MVP/course acceptance gate**.  
+**Status:** Engine and terminal creator implemented through PR #42; final
+nontechnical accessibility remains unverified and is **not an MVP/course acceptance gate**.
+Advanced features use direct files or structural/text editing, not bespoke beginner forms.
 **Project:** Lupine (engine); HOWLBOUND (tentative first game and authoring-system test case).
 
 ## Purpose
@@ -33,7 +33,7 @@ A first-time creator should be able to:
 3. **Connect and revise** locations, objects, and basic puzzle conditions/effects without manually changing engine source.
 4. **Validate** their work before play: missing room references, duplicate IDs, invalid interactions, unreachable starting locations, and malformed content produce readable, location-specific diagnostics with suggested fixes where possible.
 5. **Playtest** instantly and repeatedly using the normal Lupine player engine, with deterministic behavior.
-6. **Package/export** an offline, immediately playable game for a supported OS using an understandable workflow; the *player* does not need Rust/Cargo. (Packaging systems and supported OS coverage remain to be designed.)
+6. **Package/export** an offline, immediately playable game for a supported OS using an understandable workflow; the *player* does not need Rust/Cargo. Windows x64/Linux x64 folder and ZIP export is implemented; human acceptance remains separate.
 7. **Learn** from a starter project, a short end-to-end tutorial, examples, and a clear command reference.
 
 The final user experience should be assessed with at least one person who has little or no programming experience completing a short new-game walkthrough with minimal assistance. Exact usability targets and distribution details can be set later.
@@ -46,12 +46,14 @@ The final user experience should be assessed with at least one person who has li
 - Define reusable **conditions** (e.g., player carries item; flag is set; target is accessible) and **effects** (e.g., set flag; change object state; unlock exit; show response), not arbitrary story-specific Rust branches.
 - Allow **state-dependent descriptions** so `look`/`examine` reflect the outcome of actions.
 - Give creators sensible defaults for ordinary interactions; more sophisticated mechanics can remain optional.
-- Keep the *runtime* story-independent. Separate any future editor from the game executable.
+- Keep the *runtime* story-independent. Creator modules remain separate from gameplay even though the current executable exposes both workflows.
 
-**TOML is approved for initial authoring.** Creators use example/template files and optional future terminal commands; no graphical editor is planned. The example below illustrates the approved v1 TOML schema; the loader is pending v0.5.0-B testing:
+**TOML/FIG is the primary authoring workflow.** Creators use example/template files
+and the optional terminal creator; no graphical editor is planned. This room example
+uses the current schema and requires a separate room with ID `cabin`:
 
 ```toml
-# Illustrative only — there is no Lupine story-file loader yet.
+# Example content, not HOWLBOUND story material.
 id = "forest_clearing"
 title = "Forest Clearing"
 description = "Tall pines surround a quiet clearing."
@@ -62,7 +64,7 @@ north = "cabin"
 ## Authoring interface — text only
 
 - Primary workflow: create and edit readable TOML story files using any text editor.
-- Future terminal commands may generate templates, validate references, launch a playtest or package releases.
+- Implemented terminal commands generate templates, validate references, launch playtests and export games with matching local runtimes.
 - No graphical editor, room-map GUI or Lupine Studio application is planned.
 - Nontechnical accessibility will be measured through examples, error messages and beginner usability checks; no Rust should be needed for authoring or distributing a game at final release.
 
@@ -70,17 +72,17 @@ north = "cabin"
 
 HOWLBOUND should be authored as a separate game using public Lupine mechanisms and, when available, the same game-creation workflow offered to others. Its story is undecided. Any gap that forces a unique engine change should be assessed as a possible missing reusable feature, not immediately patched as special-case HOWLBOUND logic.
 
-## Explicitly out of scope for the current milestone
+## Boundaries and remaining acceptance
 
-- A functioning TOML/JSON/RON loader or fixed schema.
 - Any graphical editor or visual map editor.
-- One-click cross-platform compiler/packager.
-- NPC dialogue trees, combat, quests, broad scripting languages, or cloud collaboration.
+- Automatic cross-platform compilation or runtime downloads. Offline export uses supplied matching native builds.
+- Broad scripting languages and cloud collaboration.
+- NPC dialogue, combat, quests and TOML loading already exist. Their presence does not establish beginner usability; assess the complete authoring journey with people.
 
 **Exit condition:** The final release is *not* complete solely because the Rust library is extensible. It must demonstrate the nontechnical creator workflow described above, in addition to reliable offline gameplay.
 
 ## Text-only creator workflow and manual save design (confirmed)
 
-Lupine will remain text-based throughout: games play in the terminal, game content is authored using TOML templates and examples, and future project creation/validation tools are terminal commands. A graphical Lupine Studio is **not** a planned requirement.
+Lupine remains text-based throughout: games play in the terminal, content uses TOML/FIG, and project creation/validation/export tools are terminal commands. A graphical Lupine Studio is **not** a planned requirement.
 
 Game creators do not implement saving. Lupine provides engine-owned manual `save`, `load`, and `saves` commands, with multiple named slots and portable TOML-based `.rork` files. No autosaving, save-on-quit or checkpoints. Any game creation templates should have a stable `game_id` to isolate save files and keep them compatible across title changes.

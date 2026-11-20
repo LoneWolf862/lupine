@@ -1,10 +1,22 @@
 # Lupine â€” Codex Development Handoff
 
+## Current handoff
+
+Development through PR #42 is merged. Continue from current main using an isolated
+branch/worktree and a draft PR. See [STABILIZATION.md](STABILIZATION.md) for the
+approved scope, actual verification and remaining human/platform acceptance.
+Do not resume the retired branches or worktrees named below. No merge or release
+is authorized. Published v0.9.0 and manual-only RORK remain unchanged.
+
+## Historical handoffs
+
+The following entries preserve original milestone context, not current instructions.
+
 ## Phase 2I creator usability candidate (2026-11-18)
 
 Draft [PR #19](https://github.com/LoneWolf862/lupine/pull/19) targets `codex/phase-2h-rpg-integration`. Existing-definition selectors accept numbers, exact IDs and unambiguous names. Blank selections stay open; 0/back explicitly returns. Locked doors and teaching items use one selection screen. Door review retains answers after declined Save; description ordering and multiline recovery are improved. See the [audit, navigation rules, verification, remaining limits and Windows procedure](CREATOR_USABILITY_AUDIT.md). Nested 0/back follows its displayed finish/discard label; cancel abandons unsaved edits while earlier confirmed saves remain. Exact previews, Snapshot safety and manual-only RORK saves remain required.
 
-## RPG authoring handoff — 2026-11-18
+## RPG authoring handoff â€” 2026-11-18
 
 Continue from `codex/phase-2h-rpg-integration` in its isolated managed Windows worktree. Five draft PRs #14-#18 contain enemies, weapons, shops, currencies and integration; none merged. The owner primary checkout and personal adventures remain untouched. Read [complete handoff, tests, limits and human guide](RPG_AUTHORING_DEVELOPMENT.md). No Cargo/RORK versions or gameplay mechanics changed. Earlier records below are historical.
 
@@ -204,7 +216,7 @@ Windows checkpoint: 198 tests, formatting and strict Clippy passed. Final docume
 
 ## Creator completion handoff (2026-11-18)
 
-See [CREATOR_COMPLETION_REVIEW.md](CREATOR_COMPLETION_REVIEW.md) for the complete implementation inventory, branch/PR dependency table, actual verification, self-review findings, limitations, Windows review procedure and merge guidance. Current code is on codex/phase-2f-creator-integration. PRs #8–#13 remain open/draft; nothing was merged or pushed to main. Current local suite: 199 tests; formatting and strict Clippy pass. Windows Server 2022 and Ubuntu 22.04 CI passed at f236172 with 198 tests each, before one additional local sample-dependency regression; final PR CI is tracked separately.
+See [CREATOR_COMPLETION_REVIEW.md](CREATOR_COMPLETION_REVIEW.md) for the complete implementation inventory, branch/PR dependency table, actual verification, self-review findings, limitations, Windows review procedure and merge guidance. Current code is on codex/phase-2f-creator-integration. PRs #8â€“#13 remain open/draft; nothing was merged or pushed to main. Current local suite: 199 tests; formatting and strict Clippy pass. Windows Server 2022 and Ubuntu 22.04 CI passed at f236172 with 198 tests each, before one additional local sample-dependency regression; final PR CI is tracked separately.
 
 Linux CI exposed and verified the fix for unreadable sibling directories in advisory game-ID scanning. Current documentation now distinguishes the delivered menus from still-text-authored RPG definition categories, manual recovery and future packaging. All authored/editor writes remain explicitly confirmed; gameplay saving is still strictly manual. Existing user untracked files remain unchanged.
 

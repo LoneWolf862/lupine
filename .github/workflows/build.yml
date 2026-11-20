@@ -14,10 +14,8 @@ jobs:
         include:
           - os: windows-2022
             platform: windows-x64
-            executable: lupine.exe
           - os: ubuntu-22.04
             platform: linux-x64
-            executable: lupine
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v6
@@ -38,6 +36,10 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           cargo build --locked --release
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          cargo check --locked --manifest-path samples/independent_game/Cargo.toml --target-dir target/independent-consumer
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+      - name: Check offline documentation
+        run: python scripts/check_docs.py
       - name: Native exported-package acceptance
         shell: pwsh
         run: python scripts/phase4_acceptance.py
@@ -49,35 +51,25 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $metadata = cargo metadata --locked --no-deps --format-version 1 | ConvertFrom-Json
-          $version = ($metadata.packages | Where-Object name -eq 'lupine').version
-          $artifact = "Lupine-$version-${{ matrix.platform }}"
-          $package = "dist/$artifact"
-          $binary = "target/release/${{ matrix.executable }}"
-          New-Item -ItemType Directory -Path "$package/samples" -Force | Out-Null
-          Copy-Item $binary, 'README.md', 'LICENSE', 'THIRD_PARTY_NOTICES.txt' -Destination $package
-          Copy-Item 'story_example' -Destination "$package/adventure-example" -Recurse
-          Get-ChildItem 'samples' -Directory | Where-Object { Test-Path (Join-Path $_.FullName 'game.toml') } | ForEach-Object {
-            Copy-Item $_.FullName -Destination "$package/samples" -Recurse
-          }
-          & $binary runtime-manifest | Set-Content -Encoding utf8 "$package/lupine.runtime.toml"
+          $result = python scripts/package_development.py
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          @"
-          Lupine $version development build for ${{ matrix.platform }}
-          Extract the complete package. No Rust or account is needed.
-          Windows: launch lupine.exe. Linux: chmod u+x lupine, then ./lupine.
-          Startup offers Play, Create or Edit, Help and Exit.
-          Saves are manual: save <name>, saves, load <name>. Never autosaves.
-          Creator E exports a platform directory using compatible local runtimes.
-          Keep lupine.runtime.toml beside this executable for offline cross-platform export.
-          Linux requires a compatible x86_64 glibc system (built on Ubuntu 22.04).
-          This artifact is not an official release and does not replace v0.9.0.
-          "@ | Set-Content -Encoding utf8 "$package/START_HERE.txt"
-          "name=$artifact" >> $env:GITHUB_OUTPUT
-          "path=$package" >> $env:GITHUB_OUTPUT
+          $package = $result | ConvertFrom-Json
+          "name=$($package.name)" >> $env:GITHUB_OUTPUT
+          "path=$($package.path)" >> $env:GITHUB_OUTPUT
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.package.outputs.name }}
           path: ${{ steps.package.outputs.path }}/
           if-no-files-found: error
+          retention-days: 14
+      - name: Retain acceptance evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: portable-verification-${{ matrix.platform }}
+          path: |
+            target/phase4-acceptance-*/*.txt
+            target/phase4-acceptance-*/summary.json
+            target/history-pty-transcript.bin
+          if-no-files-found: warn
           retention-days: 14

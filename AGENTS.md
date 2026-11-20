@@ -31,9 +31,11 @@ Character/progression and terminology FIGs, the guided creator and Phase 3 parse
 
 ## Development workflow
 
-- Approved 2026-11-19: implement docs/ENGINE_EXPANSION.md in order. File-based TOML/FIG
-  authoring is primary; engine capability precedes wizard coverage and usability.
-  Use isolated phase branches, checkpoint pushes and stacked draft PRs. Do not merge.
+- Engine expansion and follow-ups through PR #42 are merged. Current approved work
+  is post-expansion stabilization: docs, packaging/CI and consumable reachability
+  diagnostics; see docs/STABILIZATION.md. File-based TOML/FIG authoring is primary.
+  Use isolated branches/worktrees, checkpoint pushes and draft PRs targeting main
+  (or their immediate dependency when stacked). Do not merge or publish a release.
 
 - Read `README.md`, `docs/REQUIREMENTS.md`, `docs/ARCHITECTURE.md`, `docs/ROADMAP.md`, and `docs/CREATOR_VISION.md` before architectural changes.
 - Work in small, reviewable increments. Add tests for parser ambiguity, missing objects, invalid worlds, and state transitions as features arrive.
@@ -146,10 +148,11 @@ Prior sections are historical milestone instructions, not the current feature in
 
 Read `docs/SELF_DOCUMENTING_CONFIG_SPEC.md` before changing new-adventure scaffolding or FIG activation. Every **new** game should expose implemented configuration defaults in commented FIG files, while narrative-only behavior remains the default. `config/character.fig` currently enables RPG by its mere presence; change this deliberately via an explicit opt-in `enabled` field and test existing RPG games/migrations. Do not create unsupported gameplay/progression/combat/parser FIG files. Keep content TOML, configuration FIG, manual player RORK saves strictly separate. Every Codex task uses an isolated feature branch, frequent checkpoint pushes, a reviewable PR, and no self-merge or direct pushes to `main`.
 
-## Approved engine expansion review stack (2026-11-19)
+## Merged engine expansion boundaries
 
-Phases 1-9 are implemented in stacked draft PRs #31-#39, unmerged. Read
-`docs/ENGINE_EXPANSION.md` for actual verification and review order. Current RORK is
+Phases 1-9 and follow-ups are merged through PR #42. Read
+`docs/ENGINE_EXPANSION.md` for historical verification and `docs/STABILIZATION.md`
+for current work. The original review worktrees are retired. Current RORK is
 6 for added engine state; metadata/editor changes do not revise it. Recovery journal
 v2 supports deletion and an explicitly recorded invalid baseline; never guess through
 older, corrupt or externally changed evidence. Project Files F supplies complete-schema
