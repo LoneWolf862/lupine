@@ -51,6 +51,12 @@ portable X still must be carried. Ordinary item use and spell aliases keep their
 existing precedence. `use {target}` is the only authored `use` pattern; an object
 cannot have both that action and a transaction binding. Built-in commands and
 their aliases, including manual saves, cannot be replaced by authored actions.
+`read` and `search` are deliberate exceptions: matching authored patterns run
+first, including their requirements, failure responses and effects. Otherwise
+`read <object>` and `search <object>` fall back to non-mutating examination.
+The fallback does not reveal hidden items. Authors should provide room-search
+phrases in their own action definitions (the objects demo accepts `search`,
+`search room`, `search the room` and `search around`).
 
 Limits: 1,024 actions per file, 1–16 patterns per action, 16 words/240 bytes per
 pattern. Shared rule depth/list limits still apply. Unknown fields, missing IDs,

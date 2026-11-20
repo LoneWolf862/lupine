@@ -60,6 +60,10 @@ Nesting is limited to 16; cycles are invalid. Capacity counts directly contained
 units; a contained bag counts as one unit and enforces its own capacity separately.
 Containers cannot stack or be consumables. Fixed items cannot be carried or placed
 inside containers. `examine chest` shows its state and visible contents when open.
+`look in chest`, `look inside chest` and `look into chest` inspect the same way;
+they never open a container or reveal hidden objects. `read <object>` and
+`search <object>` also inspect unless a matching authored action handles them.
+An authored search can deliberately reveal an object; generic inspection cannot.
 
 Player commands:
 
@@ -67,6 +71,11 @@ Player commands:
 - `take 3 ration`, `drop 2 ration`: explicit quantities.
 - `put 2 ration in chest`, `take ration from chest`: transfer between locations.
 - `open chest`, `close chest`, `unlock chest with key`, `lock chest with key`.
+  Bare unlock/lock gives a key-syntax hint rather than choosing a key.
+- `use key on chest`: unlocks when this is the container's authored, accessible,
+  carried key and no item interaction handles the pair. An authored interaction
+  wins even when its requirements fail. This never toggles the lock or opens the
+  container; use `open chest` next. A successful unlock spends one action turn.
 - `consume ration`, `eat ration`, `drink ration`, or bare `use ration`: one unit.
   Existing transaction bindings and authored single-object use take precedence.
 - `take all`: accessible portable items, including visible contents of open containers.

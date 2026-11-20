@@ -42,9 +42,8 @@ pub fn parse_command(input: &str) -> Result<Command, ParseError> {
         "go" | "move" | "walk" | "travel" | "run" | "head" | "leave" => {
             return Err(ParseError::MissingDirection)
         }
-        "x" | "examine" | "inspect" | "look at" => {
-            return Err(ParseError::MissingTarget("examine"))
-        }
+        "x" | "examine" | "inspect" | "read" | "search" | "look at" | "look in" | "look inside"
+        | "look into" => return Err(ParseError::MissingTarget("examine")),
         "take" | "get" | "grab" | "pick up" => return Err(ParseError::MissingTarget("take")),
         "drop" => return Err(ParseError::MissingTarget("drop")),
         "use" => return Err(ParseError::MissingTarget("use")),
@@ -77,7 +76,18 @@ pub fn parse_command(input: &str) -> Result<Command, ParseError> {
         return Ok(Command::Move(direction));
     }
 
-    for prefix in ["look at ", "look ", "examine ", "inspect ", "x "] {
+    for prefix in [
+        "look at ",
+        "look in ",
+        "look inside ",
+        "look into ",
+        "look ",
+        "examine ",
+        "inspect ",
+        "read ",
+        "search ",
+        "x ",
+    ] {
         if let Some(rest) = normalized.strip_prefix(prefix) {
             return Ok(Command::Examine(required_target(rest, "examine")?));
         }

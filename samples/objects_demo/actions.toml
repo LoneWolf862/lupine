@@ -1,6 +1,6 @@
 [[actions]]
 id="search"
-commands=["search"]
+commands=["search", "search room", "search the room", "search around"]
 effects=[{reveal_item="note"}]
 success_text="You discover a note."
 failure_text="Nothing."

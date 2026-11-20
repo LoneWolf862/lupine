@@ -689,6 +689,12 @@ pub fn manipulate(
                     let key = definition(world, id).container.and_then(|c| c.key).ok_or(
                         "This container has no authored key; an action may control its lock.",
                     )?;
+                    if target.is_none() {
+                        return Err(format!(
+                            "Specify which key to use. Try '{verb} {} with <key>'.",
+                            item.id
+                        ));
+                    }
                     if target != Some(key.as_str())
                         || !state.is_carried(&key)
                         || !state.is_accessible(&key)
