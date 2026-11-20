@@ -1,5 +1,10 @@
 # Lupine Text Creator Wizard â€” Expansion Specification
 
+> Historical milestone record. Development through PR #42 is now merged.
+> Old draft/merge instructions below describe their original sessions only.
+> See [STABILIZATION.md](STABILIZATION.md) for current work and
+> [CREATOR_QUICKSTART.md](CREATOR_QUICKSTART.md) for implemented authoring workflows.
+
 ## Phase 2I creator usability candidate (2026-11-18)
 
 Draft [PR #19](https://github.com/LoneWolf862/lupine/pull/19) targets `codex/phase-2h-rpg-integration`. Existing-definition selectors accept numbers, exact IDs and unambiguous names. Blank selections stay open; 0/back explicitly returns. Locked doors and teaching items use one selection screen. Door review retains answers after declined Save; description ordering and multiline recovery are improved. See the [audit, navigation rules, verification, remaining limits and Windows procedure](CREATOR_USABILITY_AUDIT.md). Nested 0/back follows its displayed finish/discard label; cancel abandons unsaved edits while earlier confirmed saves remain. Exact previews, Snapshot safety and manual-only RORK saves remain required.
@@ -21,7 +26,7 @@ File responsibilities:
 Phase 1 relocates existing character fields/defaults/calculations without redesigning progression, adds display terminology, and updates creator guidance. No legacy `character.toml` loader. No save-format change is needed. Full wizard and parser upgrades are later phases.
 
 
-**Current status: setup through Phase 2C.2 is merged; Phases 2D–2F are implemented candidates in stacked draft PRs #8–#13.** See [completion review](CREATOR_COMPLETION_REVIEW.md) for verified scope, limitations and merge order. Milestone sections below retain their historical scope. `lupine new` and `add room`, `add item`, `add art` already exist. Enhance them rather than replacing them.
+**Current status: setup through Phase 2C.2 is merged; Phases 2Dâ€“2F are implemented candidates in stacked draft PRs #8â€“#13.** See [completion review](CREATOR_COMPLETION_REVIEW.md) for verified scope, limitations and merge order. Milestone sections below retain their historical scope. `lupine new` and `add room`, `add item`, `add art` already exist. Enhance them rather than replacing them.
 
 ## Learning philosophy
 

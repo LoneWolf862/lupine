@@ -2,8 +2,8 @@
 
 ## Pick the right build
 
-The published v0.9.0 release is historical and unchanged. Phase 3/4 features belong to
-0.10.0-dev.1 development builds, available after building this source or downloading
+The published v0.9.0 release is historical and unchanged. The merged engine expansion
+and creator features belong to 0.11.0-dev.10 development builds, available after building this source or downloading
 the matching manually dispatched GitHub Actions artifact. A development artifact is
 not an official release. Windows x64 and Linux x64 are separate executables.
 
@@ -16,6 +16,22 @@ Linux: open a terminal in the extracted folder, `chmod u+x lupine`, then `./lupi
 an adventure export also supports `sh Play.sh`, including after ZIP extraction loses
 the executable bit. The terminal stays the interface; there is no graphical editor.
 Players need no Rust installation, account or internet.
+
+Portable development packages include README.md, docs/, templates/starter/,
+story_example/ and playable samples/. Start at docs/README.md for offline player,
+creator and developer references. Open Markdown files with a text editor if no
+Markdown viewer is installed. Instructions mentioning Cargo or source files apply
+to a source checkout; standalone authoring uses the included executable instead.
+Development artifacts expire after 14 days on GitHub Actions; keep a local copy
+of the matching runtime and its metadata when exporting for another platform.
+
+Maintainers assemble the same verified native package locally with
+`python scripts/package_development.py` after `cargo build --locked --release`
+(Python 3.12 is used in CI). It writes a new dist/Lupine-VERSION-PLATFORM directory,
+checks offline documentation and runs validation on the copied examples. An existing
+destination is refused; `--output NEW_PATH` selects another. Only tracked documentation,
+templates and playable examples are included. PACKAGE_INCOMPLETE.txt marks an
+interrupted assembly and must not be distributed. This command never publishes a release.
 
 ## Startup and play
 

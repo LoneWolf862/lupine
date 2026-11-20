@@ -1,5 +1,10 @@
 # Adventure Creator completion review
 
+> Historical milestone record. Development through PR #42 is now merged.
+> Old draft/merge instructions below describe their original sessions only.
+> See [STABILIZATION.md](STABILIZATION.md) for current work and
+> [CREATOR_QUICKSTART.md](CREATOR_QUICKSTART.md) for implemented authoring workflows.
+
 ## Current follow-up
 
 The six creator PRs #8-#13 described below have since merged. RPG authoring is delivered separately in draft PRs #14-#18; see [current review](RPG_AUTHORING_DEVELOPMENT.md). This document retains the earlier completion record.
@@ -61,7 +66,7 @@ These are automated/scripted results, not genuine human beginner usability testi
 5. Teaching scrolls could be made fixed, preventing learning. The item editor explains the dependency and refuses that change until the spell link changes.
 6. An existing parallel RPG test used timestamps for temporary paths and collided on Windows. It and the remaining creator timestamp-only fixtures now use process-local atomic counters.
 7. Linux CI revealed that advisory nearby-ID scanning failed on unreadable system siblings under /tmp. The scan now skips unreadable/linked siblings and siblings removed concurrently, with explicit guidance, while destination confinement remains strict. A later Windows CI run exposed the concurrent-removal case. Linux CI passes after the fix.
-8. Prompt/help and documentation review removed stale placeholder claims, used generic descriptions outside rooms, and limited encounter count prompts to the runtime's actual 1–12 range.
+8. Prompt/help and documentation review removed stale placeholder claims, used generic descriptions outside rooms, and limited encounter count prompts to the runtime's actual 1â€“12 range.
 
 ## Limits and remaining work
 

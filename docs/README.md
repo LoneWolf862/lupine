@@ -1,8 +1,10 @@
 # Lupine documentation
 
-These entry points describe the current development review build. The published
-v0.9.0 executable has fewer features. [Review status](ENGINE_EXPANSION.md) records
-what is implemented, tested, unmerged or deferred.
+These entry points describe development 0.11.0-dev.10, merged through PR #42.
+The published v0.9.0 executable has fewer features. [Stabilization](STABILIZATION.md)
+records current work and remaining acceptance; [engine expansion](ENGINE_EXPANSION.md)
+preserves the implementation and verification history. Portable development packages
+include this directory for offline reading in any text/Markdown editor.
 
 | Audience | Start here | Next reference |
 |---|---|---|

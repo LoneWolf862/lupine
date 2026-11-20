@@ -9,3 +9,5 @@ Thumbs.db
 /test/
 # Generated release packages
 dist/
+# Python verification/build helpers
+__pycache__/

@@ -47,6 +47,13 @@ pub fn warnings(a: &Adventure) -> Vec<String> {
                 }
             }
         }
+        for consumable in w.object_defs.values().filter_map(|d| d.consumable.as_ref()) {
+            for effect in &consumable.effects {
+                if let Effect::MovePlayer(to) = effect {
+                    reachable.insert(to.clone());
+                }
+            }
+        }
         for n in w.dialogue.npcs.values().flat_map(|n| n.nodes.values()) {
             for e in n.choices.iter().flat_map(|c| &c.effects) {
                 if let Effect::MovePlayer(to) = e {

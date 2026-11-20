@@ -5,13 +5,14 @@ RPG engine. Authors build adventures with editable TOML content, FIG configurati
 the guided Adventure Creator. HOWLBOUND is only the tentative name of a future original
 adventure; no original story is prescribed by this engine.
 
-**Development version: 0.11.0-dev.10.** Creator work through Phase 2I and Phase 3
-startup, history, parser and export improvements (#20–#24) are merged.
-They are not a published release. The existing
+**Development version: 0.11.0-dev.10.** All development through PR #42 is merged,
+including the engine expansion, per-file NPC definitions and whole-turn rollback.
+Current work is [post-expansion stabilization](docs/STABILIZATION.md).
+These changes are not a published release. The existing
 [v0.9.0 standalone release](https://github.com/LoneWolf862/lupine/releases/tag/v0.9.0)
-and its tag remain unchanged. See [Phase 3 verification and handoff](docs/PHASE_3_REVIEW.md).
+and its tag remain unchanged. See [development verification](docs/ENGINE_EXPANSION.md).
 
-The unmerged [engine expansion](docs/ENGINE_EXPANSION.md) adds file-authored scenario
+The merged [engine expansion](docs/ENGINE_EXPANSION.md) adds file-authored scenario
 tests and [shared rules](docs/RULES.md): nested conditions, counters, ordered outcomes
 and atomic effects. [Authored actions](docs/ACTIONS.md) add custom commands and fixed-object use. Try `lupine test samples/rules_demo samples/rules_demo/scenarios.toml`.
 [Containers, quantities, hidden items and consumables](docs/OBJECTS.md) are implemented.
@@ -139,10 +140,13 @@ cargo clippy --locked --all-targets -- -D warnings
 cargo build --locked --release
 ```
 
-CI tests Windows Server 2022 and Ubuntu 22.04. The manually dispatched portable-build
-workflow produces versioned development artifacts and runtime metadata; it does not
-publish a release. Actual checks, native-platform limits and merge order are recorded
-in the [Phase 3 review](docs/PHASE_3_REVIEW.md). Human beginner testing and native CachyOS
+CI tests Windows Server 2022 and Ubuntu 22.04 on PRs and pushes to main, including
+the independent Rust consumer, documentation, native package acceptance and Linux
+terminal history. Acceptance transcripts/summaries are retained for 14 days.
+The manually dispatched portable-build workflow produces versioned development
+artifacts with runtime metadata, offline docs, starter files and playable examples;
+it does not publish a release. [Stabilization verification](docs/STABILIZATION.md)
+records current results and limits. Human beginner testing and native CachyOS
 testing remain separate from scripted or agent-driven terminal verification.
 
 Architecture, requirements, creator vision and historical milestones are in `docs/`.

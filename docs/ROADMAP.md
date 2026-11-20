@@ -1,11 +1,16 @@
 # Lupine development roadmap
 
-## Approved engine expansion (2026-11-19)
+## Current work: post-expansion stabilization
 
-Current work follows [ENGINE_EXPANSION.md](ENGINE_EXPANSION.md): engine/file authoring
-first, wizard coverage second, wizard usability third. That document tracks the
-nine approved phases and verification. Phase 4 below is now merged through PR #30;
-its original review records are historical, not current merge status.
+Development through PR #42 is merged at 0.11.0-dev.10. The published v0.9.0 remains
+unchanged. [Stabilization](STABILIZATION.md) covers current documentation, offline
+packages, routine CI and consumable reachability diagnostics, followed by human
+beginner review and native CachyOS acceptance. A complete creator-directed adventure
+and an approved prerelease are future milestones, not claims of completed work.
+
+Direct TOML/FIG authoring remains primary. [ENGINE_EXPANSION.md](ENGINE_EXPANSION.md)
+records the nine completed phases and original verification. Earlier review orders,
+branches and worktree paths below are historical; they are not pending merge tasks.
 
 ## Previous development: Phase 4
 
