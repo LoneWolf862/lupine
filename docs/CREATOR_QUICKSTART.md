@@ -1,12 +1,42 @@
-Phase 4: Creator T (or R > 8) manages transaction bindings; M migrates supported IDs;
-opening interrupted edits offers evidence-based recovery; E exports ZIPs or folders.
-See [verification, limitations and human review](PHASE_4_REVIEW.md).
-
 # Lupine Adventure Creator
 
-Current source: 0.10.0-dev.1 development candidate. Creator work through Phase 2I is merged.
-Phase 3 startup, player input and export are merged; published v0.9.0 binaries
-do not include these changes. [Verification](PHASE_3_REVIEW.md).
+This guide describes the current 0.11.0-dev.10 review build, including the unmerged
+engine expansion and follow-ups. Published v0.9.0 binaries do not contain these
+features. [Review status and verification](ENGINE_EXPANSION.md) records the difference.
+Start with the [documentation map](README.md) for player and developer entry points.
+
+## Author files directly
+
+TOML/FIG editing is the primary workflow. A minimal NPC example:
+
+1. Run `lupine new my_adventure my_adventure "My Adventure"` with the current build.
+   From source, prefix the command with `cargo run --` instead of `lupine`.
+2. Open the new folder. Edit adventure content in `.toml` and game-wide settings in
+   `config/*.fig`. The generated FIGs include comments and RPG starts disabled.
+3. Create `NPCs/guide.toml` with the following content. Keep the exact NPCs/ casing.
+
+```toml
+id = "guide"
+name = "Guide"
+description = "A neutral example character."
+room = "start"
+start = "hello"
+[nodes.hello]
+text = "Would you like a greeting?"
+choices = [{ id="greet", label="Say hello", next="done", text="Greeting complete." }]
+[nodes.done]
+text = "We have already exchanged greetings."
+```
+
+4. Run `lupine validate my_adventure`, then `lupine play my_adventure`.
+5. Enter `people`, `talk guide`, then `greet`. Talking again uses the remembered node.
+6. Save progress explicitly with `save example` if desired. `.rork` files hold player
+   progress outside the content folder; they are never authored or saved automatically.
+7. Add [scenario tests](SCENARIO_TESTING.md) as the adventure grows, then export it.
+
+See [content fields](CONTENT_REFERENCE.md), [NPC dialogue](DIALOGUE.md),
+[shared rules](RULES.md) and [complete-turn rollback](TURN_TRANSACTIONS.md).
+The optional creator tools below edit the same files with previews and confirmation.
 
 ## Export and share
 
@@ -39,7 +69,7 @@ New setup explains the adventure title, destination folder, opening room and des
 |---|---|
 | 1 | Play from a fresh state; `quit` returns here. Load a save explicitly if needed. |
 | 2 | Validate all supported story, RPG and FIG content. |
-| 3 | Configure character/progression and display terminology. |
+| 3 | Configure character/progression, display terminology and combat. |
 | 4 | Create/edit items, aliases, portability and conditional descriptions. |
 | 5 | Create/edit spells and teaching-item links. |
 | 6 | Create/edit ASCII artwork and room references/variants. |
@@ -50,6 +80,10 @@ New setup explains the adventure title, destination folder, opening room and des
 | E | Validate, preview and export a Windows/Linux adventure package. |
 | T | Create/edit/remove transaction-object bindings (also R > 8). |
 | M | Deliberately rename supported internal IDs and their authored references. |
+| F | Edit/create, duplicate, delete and repair complete TOML/FIG file drafts. |
+| G | Edit publication properties and credits. |
+| I | Inspect room connections and typed references. |
+| B | Browse rooms, connected rooms and related files. |
 | 0 | Exit the selected project; return to the launcher if opened through it. |
 
 The real nested ASCII file tree refreshes after completed operations and on returning to the creator. Enter refreshes after external edits. Existing empty directories are shown; absent files are not invented. Inspection is bounded to 2048 entries/eight nested levels; display shows at most 160 entries and abbreviates long names. Links/junctions are not followed. Inspection problems block play/validation/editing.
@@ -60,7 +94,9 @@ The real nested ASCII file tree refreshes after completed operations and on retu
 
 Most editors use S to save; Room Options uses 6. Every save validates the proposed adventure before publication. Declining Save retains ordinary editor drafts; the locked-door recipe retains its review and offers revision if declined. For ordinary prose, `/multi` begins multiline entry and `/end` finishes. Use the indicated escape for literal controls. Artwork entry has its own whitespace-preserving instructions below.
 
-The exact-preview markers enclose the same bytes used for publication. TOML-aware edits preserve unedited properties, comments and existing CRLF style; changed values may use different quoting. Explicitly deleting a property/entry also removes its attached comments. Reordering variants can move table blocks while retaining their content/comments. Unsupported representations are refused rather than destructively rewritten.
+The exact-preview markers enclose the same bytes used for publication. Ordinary guided TOML forms preserve unedited properties, comments and existing CRLF style; changed values may use different quoting. Explicitly deleting a property/entry also removes its attached comments. Reordering variants can move table blocks while retaining their content/comments. Unsupported guided representations are refused. F structural editing reserializes
+its selected file and removes comments; use F exact-text replacement to control
+formatting. Its preview shows the actual proposed text before publication.
 
 ## Rooms and connections
 
@@ -80,7 +116,11 @@ Portable objects can be picked up and carried. Fixed objects remain in their roo
 
 ## Spells and abilities
 
-Choose 5 after explicitly enabling RPG in configuration. All existing fields are available: ID (creation only), display name, description, MP cost, effect kind, positive power and optional teaching item. There is no spell damage-type setting in the current schema.
+Choose 5 for the guided ability form. It covers ID (creation only), name, description,
+MP cost, kind, power and the teaching link. Damage/heal/restore-mana abilities require
+RPG; zero-MP world abilities can be authored without it. The engine also supports
+damage_type, on_hit_status and world-ability target/conditions/effects through direct
+TOML or F. See [systems](SYSTEMS.md) for their exact meanings.
 
 Damage requires an enemy target (`cast <spell> on <enemy>`); heal and restore-mana affect the player. Defining a spell does not teach it. First create a portable scroll/item in Item Manager, then choose it as the teaching item. During play, take it and use `learn <item>`; learning consumes it. One item cannot teach multiple spells. Type `remove` at the teaching-link prompt to clear it. Preview with 7 and save with S.
 
@@ -92,17 +132,19 @@ R selects a room. Set/remove default artwork, add/remove/edit a conditional vari
 
 ## Interactions, flags and locked doors
 
-Choose 9. Option 1 manages interaction and conditional-exit rules. An interaction describes `use <item> on <target>`, requirements, effects and success/failure messages. Each item/target pair has one rule. Both objects must be accessible and the used item must be carried. Conditions support `has_item`, `flag_set`, `flag_unset`; effects support `set_flag`, `clear_flag`, `move_item_to_room`. These are existing engine capabilities, not a separate scripting language.
+Choose 9. Option 1 manages interaction and conditional-exit rules. An interaction describes `use <item> on <target>`, requirements, effects and success/failure messages. Each item/target pair has one rule. Both objects must be accessible and the used item must be carried. The basic guided controls cover `has_item`, `flag_set`, `flag_unset`, `set_flag`,
+`clear_flag` and `move_item_to_room`. The engine supports the broader nested
+condition/effect vocabulary in [RULES.md](RULES.md), authored directly or through F.
 
-A flag is a named yes/no memory, initially unset. An interaction can set `door_open`; an exit, alternate description or artwork can require that same flag. All requirements in a list must pass. Edit lists by adding/removing individual entries, then return to the rule menu to preview/save. Conditional exits must already connect rooms; each room/direction has one rule. Removing a rule makes that route unconditional.
+A flag is a named yes/no memory; rules.toml can declare its initial value. An interaction can set `door_open`; an exit, alternate description or artwork can require that same flag. All requirements in a list must pass. Edit lists by adding/removing individual entries, then return to the rule menu to preview/save. Conditional exits must already connect rooms; each room/direction has one rule. Removing a rule makes that route unconditional.
 
 Option 2 guides a locked door: select room/direction, select or create a portable key and door object, choose the unlocked flag and write success/failure/blocked messages. Preview all related files and confirm one transaction. Only the selected direction is locked; configure a reverse rule separately if needed. Conflicting existing rules are rejected rather than replaced silently. Cancel/decline writes none of the draft files. Later revisions use the item/rule editors.
 
 ## FIG configuration
 
-Choose 3, then Character or Terminology. Menus show current values and defaults; selecting a setting explains its purpose, range and dependencies using the bundled self-documenting FIG templates. P previews, S confirms/validates/saves, 0 discards. Opening absent config does not create files.
+Choose 3, then Character, Terminology or Combat. Menus show current values and defaults; selecting a setting explains its purpose, range and dependencies using the bundled self-documenting FIG templates. P previews, S confirms/validates/saves, 0 discards. Opening absent config does not create files.
 
-`enabled = true` explicitly enables RPG; new games use false. Existing character FIGs that omit enabled retain true. All progression values validate even while disabled. Existing spells/encounters and other dependent RPG content prevent disabling. Starting HP/MP/AP are bases at level 1 plus per-level gains for higher starting levels. AP 100 means 1.00x weapon damage; level cap 0 means no authored cap; XP growth 120 means +20 percent per level.
+`enabled = true` explicitly enables RPG; new games use false. Existing character FIGs that omit enabled retain true. All progression values validate even while disabled. Existing RPG-dependent abilities, weapons and encounters prevent disabling; zero-MP world abilities and currencies do not. Starting HP/MP/AP are bases at level 1 plus per-level gains for higher starting levels. AP 100 means 1.00x weapon damage; level cap 0 means no authored cap; XP growth 120 means +20 percent per level.
 
 Terminology exposes only `display.spellbook` and `display.spells`; these change labels, not player commands. No unsupported FIG categories are generated. Existing saves are never rewritten. If a configuration change invalidates existing saves, deliberately manage `game.toml` save_compatibility_version; the editor does not change versions automatically.
 
@@ -110,7 +152,8 @@ Terminology exposes only `display.spellbook` and `display.spells`; these change 
 
 Authored content saves and player saves are separate. **Player progress is never autosaved**, including on quit, EOF or entering/leaving play. Only explicit `save`, `load` and `saves` commands handle RORK.
 
-Editors require a valid project. They snapshot content, reject unsafe paths/links, stage proposed changes privately, run the complete validator, compare original bytes/metadata to catch external edits, then publish complete files without truncation. Modified files retain permissions. Failed publication rolls back when safe. Failed ordinary form saves retain drafts for correction; stale-file/recovery conflicts require discarding/reopening after review.
+Ordinary guided editors require a valid project. F can repair invalid content as a
+multi-file draft; the entire proposal must validate before publication. Editors snapshot content, reject unsafe paths/links, stage proposed changes privately, run the complete validator, compare original bytes/metadata to catch external edits, then publish complete files without truncation. Modified files retain permissions. Failed publication rolls back when safe. Failed ordinary form saves retain drafts for correction; stale-file/recovery conflicts require discarding/reopening after review.
 
 All editors share `.lupine-room-edit/`. On opening the adventure, supported hashed recovery
 records offer inspection, confirmed restoration or confirmed completion. Stop any other
@@ -120,14 +163,14 @@ CHANGES.txt and retained files. **Never delete recovery data blindly.**
 
 Hard-link support is required. Publication is recoverable, not crash-atomic across multiple files. Limits are 8 MiB per snapshotted file and 64 MiB total, plus traversal bounds. Avoid concurrent editing/play while publishing. Checks do not defend against hostile concurrent filesystem replacement. No unrelated files or existing player saves are deleted.
 
-## Windows review and current limits
+## Verification and current limits
 
 Follow the [review procedure](CREATOR_COMPLETION_REVIEW.md). The automated `tests/fixtures/creator_acceptance.txt` transcript builds a nontrivial neutral adventure entirely through the CLI and is exercised by `cargo test --test creator_acceptance`. It is a test fixture, not HOWLBOUND story content or a human usability result.
 
 Current limits: migration excludes game identity, filenames/art paths, runtime instances,
 definition deletion and RORK rewriting. Weapons share their item's ID. Offers are scoped
-to a shop; flags are discovered from authored references. No save compatibility is promised.
-Use M to select the definition, enter a new ID, review every reference and exact file,
+to a shop; flags are gathered from rules.toml declarations and authored references. No save compatibility is promised.
+F supports definition deletion with explicit previews and reference repair. Use M to select the definition, enter a new ID, review every reference and exact file,
 read the save warning, and confirm after staged validation. Filenames remain unchanged.
 Unusual representations that cannot be safely edited receive a limitation message.
 Full text-file authoring and direct add/validate/play commands remain available.
@@ -143,6 +186,8 @@ I/H open prerequisite item/shop managers before a binding draft; their saves are
 Save/discard an active draft before separately saving prerequisites. Cancel never undoes
 earlier confirmed prerequisite saves or changes player progress.
 
-Current expansion: creator F provides complete-schema multi-file structural/text drafts, repair, duplicate/delete and validation. G edits publication properties; I inspects the room map and typed references. Combat FIG has a dedicated form at 3 > 3. See [PROJECT_EDITOR.md](PROJECT_EDITOR.md) for controls, formatting effects and recovery v2. Individual guided managers remain available.
-
-Engine expansion Phase 9: [CREATOR_NAVIGATION.md](CREATOR_NAVIGATION.md) describes searchable/paged selectors, visible draft status, room-centered browsing and verified local runtime discovery. Current controls and capabilities there supersede historical limitations above. Publication still requires explicit confirmation.
+See [PROJECT_EDITOR.md](PROJECT_EDITOR.md) for complete-schema editing and recovery,
+and [CREATOR_NAVIGATION.md](CREATOR_NAVIGATION.md) for search, paging and room browsing.
+Advanced NPC/event/quest/container fields use F or direct files; there is no dedicated
+beginner form for every schema. Native CachyOS and human beginner acceptance remain
+separate, unclaimed checks. Publication always requires explicit confirmation.

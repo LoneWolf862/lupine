@@ -15,7 +15,7 @@ baseline fields below with nested conditions, effects and ordered interaction ou
 
 | File | Required fields | Optional fields / defaults |
 |---|---|---|
-| game.toml | format_version=1, id, title, starting_room | save_compatibility_version=1; currency; currencies |
+| game.toml | format_version=1, id, title, starting_room | save_compatibility_version=1; currency; currencies; metadata |
 | rooms/*.toml | id, title, description | exits={} mapping north/south/east/west/up/down to rooms; descriptions=[]; art or art_file; art_variants=[]; encounters |
 | items/*.toml | id, name, description, portable; starting_room or initial | aliases=[]; descriptions=[]; hidden=false; stackable=false; quantity=1; container; consumable. See [object reference](OBJECTS.md) |
 | interactions.toml | none | interactions=[]; exit_rules=[] |
@@ -26,18 +26,20 @@ baseline fields below with nested conditions, effects and ordered interaction ou
 | events.toml | none | events, timers, quests, journal, endings; see [event reference](EVENTS.md) |
 | rules.toml | none | flags={} initial booleans; counters={} initial signed integers |
 | weapons/*.toml | item, damage (positive integer) | damage_type="physical" (used for resistance) |
-| spells/*.toml | id, name, mana_cost (nonnegative), kind, power (positive) | description=""; learn_from_item (portable teaching item) |
-| enemies/*.toml | id, name, description, level, max_hp (positive) | attack_power=100; defense=0; experience=0; attacks=[]; loot=[]; currency_rewards=[] |
+| spells/*.toml | id, name, kind; positive power for damage/heal/restore_mana | mana_cost=0; description=""; learn_from_item; damage_type="physical"; on_hit_status for damage; target/requires/effects for world abilities. See [systems](SYSTEMS.md) |
+| enemies/*.toml | id, name, description, level, max_hp (positive) | attack_power=100; defense=0; experience=0; attacks=[]; loot=[]; currency_rewards=[]; rewards=[]; resistances={} |
 | shops/*.toml | id, name, room, offers | no implicit shop or offers |
 | transaction_interactions.toml | none | bindings=[] |
 | art/*.txt | UTF-8 text | maximum 64 KiB; no terminal control sequences |
 | config/character.fig | none | See [FIG configuration](CONFIG_FIG_SPEC.md); absent disables RPG |
 | config/terminology.fig | none | display.spellbook="spellbook", display.spells="abilities" |
 
-Spells use kind="damage", "heal", or "restore_mana". Damage targets enemies;
-restoration targets the player. Defining an ability does not teach it. Teaching
-consumes the linked item. Weapons and non-world abilities require RPG enablement. Zero-mana world abilities
-work without a character; see [systems](SYSTEMS.md).
+Ability kinds are "damage", "heal", "restore_mana" and "world". Damage targets
+enemies; restoration targets the player. World abilities execute authored effects,
+optionally against an accessible item target. Defining an ability does not teach
+it; teaching items, services and shared effects can teach it. Learning from an item
+consumes one unit. Weapons, non-world abilities and positive mana costs require
+RPG enablement. Zero-mana world abilities work without a character; see [systems](SYSTEMS.md).
 
 ## Rooms, objects and puzzles
 
@@ -51,8 +53,10 @@ north = "workshop"
 ```
 
 Each exit is directional; author the reverse separately. Items begin in their
-starting room; fixed items cannot be taken. Shop merchandise and enemy loot are
-reserved out of ordinary starting placement. Items default to unique objects; opt into quantities with stackable=true.
+starting room or explicit initial placement; fixed items cannot be taken. Unique
+shop merchandise/enemy loot using starting_room is reserved offstage. Explicit
+initial placements and stackable items keep their authored placements. Items
+default to unique objects; opt into quantities with stackable=true.
 `{{objects}}` in room prose expands current room objects; static prose remains static.
 
 ```toml
@@ -94,10 +98,12 @@ positive weight, optional requires=[] of flag_set/flag_unset. Relative weights d
 not need to total 100. `room` persistence retains survivors; `unique` additionally
 remembers completion. Temporary encounters reroll on entry; look does not reroll.
 
-Enemy attacks: name, positive damage and weight. Loot: item and chance=0..100.
+Enemy attacks: name, positive damage and weight; optional damage_type="physical"
+and status. Loot: item, chance=0..100 and quantity=1. Portable unique items require
+quantity 1 and drop only while unavailable; stackable items can add multiple units.
 Currency rewards: currency, chance=0..100, min and max (nonnegative, min <= max).
-Loot references portable unique items. Existing item possession prevents duplicate
-drops. Exact enemy HP is private; the runtime shows coarse bars.
+Enemy rewards=[] accepts shared effects; resistances map damage types to percentages.
+Exact enemy HP is private; the runtime shows coarse bars. See [systems](SYSTEMS.md).
 
 ## Currency, shops and object bindings
 
@@ -107,10 +113,13 @@ Currency works independently of RPG. Amounts/prices are nonnegative integers.
 
 Each `[[offers]]` needs id, name, type, currency, price. Types and target fields:
 item/sell_item => item; restore_hp/restore_mp => positive amount;
-learn_ability => ability; set_flag => flag. Optional stock is positive; omitted
-stock is unlimited. requires_flags=[] defaults to no requirements. Item offers
-reference unique portable items; one item cannot be stocked by multiple offers.
-Failed transactions charge nothing. Successful finite offers consume one stock.
+learn_ability => ability; set_flag => flag; effects => a nonempty effects list.
+Optional stock is positive; omitted stock is unlimited. quantity=1, requires_flags=[],
+requires=[] and effects=[] are defaults. Item offers reference portable items;
+unique items require quantity 1 and may have only one item offer, while multiple
+shops may stock the same stackable item. Stock counts successful transactions, not
+units. Failed transactions charge nothing. A later required hook failure also
+restores payment, stock and inventory; see [turn transactions](TURN_TRANSACTIONS.md).
 
 Each `[[bindings]]` requires item, shop, offer; success_text/failure_text optionally
 override the normal explanation. Object starting room must match the shop room.
@@ -118,8 +127,9 @@ override the normal explanation. Object starting room must match the shop room.
 
 ## Configuration, saves, validation and examples
 
-FIG files are TOML-syntax configuration, never story content or progress. Only the
-two documented filenames are supported. New games explicitly disable RPG; older
+FIG files are TOML-syntax configuration, never story content or progress. The
+three supported filenames are config/character.fig, config/terminology.fig and
+config/combat.fig. See [FIG configuration](CONFIG_FIG_SPEC.md). New games explicitly disable RPG; older
 character FIGs omitting enabled retain enabled behavior. Unsupported knobs fail.
 Manual saves live outside adventure folders. Cosmetic changes need no save revision;
 structural changes can invalidate saves. Never edit personal RORK files as authoring.

@@ -1,12 +1,12 @@
 # FIG configuration foundation
 
-## RPG authoring integration candidate
+This is the current development configuration contract. The generated templates,
+runtime validator and creator use the same three supported FIGs. Historical editor
+milestone results are in [CREATOR_COMPLETION_REVIEW.md](CREATOR_COMPLETION_REVIEW.md);
+current review status is in [ENGINE_EXPANSION.md](ENGINE_EXPANSION.md).
 
-The guided RPG menus in draft PRs #14-#18 do not change FIG syntax or progression calculations. Explicit RPG enablement and existing progression editing remain in menu 3. Currency definitions remain content in game.toml, edited through R > 4; no currency FIG is introduced. [Authoring verification](RPG_AUTHORING_DEVELOPMENT.md). Earlier FIG editor PR #12 and integration #13 are merged.
-
-Status: the Phase 2C.2 runtime/configuration contract is merged. The Phase 2E-B guided editor is a candidate in PR #12, integrated in #13. Verification is recorded in CREATOR_COMPLETION_REVIEW.md; historical checkpoints remain in CODEX_HANDOFF.md.
-
-Lupine is unreleased/pre-1.0. Justified breaking changes are permitted; there is no legacy configuration loader. Bundled consumers must use this contract.
+Lupine is pre-1.0. Unsupported configuration fields are rejected; proposed settings
+must not be documented as implemented behavior.
 
 ## File responsibilities
 
@@ -50,41 +50,35 @@ Both `spellbook` and `spells` commands remain accepted. Display labels are not c
 
 ## Resolution and validation
 
-`config.rs` loads per-game immutable settings. `story_loader::LoadedGame` owns the resolved `GameConfig`, containing optional character progression and terminology. The runner reads configuration separately from mutable GameState. No globals, networking, scripts or config serialization in RORK.
+`config.rs` loads per-game immutable settings. `story_loader::LoadedGame` owns the resolved `GameConfig`, containing optional character progression, terminology and combat settings. The runner reads configuration separately from mutable GameState. No globals, networking, scripts or config serialization in RORK.
 
 Missing optional files use the defaults above; unreadable or malformed files fail. Unknown keys/types and invalid values report the file and relevant key or TOML source location. Validation runs for both play and validate, including narrative games with terminology only. Configuration files are confined to the game's directory.
 
-Changing character balancing during a campaign can affect subsequent level-ups; creators must deliberately manage their game's save compatibility revision for incompatible changes. Relocating identical configuration or changing terminology requires no save-format/revision change. Phase 1 leaves RORK serialization unchanged.
+Changing character balancing during a campaign can affect subsequent level-ups; creators must deliberately manage their game's save compatibility revision for incompatible changes. Relocating identical configuration or changing terminology requires no save-format/revision change. Configuration-only changes do not revise the RORK serialization format.
 
-## Creator integration and future scope
+## Creator integration
 
-`new` creates all eight standard content directories and commented, explicit defaults in both supported FIGs. The starter template shares those same files. RPG remains disabled until enabled is set true. Existing games need not add any directories or FIG files. Existing add commands validate FIG through the story loader. Full preview/guided configuration editing, parser aliases and broader balancing settings are later phases.
+`new` creates nine standard directories, including empty NPCs/, and all three
+commented FIG templates. Exact previews and generated files use the same text.
+RPG remains disabled until explicitly enabled. Existing games need not add missing
+optional directories or FIG files. Root-level character.fig, terminology.fig and
+combat.fig are rejected with guidance to place them under config/.
 
-Required verification: defaults, character fields, terminology output/commands, malformed/unknown settings, missing files, independent games, unchanged progression behavior, RPG regressions, save independence and bundled sample validation.
+Menu 3 provides Character, Terminology and Combat forms. Their defaults and
+explanations come from the bundled templates. P previews, S validates and asks for
+confirmation, and 0 discards. Missing files are created only on confirmed publication.
+F also supports complete structural/text editing; see [PROJECT_EDITOR.md](PROJECT_EDITOR.md).
+No configuration edit writes player saves or automatically changes compatibility revisions.
 
-<!-- lupine-phase-2c2-spec -->
-## Approved next contract (Phase 2C.2 — not implemented yet)
-
-The authoritative requirements are in [`SELF_DOCUMENTING_CONFIG_SPEC.md`](SELF_DOCUMENTING_CONFIG_SPEC.md). Generated character and terminology files share the starter template text; exact previews use those same bytes. Comments beside every setting explain units, accepted values, dependencies and save compatibility. No new configuration categories exist.
-
-Changing RPG enablement for existing campaigns can invalidate saves. Deliberately increase `game.toml` `save_compatibility_version` for incompatible changes; do not change Cargo or RORK format versions. Terminology-only edits need no revision change. The loader rejects root-level character.fig/terminology.fig/combat.fig with placement guidance; files belong under config/.
-
-
-## Phase 2E-B FIG editor candidate (2026-11-18)
-
-Menu 3 edits character enablement, every current progression field and both implemented display labels. Displayed defaults and explanations come from the same commented templates used for new adventures. Existing omitted-enabled semantics remain true; absent files are only created after confirmed Save. Inline display tables, comments and omitted unrelated defaults survive. Unsupported categories are not generated. Full validation prevents disabling RPG while dependent content remains and checks overflow/cross-field constraints even while disabled.
-
-Branch codex/phase-2e-fig-editor stacks on interactions #11 (after #8-#10). Windows: 193 tests, fmt and strict Clippy pass. Tests cover all fields, exact previews, new missing config directories, legacy semantics, inline labels, cancel, invalid cross-field repair and dependent RPG content. Self-review improved failed-save handling: proposed drafts remain available for correction; stale/recovery conflicts instruct users to discard/reopen after review. No save compatibility or Cargo version is changed automatically. Native Linux/human usability and final integrated acceptance remain pending.
-
-## Engine expansion phase 7: implemented combat settings
+## Combat settings
 
 New adventures include commented config/combat.fig with minimum_damage=1 and
 retaliation="combat". Valid minimum damage is 0..1000000; full immunity still
 deals zero. Retaliation supports combat, every_action or none. See [exact behavior,
 status ordering and equipment](SYSTEMS.md). This FIG never enables RPG by itself.
-Guided editing follows in expansion phase 8. Currency remains game.toml content
+Guided editing is available at 3 > 3. Currency remains game.toml content
 and no longer requires RPG.
 
 Current expansion: creator F provides complete-schema multi-file structural/text drafts, repair, duplicate/delete and validation. G edits publication properties; I inspects the room map and typed references. Combat FIG has a dedicated form at 3 > 3. See [PROJECT_EDITOR.md](PROJECT_EDITOR.md) for controls, formatting effects and recovery v2. Individual guided managers remain available.
 
-Engine expansion Phase 9: [CREATOR_NAVIGATION.md](CREATOR_NAVIGATION.md) describes searchable/paged selectors, visible draft status, room-centered browsing and verified local runtime discovery. Current controls and capabilities there supersede historical limitations above. Publication still requires explicit confirmation.
+Engine expansion Phase 9: [CREATOR_NAVIGATION.md](CREATOR_NAVIGATION.md) describes searchable/paged selectors, visible draft status, room-centered browsing and verified local runtime discovery. These controls share the same explicit publication boundary. Publication still requires explicit confirmation.
