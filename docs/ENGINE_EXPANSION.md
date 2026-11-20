@@ -5,8 +5,9 @@
 All nine phases and follow-ups through PR #42 are merged into main at
 8f9782febf68bb7374fa66cbee95a5f5a9e70725 (0.11.0-dev.10). Its tree matches the
 final PR #42 tree verified by [Windows/Ubuntu CI run 44632403701](https://github.com/LoneWolf862/lupine/actions/runs/44632403701).
+Subsequent [stabilization](STABILIZATION.md) merged in PR #43 at 7bcaa24.
 The published v0.9.0 release is unchanged. Current work and remaining acceptance
-are in [STABILIZATION.md](STABILIZATION.md). The old review worktrees are retired.
+are in [ACCEPTANCE_PLAN.md](ACCEPTANCE_PLAN.md). The old expansion review worktrees are retired.
 
 Approved by the creator on 2026-11-19. Primary workflow: directly author TOML
 content and FIG configuration. Engine capability precedes wizard coverage, which

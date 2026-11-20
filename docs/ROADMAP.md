@@ -1,12 +1,13 @@
 # Lupine development roadmap
 
-## Current work: post-expansion stabilization
+## Current work: complete-adventure and platform acceptance
 
-Development through PR #42 is merged at 0.11.0-dev.10. The published v0.9.0 remains
-unchanged. [Stabilization](STABILIZATION.md) covers current documentation, offline
-packages, routine CI and consumable reachability diagnostics, followed by human
-beginner review and native CachyOS acceptance. A complete creator-directed adventure
-and an approved prerelease are future milestones, not claims of completed work.
+Development through PR #43 is merged at 0.11.0-dev.10. The published v0.9.0 remains
+unchanged. [Stabilization](STABILIZATION.md) delivered current documentation, offline
+packages, routine CI and consumable reachability diagnostics. The
+[acceptance plan](ACCEPTANCE_PLAN.md) now covers a complete creator-directed adventure,
+human beginner/player review and native Windows 10/CachyOS testing. These checks
+remain pending until their evidence is recorded. A prerelease needs separate approval.
 
 Direct TOML/FIG authoring remains primary. [ENGINE_EXPANSION.md](ENGINE_EXPANSION.md)
 records the nine completed phases and original verification. Earlier review orders,
