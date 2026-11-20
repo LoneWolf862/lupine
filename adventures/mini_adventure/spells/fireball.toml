@@ -1,0 +1,7 @@
+id="fireball"
+name="Fireball"
+description="Deal fire damage to an enemy."
+mana_cost=10
+kind="damage"
+power=18
+learn_from_item="fireball_scroll"

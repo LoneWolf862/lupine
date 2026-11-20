@@ -1,0 +1,14 @@
+id="woods"
+title="Goblin Woods"
+description="A hollow stump stands beside the path. Search stump to check inside it. North returns to camp; enemies do not prevent retreat."
+[encounters]
+chance=100
+persistence="unique"
+min_enemies=1
+max_enemies=1
+[[encounters.enemies]]
+enemy="goblin"
+weight=100
+
+[exits]
+north="camp"

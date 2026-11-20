@@ -1,0 +1,18 @@
+id="guide"
+name="Guide"
+description="A patient guide to the mini adventure."
+room="camp"
+start="welcome"
+[nodes.welcome]
+text="Welcome, {{player_name}}. Introduce yourself, then prepare for the goblin south of camp."
+[[nodes.welcome.choices]]
+id="introduce"
+label="Introduce myself and learn Light"
+ask_name=true
+requires=[{flag_unset="introduced"}]
+effects=[{set_flag="introduced"},{teach_ability="light"}]
+text="Good to meet you, {{player_name}}. I have taught you Light. Take the dagger and both scrolls. Learn each scroll separately. Defeat the goblin to the south, take its trophy, and search the hollow stump for a key."
+[[nodes.welcome.choices]]
+id="help"
+label="Ask for the route and commands"
+text="South: defeat goblin, take trophy, search stump, take chest key. East of camp: sell trophy, buy sword. North of camp: cast light on lamp, unlock chest with chest key, open chest, take brass key from chest. East: unlock gate with brass key. Rest at the workshop, then defeat the stone golem farther east. Journal keeps these directions."

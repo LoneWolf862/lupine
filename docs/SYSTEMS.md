@@ -165,3 +165,18 @@ IDs, equipment item keys, ability targets, typed reward references and nested sh
 requirements/effects. Renames remain explicit previews followed by confirmation.
 Scenario assertions add wallet, learned_abilities, equipped, statuses, and player
 hp/mp. Full guided new-system editing follows in expansion phase 8.
+
+## Player command follow-up (dev.11 candidate)
+
+`buy` selects only purchase/service offers; `sell` selects only `sell_item` offers.
+Selection accepts offer IDs/names and item IDs/names/aliases, using the normal
+ambiguity prompt. `sell trophy to trader` and `buy sword from trader` name a shop.
+Canceled, missing or wrong-direction selections do not change stock, money or turns.
+Shop listings include quantity, price, remaining stock and the exact command.
+
+`abilities` and `skills` alias `spellbook`. Each learned ability displays cast syntax,
+its target, mana and direct currency costs, and its description. Conditional/nested
+effects may have additional requirements; author the description accordingly.
+`learn all` is explicitly unsupported and never consumes one accidentally matched
+scroll. Resolution uses names and word prefixes, not arbitrary interior substrings.
+Misspellings suggest a command to retype; they never execute it.

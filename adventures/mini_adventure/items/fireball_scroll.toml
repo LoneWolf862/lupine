@@ -1,0 +1,5 @@
+id="fireball_scroll"
+name="fireball scroll"
+description="Take it, then learn fireball scroll. Cast fireball on goblin costs 10 MP."
+portable=true
+starting_room="camp"

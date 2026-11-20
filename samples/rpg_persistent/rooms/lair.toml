@@ -1,6 +1,6 @@
 id = "lair"
 title = "Guardian's Lair"
-description = "A stone guardian blocks the entrance to an ancient vault."
+description = "The entrance to an ancient vault. Any active guardian appears in the enemies list."
 
 [exits]
 west = "woods"

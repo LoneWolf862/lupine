@@ -1,0 +1,7 @@
+id="light"
+name="Light"
+kind="world"
+description="Spend 1 coin to light the storeroom lamp and reveal the chest. Only needed once."
+target="lamp"
+requires=[{flag_unset="lit"}]
+effects=[{debit={currency="coins",amount=1}},{set_flag="lit"},{reveal_item="chest"},{show_text="The lamp lights, revealing a sturdy chest. Unlock chest with chest key."}]

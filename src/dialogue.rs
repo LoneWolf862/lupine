@@ -49,6 +49,8 @@ pub struct Variant {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Choice {
+    #[serde(default)]
+    pub ask_name: bool,
     pub id: String,
     pub label: String,
     #[serde(default)]
@@ -317,6 +319,16 @@ pub fn select(
     npc: &str,
     choice: &str,
 ) -> Result<Vec<String>, String> {
+    select_with_name(w, s, npc, choice, None)
+}
+
+pub fn select_with_name(
+    w: &World,
+    s: &mut GameState,
+    npc: &str,
+    choice: &str,
+    player_name: Option<&str>,
+) -> Result<Vec<String>, String> {
     w.dialogue.validate_state(&s.dialogue, w)?;
     if !candidates(w, s).iter().any(|c| c.id == npc) {
         return Err("That person is not available here.".into());
@@ -328,14 +340,21 @@ pub fn select(
         .iter()
         .find(|c| c.id == choice && c.requires.iter().all(|c| c.met(s)))
         .ok_or("That dialogue choice is not available.")?;
+    if choice.ask_name != player_name.is_some() {
+        return Err("This choice requires exactly its authored name input.".into());
+    }
     let mut draft = s.clone();
+    if let Some(name) = player_name {
+        validate_player_name(name)?;
+        draft.player_name = Some(name.into());
+    }
     if let Some(next) = &choice.next {
         draft.dialogue.npcs.get_mut(npc).unwrap().node = next.clone();
     }
     let mut lines = crate::rules::apply(w, &mut draft, &choice.effects)?;
     w.dialogue.validate_state(&draft.dialogue, w)?;
     if !choice.text.is_empty() {
-        lines.insert(0, choice.text.clone());
+        lines.insert(0, player_text(&choice.text, &draft));
     }
     *s = draft;
     Ok(lines)
@@ -347,7 +366,7 @@ pub(crate) fn prepare(
     query: &str,
     input: &mut impl BufRead,
     output: &mut impl Write,
-) -> io::Result<Option<(String, String)>> {
+) -> io::Result<Option<PreparedChoice>> {
     let Some(id) = crate::player_input::choose(query, &candidates(w, s), input, output)? else {
         return Ok(None);
     };
@@ -358,7 +377,13 @@ pub(crate) fn prepare(
         .iter()
         .find(|v| v.when.iter().all(|c| c.met(s)))
         .map_or(n.text.as_str(), |v| v.text.as_str());
-    writeln!(output, "{}: {}\n{}", npc.name, npc.description, text)?;
+    writeln!(
+        output,
+        "{}: {}\n{}",
+        npc.name,
+        npc.description,
+        player_text(text, s)
+    )?;
     let choices = n
         .choices
         .iter()
@@ -402,8 +427,62 @@ pub(crate) fn prepare(
                     .find(|c| c.id.eq_ignore_ascii_case(answer))
             });
         if let Some(c) = selected {
-            return Ok(Some((id.clone(), c.id.clone())));
+            let player_name = if c.ask_name {
+                loop {
+                    writeln!(
+                        output,
+                        "What is your name? (1-40 characters; 0/back/cancel cancels):\n> "
+                    )?;
+                    output.flush()?;
+                    let mut name = String::new();
+                    if input.read_line(&mut name)? == 0 {
+                        return Ok(None);
+                    }
+                    let name = name.trim_end_matches(['\r', '\n']).trim_matches(' ');
+                    if matches!(name.to_ascii_lowercase().as_str(), "0" | "back" | "cancel") {
+                        writeln!(output, "Conversation canceled. Nothing changed.\n")?;
+                        return Ok(None);
+                    }
+                    match validate_player_name(name) {
+                        Ok(()) => break Some(name.to_owned()),
+                        Err(error) => writeln!(output, "{error}")?,
+                    }
+                }
+            } else {
+                None
+            };
+            return Ok(Some(PreparedChoice {
+                npc: id.clone(),
+                choice: c.id.clone(),
+                player_name,
+            }));
         }
         writeln!(output, "Choose a listed number or ID, or cancel.")?;
     }
+}
+
+pub(crate) struct PreparedChoice {
+    pub npc: String,
+    pub choice: String,
+    pub player_name: Option<String>,
+}
+
+pub fn validate_player_name(name: &str) -> Result<(), String> {
+    if name.trim() != name
+        || name.is_empty()
+        || name.chars().count() > 40
+        || name.chars().any(|c| {
+            c.is_control() || matches!(c, '\u{202a}'..='\u{202e}' | '\u{2066}'..='\u{2069}')
+        })
+    {
+        return Err("Use a name of 1-40 visible characters, without surrounding whitespace or control characters.".into());
+    }
+    Ok(())
+}
+
+pub fn player_text(text: &str, state: &GameState) -> String {
+    text.replace(
+        "{{player_name}}",
+        state.player_name.as_deref().unwrap_or("traveler"),
+    )
 }

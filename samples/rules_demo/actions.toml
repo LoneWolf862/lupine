@@ -8,3 +8,12 @@ requires=[{not={flag_set="door_open"}}]
 effects=[{set_flag="door_open"},{add_counter={id="unlocks",amount=1}}]
 success_text="The key turns; the door unlocks."
 failure_text="The door cannot be unlocked again."
+
+[[actions]]
+id="open_door"
+commands=["open {target}"]
+room="foyer"
+target="workshop_door"
+requires=[{flag_set="door_open"}]
+success_text="The workshop door is open. Go north."
+failure_text="The workshop door is locked. Unlock door with brass key."

@@ -1,0 +1,6 @@
+id="sword"
+name="steel sword"
+description="A stronger weapon. Attack stone golem with steel sword."
+portable=true
+starting_room="market"
+aliases=["sword"]

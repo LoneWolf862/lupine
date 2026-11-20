@@ -1,0 +1,7 @@
+id="workshop"
+title="Rest Workshop"
+description="Prepare for the final boss east of here. Use mana altar for a free full rest; repeat whenever needed. Equip padded coat for protection. Abilities lists spells and their costs. Attack stone golem with steel sword or cast fireball on stone golem in the vault. You may retreat here. Save NAME now if you want a checkpoint; nothing saves automatically."
+
+[exits]
+west="gate"
+east="vault"

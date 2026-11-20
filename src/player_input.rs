@@ -185,6 +185,13 @@ pub fn prepare(
         choose(&clean_target(q), choices, input, output)
     };
 
+    if argument == "all" && matches!(verb, "learn" | "use" | "cast" | "read" | "search") {
+        writeln!(
+            output,
+            "Bulk '{verb} all' is not supported. Name one object or ability; nothing changed.\n"
+        )?;
+        return Ok(None);
+    }
     if verb == "attack" {
         if let Some((enemy, weapon)) = argument.rsplit_once(" with ") {
             // Explicit attack-with may name a learned spell, but carried weapons
@@ -247,6 +254,7 @@ pub fn prepare(
             a.id.clone()
         } else {
             let Some(s) = select(spell, &spells, input, output)? else {
+                writeln!(output, "Spell syntax: cast <ability> [on <target>]. Use abilities to see names, targets and costs.\n")?;
                 return Ok(None);
             };
             s

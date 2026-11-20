@@ -1,0 +1,5 @@
+id="healing_scroll"
+name="healing scroll"
+description="Take it, then learn healing scroll. Cast healing touch restores 20 HP for 8 MP."
+portable=true
+starting_room="camp"

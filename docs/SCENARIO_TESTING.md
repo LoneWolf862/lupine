@@ -60,3 +60,7 @@ and `mp=20` (these fail when there is no character). See samples/economy_demo.
 ## Author debug trace
 
 Append `--trace` to `lupine test PATH SCENARIOS.toml` to print each real-runner transcript, deterministic seed and final mutable state. Hidden state is intentionally visible in this author command; normal gameplay remains unchanged. The same validation and no-player-save restrictions apply.
+
+The optional `player_name = "Ada"` assertion checks the exact saved-in-memory name.
+Name prompt answers are separate entries in `commands`, just like dialogue choices.
+See [the mini-adventure suite](../adventures/mini_adventure/scenarios.toml).

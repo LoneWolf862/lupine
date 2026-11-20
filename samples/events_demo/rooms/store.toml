@@ -1,5 +1,5 @@
 id="store"
 title="Storage"
-description="The demonstration token is here."
+description="A storage room. Check the objects list for the token."
 [exits]
 south="start"

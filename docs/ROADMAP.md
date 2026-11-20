@@ -1,8 +1,10 @@
 # Lupine development roadmap
 
-## Current work: complete-adventure and platform acceptance
+## Current work: guided mini adventure and platform acceptance
 
-Development through PR #43 is merged at 0.11.0-dev.10. The published v0.9.0 remains
+Development through PR #45 is merged. The dev.11 candidate combines the player
+tests into a [guided mini adventure](MINI_ADVENTURE.md), adds dialogue-based naming
+and fixes parser/trading feedback. RORK 7 includes the new name state. The published v0.9.0 remains
 unchanged. [Stabilization](STABILIZATION.md) delivered current documentation, offline
 packages, routine CI and consumable reachability diagnostics. The
 [acceptance plan](ACCEPTANCE_PLAN.md) now covers a complete creator-directed adventure,
@@ -18,7 +20,7 @@ branches and worktree paths below are historical; they are not pending merge tas
 Creator work through Phase 2I and Phase 3 PRs #20–#24 are merged.
 The human-feedback follow-up addresses disappearing prompts, save naming and practical
 parser phrases; see [follow-up scope and verification](PLAYER_FEEDBACK_FOLLOWUP.md).
-Version 0.11.0-dev.10 identifies current
+Version 0.11.0-dev.11 identifies current
 development; v0.9.0 remains unchanged. [Actual verification](PHASE_3_REVIEW.md).
 
 Phase 4 adds transaction bindings, supported ID migration, guided editor recovery and

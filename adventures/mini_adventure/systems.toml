@@ -1,0 +1,7 @@
+[equipment.coat]
+slot="body"
+defense=2
+[statuses.focus]
+name="Focus"
+turns=4
+attack_percent=120

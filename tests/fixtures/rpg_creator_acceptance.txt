@@ -418,7 +418,7 @@ south
 buy healing
 cast renew
 buy mana
-buy sell_sword
+sell sell_sword
 save economy
 load wounded
 enemies

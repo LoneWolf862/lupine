@@ -116,6 +116,19 @@ pub fn parse_command(input: &str) -> Result<Command, ParseError> {
     Err(ParseError::Unknown(normalized))
 }
 
+/// Normalize only explicit convenience aliases; save names retain their spelling.
+pub fn canonical_input(input: &str) -> String {
+    let normalized = crate::resolution::normalize(input);
+    match normalized.as_str() {
+        "abilities" | "skills" => "spellbook".into(),
+        "read journal" | "read quests" => "journal".into(),
+        _ => normalized
+            .strip_prefix("interact with ")
+            .map(|target| format!("use {target}"))
+            .unwrap_or_else(|| input.to_owned()),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

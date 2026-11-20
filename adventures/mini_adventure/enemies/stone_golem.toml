@@ -1,0 +1,11 @@
+id="stone_golem"
+name="Stone Golem"
+description="Your final training opponent, built from heavy stone."
+level=3
+max_hp=48
+defense=2
+experience=40
+[[attacks]]
+name="Stone Fist"
+damage=6
+weight=100

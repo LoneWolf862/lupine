@@ -1,0 +1,6 @@
+id="trophy"
+name="goblin trophy"
+description="Proof of victory. Take trophy and sell trophy at the market for 8 coins."
+portable=true
+starting_room="woods"
+aliases=["trophy"]

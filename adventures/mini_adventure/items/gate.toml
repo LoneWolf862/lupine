@@ -1,0 +1,9 @@
+id="gate"
+name="iron gate"
+description="Its brass key is in the storeroom chest. Unlock gate with brass key."
+portable=false
+starting_room="gate"
+aliases=["gate","door"]
+[[descriptions]]
+when=[{flag_set="gate_open"}]
+text="The gate is unlocked. Go east to enter the workshop."

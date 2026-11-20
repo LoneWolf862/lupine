@@ -1,0 +1,10 @@
+id="gate"
+title="Locked Gate"
+description="An iron gate blocks the eastern passage. Its brass key is inside the storeroom chest. Unlock gate with brass key, then go east. West returns to the storeroom."
+[[descriptions]]
+when=[{flag_set="gate_open"}]
+text="The iron gate stands open. East leads to the workshop and final challenge; west returns to the storeroom."
+
+[exits]
+west="storeroom"
+east="workshop"

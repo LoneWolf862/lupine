@@ -1,0 +1,8 @@
+id="camp"
+title="Training Camp"
+description="Welcome to the mini adventure. Your goal is to open the eastern gate and defeat the stone golem. Start with talk guide: introduce yourself and receive instructions. Take the dagger and scrolls; learn fireball scroll and learn healing scroll. South: goblin woods. East: market. North: dark storeroom. Use journal for your current goal, help for commands, and save NAME whenever you want to keep progress."
+
+[exits]
+south="woods"
+east="market"
+north="storeroom"

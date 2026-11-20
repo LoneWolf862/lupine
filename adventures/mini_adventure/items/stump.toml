@@ -1,0 +1,6 @@
+id="stump"
+name="hollow stump"
+description="There is a gap in the wood. Search stump to look inside."
+portable=false
+starting_room="woods"
+aliases=["stump"]

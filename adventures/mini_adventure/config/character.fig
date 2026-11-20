@@ -1,0 +1,11 @@
+enabled=true
+starting_level=1
+max_level=10
+starting_hp=80
+starting_mp=30
+starting_ap=100
+hp_per_level=10
+mp_per_level=5
+ap_per_level=10
+base_requirement=100
+growth_percent=120

@@ -1,0 +1,12 @@
+[[interactions]]
+item="brass_key"
+target="gate"
+requires=[{flag_unset="gate_open"}]
+effects=[{set_flag="gate_open"}]
+success_text="The gate unlocks. Go east to the workshop."
+failure_text="The gate is already unlocked. Go east."
+[[exit_rules]]
+from="gate"
+direction="east"
+requires=[{flag_set="gate_open"}]
+blocked_text="The iron gate is locked. Find the brass key in the storeroom chest; unlock gate with brass key."

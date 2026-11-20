@@ -199,7 +199,10 @@ fn terminology_reaches_runner_without_changing_commands_or_saves() {
     let output = String::from_utf8(output).unwrap();
     assert_eq!(output.matches("Your Ability Database is empty.").count(), 2);
     assert_eq!(output.matches("Known Programs:").count(), 2);
-    assert!(output.contains("Fireball (10 MP)"), "{output}");
+    assert!(
+        output.contains("Fireball — cast fireball on <enemy> [10 MP]"),
+        "{output}"
+    );
     assert!(output.contains(
         "View your Ability Database with 'spellbook' or 'spells'; lists known Programs."
     ));

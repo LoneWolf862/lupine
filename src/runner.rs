@@ -410,7 +410,6 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
     if let Some(config) = &progression {
         state.character = Some(config.create_character().map_err(io::Error::other)?);
     }
-    let mut last_saved = state.clone();
     // Session-only convenience: selecting a slot never triggers a save itself.
     let mut current_save: Option<String> = None;
     writeln!(output, "{title}")?;
@@ -423,6 +422,8 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
     if state.events.ending.is_none() {
         encounters.enter_room(&room, &mut state, &mut rng);
     }
+    // Initialization is the fresh-session baseline, not unsaved player progress.
+    let mut last_saved = state.clone();
     // Starting an encounter is an in-memory state mutation, never an autosave.
     show_room(&world, &state, &mut output)?;
     if !state.active_enemies.is_empty() {
@@ -467,6 +468,7 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
             )?;
             continue;
         }
+        let line = crate::parser::canonical_input(line.trim());
         let command = line.trim();
         let verb = command.split_whitespace().next().unwrap_or("");
         // Defeat is terminal for this in-memory run. Only manual load or quit can
@@ -483,6 +485,10 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
             continue;
         }
         if state.events.ending.is_some()
+            && !matches!(
+                parse_command(command),
+                Ok(crate::commands::Command::Examine(_))
+            )
             && ![
                 "look",
                 "l",
@@ -494,6 +500,14 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
                 "inv",
                 "journal",
                 "quests",
+                "stats",
+                "spellbook",
+                "spells",
+                "wallet",
+                "money",
+                "balance",
+                "equipment",
+                "status",
                 "save",
                 "saves",
                 "load",
@@ -507,6 +521,12 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
             .iter()
             .any(|v| verb.eq_ignore_ascii_case(v))
         {
+            if let Some(suggestion) = suggest_verb(&crate::resolution::normalize(command)) {
+                writeln!(
+                    output,
+                    "Did you mean '{suggestion}'? Type it to retry; suggestions never execute."
+                )?;
+            }
             writeln!(output,"This adventure has ended. You may inspect, read your journal, manually save/load, or quit.\n")?;
             continue;
         }
@@ -563,13 +583,19 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
                 continue;
             }
             let before = state.current_room.clone();
-            let Some((npc, choice)) =
+            let Some(selected) =
                 crate::dialogue::prepare(&world, &state, query, &mut input, &mut output)?
             else {
                 continue;
             };
             output.stage();
-            let result = crate::dialogue::select(&world, &mut state, &npc, &choice);
+            let result = crate::dialogue::select_with_name(
+                &world,
+                &mut state,
+                &selected.npc,
+                &selected.choice,
+                selected.player_name.as_deref(),
+            );
             if let Err(error) = &result {
                 writeln!(output, "{error}\n")?;
             }
@@ -600,7 +626,7 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
             writeln!(output, "{}\n", crate::events::journal(&world, &state))?;
             continue;
         }
-        if !verb.eq_ignore_ascii_case("use") {
+        if state.events.ending.is_none() && !verb.eq_ignore_ascii_case("use") {
             match crate::actions::prepare(&line, &world, &state, &mut input, &mut output)? {
                 crate::actions::Prepared::Canceled => continue,
                 crate::actions::Prepared::Action(index) => {
@@ -936,16 +962,23 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
             continue;
         }
         if verb.eq_ignore_ascii_case("buy") || verb.eq_ignore_ascii_case("sell") {
-            let (offer, shop) = argument
-                .split_once(" from ")
-                .map_or((argument, ""), |(o, s)| (o.trim(), s.trim()));
-            if offer.is_empty() {
+            if argument.is_empty() {
                 writeln!(output, "Specify an offer, e.g. 'buy healing service'.\n")?;
             } else {
-                // Sell offers are creator-defined; the verb is convenience syntax.
+                let Some((offer, shop)) = shops.prepare_transaction(
+                    &world,
+                    &state,
+                    verb,
+                    argument,
+                    &mut input,
+                    &mut output,
+                )?
+                else {
+                    continue;
+                };
                 let transaction_room = state.current_room.clone();
                 output.stage();
-                let result = shops.transact(&world, &mut state, &wallet, offer, shop);
+                let result = shops.transact(&world, &mut state, &wallet, &offer, &shop);
                 if result.is_ok() {
                     if let Some(step) = pending.as_mut() {
                         step.performed = true;
@@ -1039,6 +1072,9 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
             continue;
         }
         if verb.eq_ignore_ascii_case("stats") && argument.is_empty() {
+            if let Some(name) = &state.player_name {
+                writeln!(output, "Name: {name}")?;
+            }
             if let Some(character) = &state.character {
                 writeln!(
                     output,
