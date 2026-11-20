@@ -57,7 +57,8 @@ fn hidden_loot_drops_and_is_persistent_state() {
         &mut state,
         &enemy,
         &mut FixedRng(0),
-    );
+    )
+    .unwrap();
     assert!(result.contains("XP"), "{result}");
     assert!(result.contains("drops"), "{result}");
     assert_eq!(
@@ -72,7 +73,8 @@ fn hidden_loot_drops_and_is_persistent_state() {
         &mut state,
         &enemy,
         &mut FixedRng(0),
-    );
+    )
+    .unwrap();
     assert!(!repeated.contains("drops"), "{repeated}");
     let encoded = lupine::save::encode_save(&game.world, &state, &game.id, "Rewards").unwrap();
     let decoded = lupine::save::decode_save(&game.world, &game.id, &encoded).unwrap();
@@ -132,7 +134,8 @@ fn chance_zero_means_no_loot_and_levels_are_capped() {
         &mut state,
         &enemy,
         &mut FixedRng(0),
-    );
+    )
+    .unwrap();
     assert!(!text.contains("drops"));
     assert_eq!(
         state.location("goblin_trophy"),

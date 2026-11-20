@@ -5,7 +5,7 @@ loads strict TOML test suites and invokes the real runner with an explicit rando
 seed, returning final in-memory state for assertions. Existing runner APIs preserve
 their signatures/default randomness. Scenarios never save implicitly.
 
-## Current development architecture (0.11.0-dev.9)
+## Current development architecture (0.11.0-dev.10)
 
 Lupine is an offline terminal engine. Immutable TOML content is separate from mutable
 GameState; supported FIG files hold configuration. Manual RORK persistence remains in
@@ -20,7 +20,11 @@ with their definitions too; no player state is used as an implicit content regis
 choice at a time. NPC placements and conversation nodes are saved separately from content.
 `events.rs` owns deterministic bounded hooks, action turns, timers, quests and endings.
 The runner processes successful action hooks before timer ticks, then turn hooks;
-reading, cancellation and manual save/load are free. See [event contract](EVENTS.md).
+reading, cancellation and manual save/load are free. runner/turn.rs settles status
+and reward consequences, retaliation and events inside the original command's
+checkpoint. The runner restores GameState and its EncounterRng position on a rule
+failure; mutation output is staged until success. Input preparation remains live.
+See [turn transactions](TURN_TRANSACTIONS.md) and [event contract](EVENTS.md).
 `objects.rs` owns placements/quantities, container state, visibility and atomic transfers.
 There is one canonical mutable placement ledger; unique items are one-unit stacks. `rules.rs` owns typed nested conditions, atomic effect application,
 ordered outcomes and initial declarations from rules.toml. Existing interactions,

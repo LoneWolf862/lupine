@@ -64,7 +64,8 @@ prompt. It spends one successful action turn, including a response with no effec
 The next node is remembered for the next `talk`. Timers and event hooks run after
 the response. The declared `next` transition is staged before effects; an explicit
 `set_dialogue` effect may override it. If an effect fails, the response, transition
-and success output all roll back, without spending a turn. Viewing text never
+and success output all roll back, without spending a turn. A later event or reward
+failure also restores the entire choice and turn; see [turn transactions](TURN_TRANSACTIONS.md). Viewing text never
 triggers effects. Use flags/conditions for once-only responses.
 
 ## Shared rules and transfers

@@ -58,9 +58,11 @@ respected; an already present unique object cannot also be purchased/dropped.
 Enemy loot accepts `quantity=1`. Stack drops add units in the current room; unique
 drops remain limited to an unavailable object. Enemy `rewards=[]` adds shared
 effects. XP, rolled loot, currency and those effects publish as one reward batch.
-On reward failure the enemy remains defeated, while the entire reward batch rolls
-back with a diagnostic. The total reward batch must fit 256 effects. Enemy defeat
-hooks then use the normal event system. No automatic retry or saving occurs.
+In the player runner, a reward or later hook failure rolls back the entire turn,
+including the defeat, encounter completion, all rewards and attack costs. The total
+reward batch must fit 256 effects. Defeat hooks use the same turn transaction;
+status-caused defeats follow the same rule. Random draws and success output are
+also rolled back. No automatic retry or saving occurs. See [turn transactions](TURN_TRANSACTIONS.md).
 
 ## World abilities
 
