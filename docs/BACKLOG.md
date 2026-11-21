@@ -1,6 +1,6 @@
 # Lupine development backlog
 
-## Current priorities after PR #43
+## Current priorities after the playthrough follow-up
 
 - Complete the [adventure and platform acceptance plan](ACCEPTANCE_PLAN.md).
   [Stabilization](STABILIZATION.md) is merged and its main CI passed.
@@ -16,13 +16,14 @@
 Development through PR #47 is implemented and creator-approved for merge: startup/history, parser clarification,
 bindings/migration/recovery, exports, engine expansion, per-file NPCs and whole-turn
 rollback, plus the guided mini adventure and playthrough refinements.
-[Current verification](PLAYTHROUGH_REVIEW.md) and [engine expansion](ENGINE_EXPANSION.md) preserves original verification.
+[Current verification](PLAYTHROUGH_REVIEW.md) and the [engine expansion record](ENGINE_EXPANSION.md)
+preserve the supporting evidence.
 There is no remaining Phase 4/expansion merge stack. Keep the runtime lightweight,
 offline, terminal-only and story-independent. Never autosave.
 
 Later engineering candidates: simplify the Rust session API, add per-step scenario
 assertions and measure larger adventures. Prioritize observed needs; these are not
-implemented or prerequisites for this stabilization patch.
+implemented or prerequisites for the completed playthrough work.
 
 ## Historical roadmap/backlog entries
 
