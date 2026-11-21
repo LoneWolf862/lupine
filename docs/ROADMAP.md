@@ -2,14 +2,14 @@
 
 ## Current work: guided mini adventure and platform acceptance
 
-Development through PR #45 is merged. The dev.11 candidate combines the player
-tests into a [guided mini adventure](MINI_ADVENTURE.md), adds dialogue-based naming
-and fixes parser/trading feedback. RORK 7 includes the new name state. The published v0.9.0 remains
+The creator approved PR #47 for merge on 2026-11-21. Development dev.12 applies the creator's
+playthrough feedback to the [guided mini adventure](MINI_ADVENTURE.md), parser,
+dialogue and presentation. RORK remains 7; mini-adventure content revision is 2. The published v0.9.0 remains
 unchanged. [Stabilization](STABILIZATION.md) delivered current documentation, offline
 packages, routine CI and consumable reachability diagnostics. The
 [acceptance plan](ACCEPTANCE_PLAN.md) now covers a complete creator-directed adventure,
-human beginner/player review and native Windows 10/CachyOS testing. These checks
-remain pending until their evidence is recorded. A prerelease needs separate approval.
+human beginner/player review and native Windows 10/CachyOS testing. See [recorded automated evidence and remaining human checks](PLAYTHROUGH_REVIEW.md).
+Native CachyOS and broader human beginner acceptance remain pending. A prerelease needs separate approval.
 
 Direct TOML/FIG authoring remains primary. [ENGINE_EXPANSION.md](ENGINE_EXPANSION.md)
 records the nine completed phases and original verification. Earlier review orders,
@@ -20,7 +20,7 @@ branches and worktree paths below are historical; they are not pending merge tas
 Creator work through Phase 2I and Phase 3 PRs #20–#24 are merged.
 The human-feedback follow-up addresses disappearing prompts, save naming and practical
 parser phrases; see [follow-up scope and verification](PLAYER_FEEDBACK_FOLLOWUP.md).
-Version 0.11.0-dev.11 identifies current
+Version 0.11.0-dev.12 identifies current
 development; v0.9.0 remains unchanged. [Actual verification](PHASE_3_REVIEW.md).
 
 Phase 4 adds transaction bindings, supported ID migration, guided editor recovery and

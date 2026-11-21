@@ -188,8 +188,20 @@ pub fn prepare(
     if argument == "all" && matches!(verb, "learn" | "use" | "cast" | "read" | "search") {
         writeln!(
             output,
-            "Bulk '{verb} all' is not supported. Name one object or ability; nothing changed.\n"
+            "Bulk '{verb} all' is not supported.\nName one object or ability; nothing changed.\n"
         )?;
+        if verb == "learn" {
+            for item in &carried {
+                if content
+                    .abilities
+                    .values()
+                    .any(|a| a.learn_from_item.as_ref() == Some(&item.id))
+                {
+                    writeln!(output, "  learn {}", item.name)?;
+                }
+            }
+            writeln!(output)?;
+        }
         return Ok(None);
     }
     if verb == "attack" {
@@ -336,8 +348,8 @@ pub fn prepare(
                 Command::Drop(_) => "drop",
                 _ => "examine",
             };
-            if target == "all" && action != "examine" {
-                return Ok(Some(format!("{action} all")));
+            if (target == "all" || target.starts_with("all ")) && action != "examine" {
+                return Ok(Some(format!("{action} {target}")));
             }
             let eligible = if action == "drop" {
                 carried

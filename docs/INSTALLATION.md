@@ -2,8 +2,12 @@
 
 ## Pick the right build
 
+[Download Windows or Linux from the front page](../README.md#downloads). The
+current dev.12 Actions artifacts require GitHub sign-in; the older permanent
+v0.9.0 release links do not. Gameplay itself is fully offline.
+
 The published v0.9.0 release is historical and unchanged. The merged engine expansion
-and creator features belong to 0.11.0-dev.11 development builds, available after building this source or downloading
+and creator features belong to 0.11.0-dev.12 development builds, available after building this source or downloading
 the matching manually dispatched GitHub Actions artifact. A development artifact is
 not an official release. Windows x64 and Linux x64 are separate executables.
 
@@ -18,7 +22,7 @@ the executable bit. The terminal stays the interface; there is no graphical edit
 Players need no Rust installation, account or internet.
 
 Portable development packages include README.md, docs/, templates/starter/,
-story_example/ and playable samples/. Start at docs/README.md for offline player,
+story_example/, adventures/mini_adventure/ and playable samples/. Start at docs/README.md for offline player,
 creator and developer references. Open Markdown files with a text editor if no
 Markdown viewer is installed. Instructions mentioning Cargo or source files apply
 to a source checkout; standalone authoring uses the included executable instead.

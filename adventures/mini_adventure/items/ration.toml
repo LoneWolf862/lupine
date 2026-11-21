@@ -1,6 +1,8 @@
 id="ration"
 name="ration"
-description="Eat ration restores 15 HP. There are two in the chest."
+description="""
+Eat ration restores up to 15 HP.
+"""
 portable=true
 initial={kind="container",id="chest"}
 stackable=true

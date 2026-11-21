@@ -144,3 +144,22 @@ form does not provide a dedicated control for every advanced field. Use
 `lupine test samples/objects_demo samples/objects_demo/scenarios.toml` for executable
 examples. Scenario `quantities` assertions accept `{item, location, quantity}` entries;
 optional `hidden` asserts the complete hidden-ID set.
+
+## Player presentation and explicit bulk filters (dev.12)
+
+Inventory and open-container contents show one item per line. Opening a container
+immediately shows visible contents. Equipped inventory items are marked.
+`take all scrolls` and `drop all scrolls` filter eligible accessible items by
+normal ID/name/authored aliases and move all matches in one atomic action turn.
+Author `aliases = ["scrolls"]` on each scroll to support that plural. Plain
+`take scrolls` still asks which item when ambiguous; it never implies bulk use.
+Hidden, fixed, distant, closed-container and NPC-held items are excluded.
+A failed transfer or later turn hook rolls back the entire bulk action.
+
+`learn all` remains unsupported and lists carried teaching-item commands.
+Numeric input outside a selection reports that no selection is active.
+
+Default container unlocks preserve the key. For a key that remains in its lock,
+author `set_container` and `remove_item` effects together in an unlock action
+and matching use interaction, as the mini adventure does. Consumption is a
+content decision, not a global key rule.

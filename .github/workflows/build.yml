@@ -56,6 +56,8 @@ jobs:
           $package = $result | ConvertFrom-Json
           "name=$($package.name)" >> $env:GITHUB_OUTPUT
           "path=$($package.path)" >> $env:GITHUB_OUTPUT
+      - name: Complete packaged mini adventure and export
+        run: python scripts/mini_adventure_acceptance.py
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.package.outputs.name }}
@@ -71,5 +73,8 @@ jobs:
             target/phase4-acceptance-*/*.txt
             target/phase4-acceptance-*/summary.json
             target/history-pty-transcript.bin
+            target/mini-pty-transcript.bin
+            target/mini-package-acceptance-*/*.txt
+            target/mini-package-acceptance-*/summary.json
           if-no-files-found: warn
           retention-days: 14

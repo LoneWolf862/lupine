@@ -5,15 +5,36 @@ RPG engine. Authors build adventures with editable TOML content, FIG configurati
 the guided Adventure Creator. HOWLBOUND is only the tentative name of a future original
 adventure; no original story is prescribed by this engine.
 
-**Development version: 0.11.0-dev.11.** Development through PR #45 is merged,
-including the engine expansion, per-file NPC definitions and whole-turn rollback.
-[Post-expansion stabilization](docs/STABILIZATION.md) is merged. Next is
-[mini-adventure playtesting](docs/MINI_ADVENTURE.md) and
-[platform acceptance](docs/ACCEPTANCE_PLAN.md). The new mini adventure, naming and
-parser changes are development candidates pending human acceptance.
-These changes are not a published release. The existing
-[v0.9.0 standalone release](https://github.com/LoneWolf862/lupine/releases/tag/v0.9.0)
-and its tag remain unchanged. See [development verification](docs/ENGINE_EXPANSION.md).
+## Downloads
+
+**Current development build: 0.11.0-dev.12 — includes the guided mini adventure.**
+
+| Platform | Download the tested package | After extracting the entire ZIP |
+|---|---|---|
+| Windows x64 | [Download for Windows](https://github.com/LoneWolf862/lupine/actions/runs/44738362861/artifacts/14629952363) | Run `lupine.exe` |
+| Linux x64 / CachyOS | [Download for Linux](https://github.com/LoneWolf862/lupine/actions/runs/44738362861/artifacts/14628983841) | Run `chmod u+x lupine`, then `./lupine` |
+
+These are verified development artifacts from November 20, 2026. GitHub sign-in
+is required to download them; they expire on **December 4, 2026 (UTC)**.
+For newer packages or expired links, open [Portable builds](https://github.com/LoneWolf862/lupine/actions/workflows/build.yml),
+choose a successful run, and download the Windows or Linux package under **Artifacts**.
+No account, network connection or Rust installation is needed to play after download.
+[Installation details](docs/INSTALLATION.md) · [Mini-adventure walkthrough](docs/MINI_ADVENTURE.md)
+
+**Older published release (v0.9.0):** [Windows ZIP](https://github.com/LoneWolf862/lupine/releases/download/v0.9.0/Lupine-v0.9.0-windows-x64.zip)
+· [Linux tar.gz](https://github.com/LoneWolf862/lupine/releases/download/v0.9.0/Lupine-v0.9.0-linux-x64.tar.gz).
+These permanent public downloads do **not** contain the current mini adventure
+or the later creator/parser improvements. The v0.9.0 release remains unchanged.
+
+## Current development
+
+Development 0.11.0-dev.12 includes the eight-room adventure, persistent dialogue,
+player naming, parser improvements and clearer terminal presentation in
+[PR #47](https://github.com/LoneWolf862/lupine/pull/47). The creator approved this
+work for merge on November 21, 2026. [Verification and remaining acceptance](docs/PLAYTHROUGH_REVIEW.md)
+records 408 Rust tests, Windows/Ubuntu CI, terminal playthroughs and native package
+checks. Native CachyOS and broader human beginner acceptance remain separate.
+These development artifacts are not a new official release.
 
 The merged [engine expansion](docs/ENGINE_EXPANSION.md) adds file-authored scenario
 tests and [shared rules](docs/RULES.md): nested conditions, counters, ordered outcomes
@@ -41,7 +62,7 @@ and run `sh Play.sh`. Or launch `lupine.exe` / `./lupine` without arguments for:
 4. Exit
 
 Start with **Play an Adventure > Lupine Mini Adventure — Start Here**. It combines
-seven rooms, a guide who asks your name, locks, a chest, trading, spells and a final
+eight rooms, a guide who asks your name, locks, a chest, trading, spells and a final
 stone golem. [Directions and optional walkthrough](docs/MINI_ADVENTURE.md).
 
 When an `adventures/` collection is present, Play prioritizes it. Otherwise it lists
@@ -52,7 +73,7 @@ loads a save. See [installation and distribution](docs/INSTALLATION.md).
 
 Explore with `look`, `north`/`n`, `examine <object>`, `take <object>`, `take all`,
 `drop <object>`, `drop all`, `inventory`, and `use <item> on <target>`. Names, item aliases,
-exact IDs and unambiguous partial names work. `pick up the bronze key` and `grab key`
+exact IDs and unambiguous partial names work. `pick up the brass key` and `grab key`
 are accepted when unambiguous. Multiple matches prompt for a number or ID; cancel with
 0/back/cancel. Typo suggestions never execute an action.
 

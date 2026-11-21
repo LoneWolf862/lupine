@@ -16,3 +16,13 @@ item="sword"
 currency="coins"
 price=10
 stock=1
+
+[[offers]]
+id="rations"
+name="Ration"
+type="item"
+item="ration"
+currency="coins"
+price=2
+quantity=1
+stock=10

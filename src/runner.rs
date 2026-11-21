@@ -433,6 +433,10 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
     let mut pending_rng = rng.0;
     let mut pending_failure = None;
     let mut pending = None::<crate::events::Step>;
+    let mut conversation: Option<String> = None;
+    let mut displayed_room = state.current_room.clone();
+    let mut offers = std::collections::VecDeque::new();
+    show_shops(&shops, &wallet, &state, &mut output)?;
     loop {
         if let Some(step) = pending.take() {
             let before = step.before.clone();
@@ -446,17 +450,76 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
                     state = before;
                     rng.0 = pending_rng;
                     output.discard();
+                    conversation = None;
                     writeln!(output, "Action could not complete: {error}. The action and all turn changes were rolled back.\n")?;
                 }
                 Err(turn::Error::Io(error)) => return Err(error),
             }
         }
-        write!(output, "> ")?;
-        output.flush()?;
+        if state.current_room != displayed_room {
+            displayed_room = state.current_room.clone();
+            show_shops(&shops, &wallet, &state, &mut output)?;
+            offers = world
+                .actions
+                .iter()
+                .enumerate()
+                .filter(|(_, a)| {
+                    a.room.as_ref() == Some(&state.current_room) && a.offer_on_enter.is_some()
+                })
+                .map(|(i, _)| i)
+                .collect();
+        }
+        if state.events.ending.is_some() || is_defeated(&state) {
+            conversation = None;
+            offers.clear();
+        }
+        if let Some(index) = offers.pop_front() {
+            let action = &world.actions[index];
+            if action.in_scope(&state)
+                && action.item.as_ref().is_none_or(|id| state.is_carried(id))
+                && action.requires.iter().all(|c| c.met(&state))
+                && confirm_action(
+                    &mut input,
+                    &mut output,
+                    &format!(
+                        "{} (yes/no; cancel to leave): ",
+                        action.offer_on_enter.as_deref().unwrap()
+                    ),
+                )? == Some(true)
+            {
+                pending_rng = rng.0;
+                let mut step = crate::events::Step::new(&state, true);
+                output.stage();
+                if run_authored(
+                    index,
+                    &world,
+                    &mut state,
+                    &encounters,
+                    &mut rng,
+                    &mut output,
+                )? {
+                    step.performed = true;
+                    step.triggers
+                        .push(crate::events::Trigger::Action(action.id.clone()));
+                }
+                pending = Some(step);
+            }
+            continue;
+        }
         let mut line = String::new();
-        if input.read_line(&mut line)? == 0 {
-            writeln!(output, "\nGoodbye!")?;
-            break;
+        if let Some(npc) = conversation.take().filter(|id| {
+            crate::dialogue::candidates(&world, &state)
+                .iter()
+                .any(|c| &c.id == id)
+        }) {
+            line = format!("talk {npc}");
+        } else {
+            write!(output, "> ")?;
+            output.flush()?;
+            if input.read_line(&mut line)? == 0 {
+                writeln!(output, "\nGoodbye!")?;
+                break;
+            }
         }
         if line
             .chars()
@@ -470,6 +533,16 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
         }
         let line = crate::parser::canonical_input(line.trim());
         let command = line.trim();
+        if command.is_empty() {
+            continue;
+        }
+        if command.chars().all(|c| c.is_ascii_digit()) {
+            writeln!(
+                output,
+                "No selection is active. Type a command, such as look or inventory.\n"
+            )?;
+            continue;
+        }
         let verb = command.split_whitespace().next().unwrap_or("");
         // Defeat is terminal for this in-memory run. Only manual load or quit can
         // recover; do not silently heal, autosave or permit paid services.
@@ -578,13 +651,21 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
         if verb.eq_ignore_ascii_case("talk") {
             let query = crate::resolution::normalize(command[verb.len()..].trim());
             let query = query.strip_prefix("to ").unwrap_or(&query);
+            let query = if crate::dialogue::candidates(&world, &state)
+                .iter()
+                .any(|c| c.id == query)
+            {
+                query.to_owned()
+            } else {
+                crate::parser::clean_target(query)
+            };
             if query.is_empty() {
                 writeln!(output, "Talk to whom? Use talk <name>.\n")?;
                 continue;
             }
             let before = state.current_room.clone();
             let Some(selected) =
-                crate::dialogue::prepare(&world, &state, query, &mut input, &mut output)?
+                crate::dialogue::prepare(&world, &state, &query, &mut input, &mut output)?
             else {
                 continue;
             };
@@ -600,6 +681,9 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
                 writeln!(output, "{error}\n")?;
             }
             if let Ok(lines) = result {
+                if world.dialogue.npcs[&selected.npc].keep_open {
+                    conversation = Some(selected.npc.clone());
+                }
                 for line in lines {
                     writeln!(output, "{line}")?;
                 }
@@ -697,7 +781,7 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
             }
         }
         let original_intent = parse_command(&line);
-        let requested_bulk = matches!(&original_intent, Ok(crate::commands::Command::Take(target) | crate::commands::Command::Drop(target)) if target == "all");
+        let requested_bulk = matches!(&original_intent, Ok(crate::commands::Command::Take(target) | crate::commands::Command::Drop(target)) if target == "all" || target.starts_with("all "));
         let Some(line) = crate::player_input::prepare(
             &line,
             &world,
@@ -1003,19 +1087,33 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
             }
             continue;
         }
-        // Bulk inventory operations are explicit: only items actually in this room
-        // can be collected, and only carried items can be dropped. Never touch fixed
-        // scenery, consumed items or another room's objects.
+        // Explicit bulk operations include accessible open-container contents.
+        // Filter the eligible role before name matching, never hidden/remote items.
         if (verb.eq_ignore_ascii_case("take") || verb.eq_ignore_ascii_case("drop"))
-            && argument.eq_ignore_ascii_case("all")
             && requested_bulk
         {
             let taking = verb.eq_ignore_ascii_case("take");
+            let candidates = crate::resolution::items(&world, &state)
+                .into_iter()
+                .filter(|c| {
+                    world.item(&c.id).is_some_and(|i| i.portable)
+                        && state.available_source(&c.id, !taking).is_some()
+                })
+                .collect::<Vec<_>>();
+            let filter = argument.strip_prefix("all ").map(|query| {
+                crate::resolution::matches(query, &candidates)
+                    .into_iter()
+                    .map(|c| c.id.as_str())
+                    .collect::<Vec<_>>()
+            });
             let targets: Vec<_> = world
                 .items
                 .iter()
                 .filter(|item| {
                     item.portable
+                        && filter
+                            .as_ref()
+                            .is_none_or(|ids| ids.contains(&item.id.as_str()))
                         && state.is_accessible(&item.id)
                         && if taking {
                             state.available_source(&item.id, false).is_some()
@@ -1289,8 +1387,11 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
                     // never reroll on load, since that could regenerate defeated enemies.
                     last_saved = state.clone();
                     current_save = Some(name.clone());
+                    displayed_room = state.current_room.clone();
+                    offers.clear();
                     writeln!(output, "Loaded: {name}\n")?;
                     show_room(&world, &state, &mut output)?;
+                    show_shops(&shops, &wallet, &state, &mut output)?;
                 }
                 Err(error) => writeln!(output, "Load failed: {error}\n")?,
             }
@@ -1364,6 +1465,9 @@ pub fn run_session_with_io<R: BufRead, W: Write>(
                 match result {
                     ActionOutcome::Message(message) => {
                         writeln!(output, "{message}\n")?;
+                        if is_look {
+                            show_shops(&shops, &wallet, &state, &mut output)?;
+                        }
                         if state.current_room != old_room {
                             // Temporary encounters disperse. Room/unique encounters survive retreat.
                             encounters.leave_room(&old_room, &mut state);
@@ -1628,6 +1732,42 @@ fn confirm<R: BufRead, W: Write>(
             _ => writeln!(output, "Please answer yes or no.")?,
         }
     }
+}
+
+fn confirm_action(
+    input: &mut impl BufRead,
+    output: &mut impl Write,
+    text: &str,
+) -> io::Result<Option<bool>> {
+    loop {
+        let Some(answer) = prompt(input, output, text)? else {
+            return Ok(None);
+        };
+        match answer.to_ascii_lowercase().as_str() {
+            "yes" | "y" => return Ok(Some(true)),
+            "no" | "n" | "0" | "back" | "cancel" => return Ok(Some(false)),
+            _ => writeln!(output, "Please answer yes, no, or cancel.")?,
+        }
+    }
+}
+
+fn show_shops(
+    shops: &ShopContent,
+    wallet: &WalletContent,
+    state: &GameState,
+    output: &mut impl Write,
+) -> io::Result<()> {
+    let mut ids = shops
+        .shops
+        .values()
+        .filter(|s| s.room == state.current_room)
+        .map(|s| &s.id)
+        .collect::<Vec<_>>();
+    ids.sort();
+    for id in ids {
+        writeln!(output, "{}\n", shops.describe(state, wallet, id))?;
+    }
+    Ok(())
 }
 
 fn show_room<W: Write>(world: &World, state: &GameState, output: &mut W) -> io::Result<()> {

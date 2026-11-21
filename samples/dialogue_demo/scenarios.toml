@@ -5,7 +5,7 @@ commands=["people","talk helper","cancel"]
 turn=0
 npcs={guide={room="start",node="hello"}}
 flags=[]
-contains=["Introduce yourself","Conversation canceled"]
+contains=["Introduce yourself","Conversation closed"]
 excludes=["Receive two tokens"]
 [[scenario]]
 name="conditional choice and transfer"

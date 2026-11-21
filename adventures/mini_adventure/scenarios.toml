@@ -1,50 +1,63 @@
 format_version=1
+
 [[scenario]]
 name="Complete guided route"
-commands=["talk guide", "introduce", "Rex", "take dagger", "take fireball scroll", "learn fireball scroll", "take healing scroll", "learn healing scroll", "south", "cast fireball on goblin", "take trophy", "search stump", "take chest key", "north", "east", "shop", "sell trophy", "buy sword", "west", "north", "cast light on lamp", "unlock chest with chest key", "open chest", "look in chest", "take brass key from chest", "take padded coat from chest", "equip padded coat", "take 2 ration from chest", "east", "unlock gate with brass key", "open gate", "east", "interact with mana altar", "east", "attack stone golem with steel sword", "attack stone golem with steel sword", "attack stone golem with steel sword", "attack stone golem with steel sword", "read journal", "stats", "abilities"]
+commands=["talk to the guide", "Rex", "L", "take dagger", "take all scrolls", "learn fire scroll", "learn heal", "south", "cast fireball at goblin", "take trophy", "search stump", "take chest key", "north", "use shop key on door", "west", "sell trophy", "buy sword", "east", "north", "south", "talk guide", "chest", "L", "north", "cast light on lamp", "unlock chest with chest key", "open chest", "take all", "equip padded coat", "south", "east", "yes", "east", "use mana altar", "east", "east", "attack stone golem with steel sword", "attack stone golem with steel sword", "attack stone golem with steel sword", "attack stone golem with steel sword", "read journal", "stats", "abilities"]
 player_name="Rex"
 ending="victory"
 quests={challenge="done"}
-wallet={coins=1}
+wallet={coins=0}
 contains=["Good to meet you, Rex", "Mini adventure complete!", "Route and commands"]
 
 [[scenario]]
 name="Cancel introduction without progress"
-commands=["talk guide", "introduce", "cancel", "abilities", "read journal"]
+commands=["talk guide", "cancel", "abilities", "read journal"]
 turn=0
-wallet={coins=2}
+wallet={coins=0}
 learned_abilities=[]
 flags=[]
 ended=false
 
 [[scenario]]
 name="Wrong trade direction never spends"
-commands=["east", "sell sword", "buy trophy", "buy sword"]
-turn=1
-wallet={coins=2}
+commands=["talk to the guide", "Rex", "L", "use shop key on door", "west", "sell sword", "buy trophy", "buy sword"]
+turn=3
+wallet={coins=0}
 contains=["No sell transaction occurred", "No buy transaction occurred"]
 
 [[scenario]]
 name="Locked routes give guidance"
-commands=["north", "east", "east", "open gate", "unlock gate"]
+commands=["west", "east", "east", "open gate", "unlock gate"]
 room="gate"
-turn=2
+turn=1
 flags=[]
-contains=["The iron gate is locked", "Unlock gate with brass key"]
+contains=["The shop door is locked", "The iron gate is locked", "Unlock gate with brass key"]
 
 [[scenario]]
 name="Light is charged once and a wrong key cannot unlock chest"
-commands=["talk guide", "introduce", "Ada", "north", "cast light on lamp", "cast light on lamp", "open chest", "unlock chest with brass key", "look in chest"]
-turn=3
-player_name="Ada"
-wallet={coins=1}
-flags=["introduced","lit"]
+commands=["talk to the guide", "Rex", "L", "take dagger", "take all scrolls", "learn fire scroll", "learn heal", "south", "cast fireball at goblin", "take trophy", "search stump", "take chest key", "north", "north", "south", "talk guide", "chest", "L", "north", "cast light on lamp", "cast light on lamp", "open chest", "unlock chest with brass key", "look in chest"]
+wallet={coins=2}
+flags=["introduced", "lit"]
 contains=["It is locked."]
-excludes=["Contents: brass gate key"]
+excludes=["Contents:"]
 
 [[scenario]]
 name="Sword purchase is optional"
-commands=["talk guide", "introduce", "Rex", "take dagger", "take fireball scroll", "learn fireball scroll", "take healing scroll", "learn healing scroll", "south", "cast fireball on goblin", "take trophy", "search stump", "take chest key", "north", "north", "cast light on lamp", "unlock chest with chest key", "open chest", "look in chest", "take brass key from chest", "take padded coat from chest", "equip padded coat", "take 2 ration from chest", "east", "unlock gate with brass key", "open gate", "east", "interact with mana altar", "east", "cast fireball on stone golem", "cast fireball on stone golem", "cast fireball on stone golem", "attack stone golem with dagger", "attack stone golem with dagger"]
+commands=["talk to the guide", "Rex", "L", "take dagger", "take all scrolls", "learn fire scroll", "learn heal", "south", "cast fireball at goblin", "take trophy", "search stump", "take chest key", "north", "north", "south", "talk guide", "chest", "L", "north", "cast light on lamp", "unlock chest with chest key", "open chest", "take all", "equip padded coat", "south", "east", "yes", "east", "use mana altar", "east", "east", "cast fireball at golem", "cast fireball at golem", "cast fireball at golem", "attack golem with dagger", "attack golem with dagger", "attack golem with dagger", "attack golem with dagger", "attack golem with dagger"]
 ending="victory"
-wallet={coins=3}
+wallet={coins=2}
 contains=["Mini adventure complete!"]
+
+[[scenario]]
+name="Filtered pickup and learning guidance"
+commands=["take scrolls", "cancel", "take all scrolls", "learn all", "2"]
+inventory=["fireball_scroll", "healing_scroll"]
+turn=1
+learned_abilities=[]
+contains=["Which scrolls", "learn fireball scroll", "learn healing scroll", "No selection is active"]
+
+[[scenario]]
+name="Rations cannot spend the last Light coin"
+commands=["talk to the guide", "Rex", "L", "take dagger", "take all scrolls", "learn fire scroll", "learn heal", "south", "cast fireball at goblin", "take trophy", "search stump", "take chest key", "north", "use shop key on door", "west", "sell trophy", "buy rations", "buy rations", "buy rations", "buy rations", "buy rations", "buy rations", "east", "north", "south", "talk guide", "chest", "L", "north", "cast light on lamp"]
+wallet={coins=0}
+flags=["introduced", "lit", "shop_open"]

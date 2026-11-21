@@ -1,6 +1,8 @@
 id="lamp"
 name="lamp"
-description="Cast light on lamp to illuminate the storeroom and reveal the chest. Costs 1 coin; the guide teaches Light."
+description="""
+An unlit lamp. The guide may know how to light it.
+"""
 portable=false
 starting_room="storeroom"
 [[descriptions]]

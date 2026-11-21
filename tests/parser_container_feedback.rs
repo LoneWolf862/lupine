@@ -93,7 +93,7 @@ fn sample_phrases_unlock_inspect_and_read_through_the_real_runner() {
     let (state, text) = play(sample(), "use the key on the chest\nlook inside chest\nopen chest\nlook into chest\nsearch chest\nsearch the room\nread the note\n");
     assert!(text.contains("You unlock the chest."), "{text}");
     assert!(text.contains("It is closed."), "{text}");
-    assert!(text.contains("Contents: gem"), "{text}");
+    assert!(text.contains("Contents:\n  gem"), "{text}");
     assert!(text.contains("A demonstration note."), "{text}");
     assert!(state.objects.containers["chest"].open);
     assert!(!state.objects.containers["chest"].locked);

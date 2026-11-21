@@ -4,10 +4,15 @@
 
 Stabilization is merged through PR #43 at 7bcaa24, version 0.11.0-dev.10.
 This plan covers documentation, automated verification and a human test handoff.
-It does not authorize merging this follow-up or publishing a release. v0.9.0,
-game save-compatibility revisions remain unchanged. The later dev.11 candidate
+The creator approved the PR #47 playthrough follow-up for merge on 2026-11-21;
+[recorded evidence](PLAYTHROUGH_REVIEW.md) distinguishes that approval from
+pending human/platform tests. No new official release is authorized. The
+published v0.9.0 release remains unchanged. The later dev.11 implementation
 uses RORK 7 because player naming adds persistent state; RORK 6 files require
-their matching build. PRs #44 and #45 are now merged. Current human testing should
+their matching build. PRs #44 through #46 are now merged.
+The dev.12 playthrough follow-up keeps RORK 7 and raises only the mini adventure's
+content compatibility revision to 2. Use fresh slots; older content saves need
+the matching old adventure package. For current acceptance,
 use the [combined mini-adventure plan](MINI_ADVENTURE.md), rather than replay every
 mechanic fixture below. Older sections remain useful developer coverage.
 

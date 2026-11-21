@@ -14,6 +14,9 @@ use std::{
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Action {
+    /// Offer this action on room entry. Acceptance still runs a normal atomic turn.
+    #[serde(default)]
+    pub offer_on_enter: Option<String>,
     pub id: String,
     /// Literal words plus optional {target} and {item}; each binds a stable ID below.
     pub commands: Vec<String>,
@@ -136,6 +139,13 @@ fn reserved(verb: &str) -> bool {
 impl Action {
     pub fn validate(&self, world: &World) -> Result<(), String> {
         crate::rules::valid_id(&self.id)?;
+        if let Some(prompt) = &self.offer_on_enter {
+            if self.room.is_none() || prompt.trim().is_empty() || prompt.len() > 4096 {
+                return Err(
+                    "offer_on_enter requires a room and 1..4096 bytes of prompt text".into(),
+                );
+            }
+        }
         if self.commands.is_empty() || self.commands.len() > 16 {
             return Err("needs 1..16 command patterns".into());
         }

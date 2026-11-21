@@ -29,7 +29,12 @@ pub fn describe_room(world: &World, state: &GameState, room: &Room) -> String {
     let mut visible = if objects.is_empty() {
         "Objects: none".to_string()
     } else {
-        format!("Objects: {}", objects.join(", "))
+        let inline = format!("Objects: {}", objects.join(", "));
+        if inline.chars().count() > 76 {
+            format!("Objects:\n  {}", objects.join("\n  "))
+        } else {
+            inline
+        }
     };
     if !crate::dialogue::candidates(world, state).is_empty() {
         visible.push_str(&format!("\n{}", crate::dialogue::people(world, state)));
@@ -52,7 +57,7 @@ pub fn describe_room(world: &World, state: &GameState, room: &Room) -> String {
         .filter(|art| !art.is_empty());
     match art {
         Some(art) => format!(
-            "{}\n{}\n{}\nExits: {}\n{}",
+            "{}\n\n{}\n\n{}\n\nExits: {}\n{}",
             room.title,
             description,
             art,
@@ -64,7 +69,7 @@ pub fn describe_room(world: &World, state: &GameState, room: &Room) -> String {
             visible
         ),
         None => format!(
-            "{}\n{}\nExits: {}\n{}",
+            "{}\n\n{}\n\nExits: {}\n{}",
             room.title,
             description,
             if exits.is_empty() {
@@ -78,7 +83,7 @@ pub fn describe_room(world: &World, state: &GameState, room: &Room) -> String {
 }
 
 pub fn help() -> &'static str {
-    "Explore: look (l), look <object>, examine <object> (x), read <object>, look in <container>, inventory (i).\nMove: north/n, south/s, east/e, west/w, up/u, down/d; go/walk/travel/run/head <direction>. 'look' lists exits.\nObjects: take <object|all> (get/grab/pick up), drop <object|all>, use <item> on <target>, interact with <object>. Object synonyms depend on the adventure's aliases.\nContainers: open/close <container>, unlock/lock <container> with <key>, put [quantity] <item> in <container>, take [quantity] <item> from <container>. Using a container's carried key on it also unlocks it unless an authored interaction handles that pair. Unlocking does not open it. Quantities default to one. Consume/eat/drink <item> uses one carried consumable.\nCombat: attack <enemy> with <weapon> (hit/strike/stab/slash); attack <enemy> asks which weapon.\nSpells: spellbook (spells), learn <scroll>, cast <ability> on/at <enemy|self>, use <ability> on <enemy>.\nOther RPG commands: stats, weapons, enemies, wallet, shop, buy <offer>, sell <offer>.\nEquipment: equipment/status, equip <item>, unequip <slot>.\nAbilities: abilities/skills/spellbook, learn <teaching item>, cast <world ability> [on <object>]. Availability depends on authored definitions.\nSearch: search <object> inspects it unless an authored action handles the phrase; room searches and discoveries depend on the adventure.\nPeople: people, talk <name> (or talk to <name>); select a response by number or ID. Opening/canceling dialogue is free; a chosen response spends one turn.\nStory progress: journal (quests), wait. Successful game actions advance story timers; reading, clarification, failed/canceled commands and manual save/load do not.\nManual saves: save camp (a name you choose), saves (list names), load camp. 'save' offers to overwrite the current slot; no asks for a name. With no current slot, it asks for a name. 'save <name>' writes directly, replacing that name. Enter/cancel at the name prompt cancels. No autosaving.\nHelp: help (h). Leave the adventure: quit/exit (q); unsaved progress requires yes/no confirmation.\nSuggestions never execute: type the suggested command to try it. Multiple matches ask you to choose; 0/back/cancel cancels."
+    "Explore: look (l), look <object>, examine <object> (x), read <object>, look in <container>, inventory (i).\nMove: north/n, south/s, east/e, west/w, up/u, down/d; go/walk/travel/run/head <direction>. 'look' lists exits.\nObjects: take <object|all> (get/grab/pick up), drop <object|all>, use <item> on <target>, interact with <object>. Object synonyms depend on the adventure's aliases.\nContainers: open/close <container>, unlock/lock <container> with <key>, put [quantity] <item> in <container>, take [quantity] <item> from <container>. Using a container's carried key on it also unlocks it unless an authored interaction handles that pair. Unlocking does not open it. Quantities default to one. Consume/eat/drink <item> uses one carried consumable.\nBulk: take all <name>, drop all <name>. Plain plurals ask which item.\nCombat: attack <enemy> with <weapon> (hit/strike/stab/slash); attack <enemy> asks which weapon.\nSpells: spellbook (spells), learn <scroll>, cast <ability> on/at <enemy|self>, use <ability> on <enemy>.\nOther RPG commands: stats, weapons, enemies, wallet, shop, buy <offer>, sell <offer>.\nEquipment: equipment/status, equip <item>, unequip <slot>.\nAbilities: abilities/skills/spellbook, learn <teaching item>, cast <world ability> [on <object>]. Availability depends on authored definitions.\nSearch: search <object> inspects it unless an authored action handles the phrase; room searches and discoveries depend on the adventure.\nPeople: people, talk <name> (or talk to <name>); select a response by number or ID. Opening/canceling dialogue is free; a chosen response spends one turn.\nStory progress: journal (quests), wait. Successful game actions advance story timers; reading, clarification, failed/canceled commands and manual save/load do not.\nManual saves: save camp (a name you choose), saves (list names), load camp. 'save' offers to overwrite the current slot; no asks for a name. With no current slot, it asks for a name. 'save <name>' writes directly, replacing that name. Enter/cancel at the name prompt cancels. No autosaving.\nHelp: help (h). Leave the adventure: quit/exit (q); unsaved progress requires yes/no confirmation.\nSuggestions never execute: type the suggested command to try it. Multiple matches ask you to choose; 0/back/cancel cancels."
 }
 
 /// Display terminology never changes the accepted command vocabulary.

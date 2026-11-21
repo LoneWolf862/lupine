@@ -1,6 +1,8 @@
 id="mana_altar"
 name="mana altar"
-description="A free training aid. Use mana altar restores HP and MP, without coins."
+description="""
+Use mana altar to restore HP and MP and refresh Focus, free of charge.
+"""
 portable=false
 starting_room="workshop"
 aliases=["altar"]

@@ -1,9 +1,14 @@
 id="vault"
 title="Final Vault"
-description="This is the final challenge. Defeat the stone golem to finish. Attack stone golem with steel sword, or cast fireball on stone golem. West returns to the workshop for rest; a living golem keeps its wounds when you return."
+description="""
+A stone golem guards the final vault. The passage west leads back toward
+the workshop.
+"""
 [[descriptions]]
 when=[{quest_stage={quest="challenge",stage="done"}}]
-text="The stone golem is still. Your training adventure is complete. Read journal or check stats; save NAME if you want to keep this victory."
+text="""
+The stone golem is still. Your training adventure is complete.
+"""
 [encounters]
 chance=100
 persistence="unique"
@@ -14,4 +19,4 @@ enemy="stone_golem"
 weight=100
 
 [exits]
-west="workshop"
+west="approach"

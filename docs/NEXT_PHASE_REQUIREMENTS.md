@@ -1,6 +1,12 @@
 # Lupine — Next Development Phase Requirements
 
-## Current pre-release policy (2026-11-18)
+This document records the original creator/parser expansion plan. Those phases
+are implemented. Current development is 0.11.0-dev.12; use the
+[documentation index](README.md) and [playthrough review](PLAYTHROUGH_REVIEW.md)
+for present capabilities and remaining acceptance. The historical baseline and
+future-tense milestones below are preserved as the original plan.
+
+## Historical pre-release policy (2026-11-18)
 
 Lupine is unreleased and pre-1.0, with no external users, published games or production deployments requiring development-version compatibility. Justified breaking API and format changes are allowed. Do not add obsolete-format loaders or unnecessary compatibility layers. Update bundled samples, templates, tests and current documentation together; preserve gameplay unless a change is intentional.
 

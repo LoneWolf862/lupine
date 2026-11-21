@@ -78,3 +78,21 @@ RORK 4 for [event progress](EVENTS.md).
 Phase 6 uses RORK 5 for NPC progress. `talk` and `people` are reserved player commands.
 NPC conditions and movement/dialogue effects can be used in authored actions;
 object placeholders still bind objects, not NPC names. See [dialogue](DIALOGUE.md).
+
+## Optional room-entry offers (dev.12)
+
+An action may set `offer_on_enter = "Use your key to unlock the door?"`.
+This requires a bound `room` and 1..4096 bytes of nonblank prompt text. After a
+successful transition into that room, the runner offers eligible actions in
+file order: the target must be accessible, a bound item must be carried, and
+all requirements must pass. Multiple offers are separate explicit questions.
+
+Yes/y runs the same action with normal validation, effects, event hooks, timers
+and whole-turn rollback. No/n, 0/back/cancel and EOF are free. Invalid answers
+reprompt without changing state. It does not prompt on look, startup or load,
+or again after declining until leaving and reentering the room. Requirements
+such as `flag_unset` prevent offers after a lock is already open. Manual command
+patterns remain available and execute directly without this entry prompt.
+
+The mini adventure's gate is an example; no particular room or key is hardcoded
+in the engine. Questions alone do not mutate state or create saves.

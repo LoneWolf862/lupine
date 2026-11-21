@@ -1,21 +1,110 @@
 id="guide"
 name="Guide"
-description="A patient guide to the mini adventure."
+description="A patient guide to the training fort."
 room="camp"
-start="welcome"
-[nodes.welcome]
-text="Welcome, {{player_name}}. Introduce yourself, then prepare for the goblin south of camp."
-[[nodes.welcome.variants]]
-when=[{flag_set="introduced"}]
-text="Welcome back, {{player_name}}. Read journal for your current goal, or ask me for the route."
-[[nodes.welcome.choices]]
+start="introduction"
+keep_open=true
+[nodes.introduction]
+text="Welcome, traveler. Let us begin with your name."
+prompt_choice="introduce"
+[[nodes.introduction.choices]]
 id="introduce"
-label="Introduce myself and learn Light"
+label="Introduce myself"
 ask_name=true
-requires=[{flag_unset="introduced"}]
-effects=[{set_flag="introduced"},{teach_ability="light"}]
-text="Good to meet you, {{player_name}}. I have taught you Light. Take the dagger and both scrolls. Learn each scroll separately. Defeat the goblin to the south, take its trophy, and search the hollow stump for a key."
-[[nodes.welcome.choices]]
-id="help"
-label="Ask for the route and commands"
-text="South: defeat goblin, take trophy, search stump, take chest key. East of camp: sell trophy, buy sword. North of camp: cast light on lamp, unlock chest with chest key, open chest, take brass key from chest. East: unlock gate with brass key. Rest at the workshop, then defeat the stone golem farther east. Journal keeps these directions."
+next="topics"
+effects=[{set_flag="introduced"},{give_item="shop_key"}]
+text="""
+Good to meet you, {{player_name}}.
+
+Your quest is to slay the stone golem beyond the eastern gate. Its brass
+key and some supplies are in the chest in the storeroom north of camp.
+
+I lost the chest key in the woods to the south while fleeing a goblin. I
+stumbled over a hollow stump; search it after dealing with the goblin.
+
+The dagger and scrolls here are yours. Take items one at a time with
+take <item>, or take all. Take all scrolls collects just the scrolls.
+Learn fireball scroll and learn healing scroll teach spells
+individually. Spellbook lists what you know.
+
+Use attack <enemy> with <weapon> or use dagger on goblin to fight.
+
+The shop west of camp buys trophies and sells a stronger sword and
+rations. Use shop key on door to unlock it. Selling the goblin trophy
+gives you enough for the sword, with a coin left for Light.
+
+If you cannot find the chest in the storeroom, return and ask me for
+help. Journal keeps the route and your current objective. Nothing saves
+automatically; use save NAME whenever you want to keep progress.
+
+Here is the shop key. Good luck, {{player_name}}.
+"""
+[nodes.topics]
+text="Welcome back, {{player_name}}. What would you like to know?"
+[[nodes.topics.choices]]
+id="welcome"
+label="Repeat the welcome and instructions"
+text="""
+Your quest is to slay the stone golem beyond the eastern gate. Its brass
+key and some supplies are in the chest in the storeroom north of camp.
+
+I lost the chest key in the woods to the south while fleeing a goblin. I
+stumbled over a hollow stump; search it after dealing with the goblin.
+
+The dagger and scrolls here are yours. Take items one at a time with
+take <item>, or take all. Take all scrolls collects just the scrolls.
+Learn fireball scroll and learn healing scroll teach spells
+individually. Spellbook lists what you know.
+
+Use attack <enemy> with <weapon> or use dagger on goblin to fight.
+
+The shop west of camp buys trophies and sells a stronger sword and
+rations. Use shop key on door to unlock it. Selling the goblin trophy
+gives you enough for the sword, with a coin left for Light.
+
+If you cannot find the chest in the storeroom, return and ask me for
+help. Journal keeps the route and your current objective. Nothing saves
+automatically; use save NAME whenever you want to keep progress.
+"""
+[[nodes.topics.choices]]
+id="chest"
+label="I cannot find the chest"
+requires=[{visited="storeroom"},{not={knows_ability="light"}}]
+effects=[{teach_ability="light"}]
+text="""
+The storeroom is too dark. I have taught you Light.
+Cast light on lamp to reveal the chest. It costs one coin, once.
+The goblin carries three coins if you have not defeated it yet.
+"""
+[[nodes.topics.choices]]
+id="shop"
+label="Ask about the shop"
+text="""
+The shop is west of camp. Use shop key on door to unlock it.
+Sell trophy earns eight coins; buy sword costs ten. Rations cost two.
+The goblin's three coins leave one for Light after buying the sword.
+"""
+[[nodes.topics.choices]]
+id="woods"
+label="Ask about the woods"
+text="""
+Go south. Defeat the goblin, then take trophy and search stump.
+Take chest key before returning north. Enemies do not block retreat.
+"""
+[[nodes.topics.choices]]
+id="workshop"
+label="Ask about the workshop"
+text="""
+Beyond the eastern gate, use mana altar for free HP and MP restoration.
+It also refreshes Focus for several actions. Status shows its duration.
+The next room east is a peaceful place to save before the golem.
+"""
+[[nodes.topics.choices]]
+id="golem"
+label="Ask about the stone golem"
+text="""
+Equip padded coat, rest at the workshop, and save NAME if you wish.
+Go east through the approach to the vault. Attack with your sword,
+or cast fireball at golem. Retreat west twice to reach the altar.
+The golem keeps its wounds when you leave; defeated enemies stay gone.
+"""

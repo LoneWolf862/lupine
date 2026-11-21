@@ -1,11 +1,12 @@
 id="camp"
 title="Training Camp"
-description="Welcome to the mini adventure. Your goal is to open the eastern gate and defeat the stone golem. Start with talk guide: introduce yourself and receive instructions. Take the dagger and scrolls; learn fireball scroll and learn healing scroll. South: goblin woods. East: market. North: dark storeroom. Use journal for your current goal, help for commands, and save NAME whenever you want to keep progress."
+description="""
+You stand in a small fort. A table rests near the guide. An armored shop
+door faces west, a wooden door north, woods south, and a gate east.
+"""
 
-[[descriptions]]
-when=[{flag_set="introduced"}]
-text="The guide is here if you need directions: talk guide. Journal shows your current goal and the complete route. South: goblin woods. East: market. North: storeroom. Check inventory and abilities to review your equipment and spells."
 [exits]
-south="woods"
-east="market"
 north="storeroom"
+south="woods"
+west="market"
+east="gate"

@@ -34,11 +34,11 @@ pub fn describe_container(world: &World, state: &GameState, id: &str) -> String 
         })
         .collect::<Vec<_>>();
     format!(
-        "\nIt is open. Contents: {}",
+        "\nIt is open. Contents:\n  {}",
         if contents.is_empty() {
             "nothing".into()
         } else {
-            contents.join(", ")
+            contents.join("\n  ")
         }
     )
 }
@@ -717,7 +717,15 @@ pub fn manipulate(
                 ));
             }
             state.objects.containers.insert(id.into(), next);
-            Ok(format!("You {verb} the {}.", item.name))
+            Ok(format!(
+                "You {verb} the {}.{}",
+                item.name,
+                if verb == "open" {
+                    describe_container(world, state, id)
+                } else {
+                    String::new()
+                }
+            ))
         }
         "consume" => {
             let d = definition(world, id)

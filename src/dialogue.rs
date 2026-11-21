@@ -20,6 +20,8 @@ pub struct Content {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Npc {
+    #[serde(default)]
+    pub keep_open: bool,
     pub name: String,
     #[serde(default)]
     pub aliases: Vec<String>,
@@ -34,6 +36,9 @@ pub struct Npc {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Node {
+    /// Immediately ask for a name through this choice, without a selection menu.
+    #[serde(default)]
+    pub prompt_choice: Option<String>,
     pub text: String,
     #[serde(default)]
     pub variants: Vec<Variant>,
@@ -241,6 +246,13 @@ impl Content {
                     }
                 }
                 let mut ids = std::collections::BTreeSet::new();
+                if let Some(prompt) = &v.prompt_choice {
+                    if !v.choices.iter().any(|c| &c.id == prompt && c.ask_name) {
+                        return Err(format!(
+                            "NPC '{id}:{nid}' prompt_choice must name an ask_name choice"
+                        ));
+                    }
+                }
                 for choice in &v.choices {
                     crate::rules::valid_id(&choice.id)?;
                     if !ids.insert(&choice.id)
@@ -359,7 +371,8 @@ pub fn select_with_name(
     *s = draft;
     Ok(lines)
 }
-/// Viewing and cancellation are read-only; one confirmed choice returns to gameplay.
+/// Viewing and cancellation are read-only. The runner settles each selected turn
+/// before reopening an opted-in persistent conversation.
 pub(crate) fn prepare(
     w: &World,
     s: &GameState,
@@ -393,43 +406,54 @@ pub(crate) fn prepare(
         writeln!(output, "No dialogue choices are available.\n")?;
         return Ok(None);
     }
-    for (i, c) in choices.iter().enumerate() {
-        writeln!(output, "  {}. {} [{}]", i + 1, c.label, c.id)?;
+    let automatic = n
+        .prompt_choice
+        .as_ref()
+        .and_then(|id| choices.iter().copied().find(|c| &c.id == id));
+    if automatic.is_none() {
+        for (i, c) in choices.iter().enumerate() {
+            writeln!(output, "  {}. {} [{}]", i + 1, c.label, c.id)?;
+        }
+        writeln!(output, "  L. Leave conversation")?;
     }
     loop {
-        write!(
-            output,
-            "Choose a response (number or ID; 0/back/cancel cancels):\n> "
-        )?;
-        output.flush()?;
-        let mut line = String::new();
-        if input.read_line(&mut line)? == 0 {
-            return Ok(None);
-        }
-        let answer = line.trim();
-        if matches!(
-            answer.to_ascii_lowercase().as_str(),
-            "0" | "back" | "cancel" | "quit"
-        ) {
-            writeln!(output, "Conversation canceled. Nothing changed.\n")?;
-            return Ok(None);
-        }
-        let selected = answer
-            .parse::<usize>()
-            .ok()
-            .and_then(|n| n.checked_sub(1))
-            .and_then(|i| choices.get(i))
-            .copied()
-            .or_else(|| {
-                choices
-                    .iter()
-                    .copied()
-                    .find(|c| c.id.eq_ignore_ascii_case(answer))
-            });
+        let selected = if let Some(c) = automatic {
+            Some(c)
+        } else {
+            write!(
+                output,
+                "Choose a response (number or ID; 0/back/cancel cancels):\n> "
+            )?;
+            output.flush()?;
+            let mut line = String::new();
+            if input.read_line(&mut line)? == 0 {
+                return Ok(None);
+            }
+            let answer = line.trim();
+            if matches!(
+                answer.to_ascii_lowercase().as_str(),
+                "0" | "back" | "cancel" | "quit" | "l" | "leave"
+            ) {
+                writeln!(output, "Conversation closed. Back to gameplay.\n")?;
+                return Ok(None);
+            }
+            answer
+                .parse::<usize>()
+                .ok()
+                .and_then(|n| n.checked_sub(1))
+                .and_then(|i| choices.get(i))
+                .copied()
+                .or_else(|| {
+                    choices
+                        .iter()
+                        .copied()
+                        .find(|c| c.id.eq_ignore_ascii_case(answer))
+                })
+        };
         if let Some(c) = selected {
             let player_name = if c.ask_name {
                 loop {
-                    writeln!(
+                    write!(
                         output,
                         "What is your name? (1-40 characters; 0/back/cancel cancels):\n> "
                     )?;

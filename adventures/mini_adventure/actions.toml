@@ -7,6 +7,7 @@ failure_text="The stump cannot be searched now."
 success_text="Inside the hollow stump you find a small chest key. Take chest key."
 [[actions]]
 id="unlock_gate"
+offer_on_enter="Use your brass key to unlock the gate?"
 commands=["unlock {target} with {item}"]
 room="gate"
 target="gate"
@@ -28,6 +29,33 @@ id="rest"
 commands=["use {target}"]
 room="workshop"
 target="mana_altar"
-effects=[{restore_hp=80},{restore_mp=30}]
-success_text="The altar restores your strength and mana. There is no charge."
+effects=[{restore_hp=80},{restore_mp=30},{apply_status="focus"}]
+success_text="The altar restores your strength and mana, and refreshes Focus."
 failure_text="You cannot rest now."
+
+[[actions]]
+id="unlock_shop"
+commands=["unlock {target} with {item}"]
+room="camp"
+target="shop_door"
+item="shop_key"
+requires=[{flag_unset="shop_open"}]
+effects=[{set_flag="shop_open"},{remove_item="shop_key"}]
+success_text="""
+The shop unlocks. The key stays in the door.
+  +-----------+
+  |     /     |
+  |   OPEN    |
+  +-----------+
+"""
+failure_text="The shop is already unlocked. Go west."
+[[actions]]
+id="unlock_chest"
+commands=["unlock {target} with {item}"]
+room="storeroom"
+target="chest"
+item="chest_key"
+requires=[{container_locked="chest"}]
+effects=[{set_container={item="chest",locked=false}},{remove_item="chest_key"}]
+success_text="The chest unlocks. The small key remains in its lock."
+failure_text="The chest is already unlocked."
