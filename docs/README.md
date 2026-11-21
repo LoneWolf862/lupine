@@ -47,4 +47,5 @@ complete-schema editing is not a claim of human beginner acceptance.
 
 Windows and Ubuntu automated results belong to their recorded commit/PR. Native
 CachyOS verification, human beginner testing and public release approval are separate
-checks. Development CI packages are not a new public release.
+checks. The current public prerelease is v0.11.0-dev.12; see [release notes](RELEASES.md).
+Development CI artifacts remain separate from permanent public release assets.

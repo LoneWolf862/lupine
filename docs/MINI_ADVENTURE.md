@@ -113,5 +113,6 @@ results belong in the PR and CI runs.
 The creator reported a real dev.11 playthrough and approved this follow-up for
 merge on 2026-11-21. See [recorded verification](PLAYTHROUGH_REVIEW.md) for the
 408-test and native package/terminal evidence. A separate completed dev.12 human
-Windows/CachyOS acceptance report remains **NOT VERIFIED**. Merge approval does
-not establish those results or authorize a new official release.
+Windows/CachyOS acceptance report remains **NOT VERIFIED**. Release approval does
+not establish those results. The creator separately authorized publishing
+v0.11.0-dev.12 on 2026-11-21; see [the release record](RELEASES.md).

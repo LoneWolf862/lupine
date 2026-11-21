@@ -6,7 +6,8 @@ Stabilization is merged through PR #43 at 7bcaa24, version 0.11.0-dev.10.
 This plan covers documentation, automated verification and a human test handoff.
 The creator approved the PR #47 playthrough follow-up for merge on 2026-11-21;
 [recorded evidence](PLAYTHROUGH_REVIEW.md) distinguishes that approval from
-pending human/platform tests. No new official release is authorized. The
+pending human/platform tests. The creator subsequently authorized publishing
+v0.11.0-dev.12; see [the release record](RELEASES.md). The
 published v0.9.0 release remains unchanged. The later dev.11 implementation
 uses RORK 7 because player naming adds persistent state; RORK 6 files require
 their matching build. PRs #44 through #46 are now merged.
