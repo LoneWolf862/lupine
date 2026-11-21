@@ -2,6 +2,12 @@ name: Lupine portable builds
 
 on:
   workflow_dispatch:
+    inputs:
+      release_package:
+        description: 'Assemble release archives and checksums (does not publish)'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -46,16 +52,19 @@ jobs:
       - name: Linux interactive history acceptance
         if: runner.os == 'Linux'
         run: python3 scripts/history_pty_check.py
-      - name: Package native development runtime and examples
+      - name: Package native runtime and examples
         id: package
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $result = python scripts/package_development.py
+          $packageArgs = @()
+          if ('${{ inputs.release_package }}' -eq 'true') { $packageArgs += '--release' }
+          $result = python scripts/package_development.py @packageArgs
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           $package = $result | ConvertFrom-Json
           "name=$($package.name)" >> $env:GITHUB_OUTPUT
-          "path=$($package.path)" >> $env:GITHUB_OUTPUT
+          $uploadPath = if ($package.assets) { $package.assets } else { $package.path }
+          "path=$uploadPath" >> $env:GITHUB_OUTPUT
       - name: Complete packaged mini adventure and export
         run: python scripts/mini_adventure_acceptance.py
       - uses: actions/upload-artifact@v4

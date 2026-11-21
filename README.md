@@ -7,24 +7,24 @@ adventure; no original story is prescribed by this engine.
 
 ## Downloads
 
-**Current development build: 0.11.0-dev.12 — includes the guided mini adventure.**
+**Current public prerelease: [v0.11.0-dev.12](https://github.com/LoneWolf862/lupine/releases/tag/v0.11.0-dev.12)** — includes the guided mini adventure and Adventure Creator.
 
-| Platform | Download the tested package | After extracting the entire ZIP |
+| Platform | Permanent public download | After extracting the entire archive |
 |---|---|---|
-| Windows x64 | [Download for Windows](https://github.com/LoneWolf862/lupine/actions/runs/44738362861/artifacts/14629952363) | Run `lupine.exe` |
-| Linux x64 / CachyOS | [Download for Linux](https://github.com/LoneWolf862/lupine/actions/runs/44738362861/artifacts/14628983841) | Run `chmod u+x lupine`, then `./lupine` |
+| Windows x64 | [Download Windows ZIP](https://github.com/LoneWolf862/lupine/releases/download/v0.11.0-dev.12/Lupine-0.11.0-dev.12-windows-x64.zip) | Open the extracted folder and run `lupine.exe` |
+| Linux x64 / CachyOS | [Download Linux tar.gz](https://github.com/LoneWolf862/lupine/releases/download/v0.11.0-dev.12/Lupine-0.11.0-dev.12-linux-x64.tar.gz) | Open a terminal in the extracted folder and run `./lupine` |
 
-These are verified development artifacts from November 20, 2026. GitHub sign-in
-is required to download them; they expire on **December 4, 2026 (UTC)**.
-For newer packages or expired links, open [Portable builds](https://github.com/LoneWolf862/lupine/actions/workflows/build.yml),
-choose a successful run, and download the Windows or Linux package under **Artifacts**.
+**No GitHub account or sign-in is required. These release downloads do not expire.**
+Download the package for your OS, not GitHub's automatic source-code archive.
+[Release notes and SHA-256 checksums](https://github.com/LoneWolf862/lupine/releases/tag/v0.11.0-dev.12)
+· [Installation details](docs/INSTALLATION.md) · [Mini-adventure walkthrough](docs/MINI_ADVENTURE.md).
 No account, network connection or Rust installation is needed to play after download.
-[Installation details](docs/INSTALLATION.md) · [Mini-adventure walkthrough](docs/MINI_ADVENTURE.md)
 
-**Older published release (v0.9.0):** [Windows ZIP](https://github.com/LoneWolf862/lupine/releases/download/v0.9.0/Lupine-v0.9.0-windows-x64.zip)
-· [Linux tar.gz](https://github.com/LoneWolf862/lupine/releases/download/v0.9.0/Lupine-v0.9.0-linux-x64.tar.gz).
-These permanent public downloads do **not** contain the current mini adventure
-or the later creator/parser improvements. The v0.9.0 release remains unchanged.
+This is a development prerelease, not a claim of completed beginner or native CachyOS
+acceptance. The [older v0.9.0 release](https://github.com/LoneWolf862/lupine/releases/tag/v0.9.0)
+remains available unchanged and lacks the current creator/parser improvements.
+For contributor-only builds, [Actions artifacts](https://github.com/LoneWolf862/lupine/actions/workflows/build.yml)
+still require GitHub sign-in and expire after 14 days; use the public downloads above to share Lupine.
 
 ## Current development
 
@@ -34,7 +34,8 @@ player naming, parser improvements and clearer terminal presentation in
 work for merge on November 21, 2026. [Verification and remaining acceptance](docs/PLAYTHROUGH_REVIEW.md)
 records 408 Rust tests, Windows/Ubuntu CI, terminal playthroughs and native package
 checks. Native CachyOS and broader human beginner acceptance remain separate.
-These development artifacts are not a new official release.
+The creator authorized publishing the current version on November 21, 2026;
+see the [release record](docs/RELEASES.md).
 
 The merged [engine expansion](docs/ENGINE_EXPANSION.md) adds file-authored scenario
 tests and [shared rules](docs/RULES.md): nested conditions, counters, ordered outcomes

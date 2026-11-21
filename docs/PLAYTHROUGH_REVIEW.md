@@ -5,7 +5,8 @@
 Development 0.11.0-dev.12, [PR #47](https://github.com/LoneWolf862/lupine/pull/47),
 implements the creator-directed follow-up to the dev.11 playthrough. The creator
 approved merging this work on **2026-11-21**. This approval is not a record of
-native CachyOS testing or approval to publish a new official release.
+native CachyOS testing. The creator subsequently authorized publishing
+v0.11.0-dev.12; see [the release record](RELEASES.md).
 
 - Eight rooms: shop west of camp; storeroom north with only a south exit;
   gate east; workshop, peaceful approach and final golem beyond it.
@@ -55,7 +56,7 @@ not been supplied. Broader nontechnical creator acceptance also remains open.
 Use the [walkthrough and platform checklist](MINI_ADVENTURE.md) to record those
 results without repeating all developer fixtures.
 
-[Front-page downloads](../README.md#downloads) distinguish the tested dev.12
-artifacts from the older permanent v0.9.0 release. Actions artifacts require
-GitHub sign-in and expire; keep a local copy of a runtime and its metadata when
-exporting. New official release publication requires separate creator approval.
+[Front-page downloads](../README.md#downloads) now use permanent public dev.12
+release assets, available without GitHub sign-in. The earlier Actions links
+required sign-in and expired. Keep a local copy of a runtime and its metadata
+when exporting. The older v0.9.0 release remains unchanged.

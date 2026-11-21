@@ -1,4 +1,4 @@
-"""Assemble and verify a native development package; never publish a release.
+"""Assemble and verify a native package; never publish to GitHub.
 
 Run after cargo build --locked --release. Only tracked docs, templates and playable
 examples are copied, so local adventures, saves and build output cannot leak in.
@@ -10,12 +10,14 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import tarfile
 import tomllib
+import zipfile
 
 from check_docs import check
 
 
-def package(binary, destination=None):
+def package(binary, destination=None, release=False):
     root = Path(__file__).resolve().parents[1]
     version = tomllib.loads((root / "Cargo.toml").read_text(encoding="utf-8"))["package"]["version"]
     binary = binary.resolve(strict=True)
@@ -61,7 +63,7 @@ def package(binary, destination=None):
         raise ValueError("Copied runtime digest mismatch")
     (destination / "lupine.runtime.toml").write_text(manifest, encoding="utf-8")
     (destination / "START_HERE.txt").write_text(
-        f"Lupine {version} development build for {native}\n"
+        f"Lupine {version} {'release package' if release else 'development build'} for {native}\n"
         "Extract the complete package. No Rust, account or internet is needed.\n"
         "Windows: launch lupine.exe. Linux: chmod u+x lupine, then ./lupine.\n"
         "Startup offers Play, Create or Edit, Help and Exit.\n"
@@ -73,7 +75,8 @@ def package(binary, destination=None):
         "Creator E exports ZIPs or folders using matching local runtimes.\n"
         "Keep lupine.runtime.toml beside this executable for offline cross-platform export.\n"
         "Linux requires a compatible x86_64 glibc system (CI builds on Ubuntu 22.04).\n"
-        "This package is not an official release and does not replace v0.9.0.\n",
+        + (f"Public release: https://github.com/LoneWolf862/lupine/releases/tag/v{version}\n"
+           if release else "This is a CI/local development package, not a published release.\n"),
         encoding="utf-8",
     )
     documents = check(destination)
@@ -88,13 +91,43 @@ def package(binary, destination=None):
             subprocess.run([str(executable), "test", str(destination / game), str(scenarios)],
                            cwd=destination, check=True, capture_output=True, text=True, encoding="utf-8", timeout=90)
     marker.unlink()
-    return dict(name=name, path=str(destination), target=native, version=version,
-                documents=documents, examples=1 + len(games), sha256=metadata["sha256"])
+    result = dict(name=name, path=str(destination), target=native, version=version,
+                  documents=documents, examples=1 + len(games), sha256=metadata["sha256"])
+    if release:
+        assets = destination.parent / (name + "-release-assets")
+        assets.mkdir()  # Refuse to replace any previously assembled release assets.
+        archive = Path(shutil.make_archive(str(assets / name),
+                       "zip" if os.name == "nt" else "gztar",
+                       root_dir=destination.parent, base_dir=destination.name))
+        expected = {p.relative_to(destination.parent).as_posix():
+                    hashlib.sha256(p.read_bytes()).hexdigest()
+                    for p in destination.rglob("*") if p.is_file()}
+        # Compare every archived file with the tested package, not just the binary.
+        if os.name == "nt":
+            with zipfile.ZipFile(archive) as packed:
+                actual = {p.filename: hashlib.sha256(packed.read(p)).hexdigest()
+                          for p in packed.infolist() if not p.is_dir()}
+        else:
+            with tarfile.open(archive) as packed:
+                actual = {p.name: hashlib.sha256(packed.extractfile(p).read()).hexdigest()
+                          for p in packed.getmembers() if p.isfile()}
+                if not packed.getmember(f"{destination.name}/lupine").mode & 0o111:
+                    raise ValueError("Linux release archive lost executable permissions")
+        if actual != expected:
+            raise ValueError("Release archive inventory or contents differ from the tested package")
+        digest = hashlib.sha256(archive.read_bytes()).hexdigest()
+        (assets / f"SHA256SUMS-{native}.txt").write_text(
+            f"{digest}  {archive.name}\n", encoding="utf-8")
+        result["assets"] = str(assets)
+        result["archive"] = str(archive)
+    return result
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--binary", type=Path, default=Path(__file__).resolve().parents[1] / "target" / "release" / ("lupine.exe" if os.name == "nt" else "lupine"))
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--release", action="store_true",
+                        help="Also create a verified release archive and checksum; does not publish")
     args = parser.parse_args()
-    print(json.dumps(package(args.binary, args.output), indent=2))
+    print(json.dumps(package(args.binary, args.output, args.release), indent=2))

@@ -10,8 +10,9 @@ and [downloads](../README.md#downloads). Check GitHub for the current merge/CI s
 before starting another isolated branch and draft PR.
 
 RORK remains 7; the revised mini adventure uses content compatibility 2.
-Native CachyOS and broader human beginner acceptance remain open. No new official
-release is authorized; preserve published v0.9.0. Do not resume the retired
+Native CachyOS and broader human beginner acceptance remain open. The creator authorized
+publishing v0.11.0-dev.12 on 2026-11-21; see [the release record](RELEASES.md).
+Preserve published v0.9.0. Do not resume the retired
 branches/worktrees described in the historical entries below.
 
 ## Historical handoffs

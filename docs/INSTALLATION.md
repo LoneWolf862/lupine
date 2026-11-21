@@ -3,30 +3,31 @@
 ## Pick the right build
 
 [Download Windows or Linux from the front page](../README.md#downloads). The
-current dev.12 Actions artifacts require GitHub sign-in; the older permanent
-v0.9.0 release links do not. Gameplay itself is fully offline.
+current public prerelease is **v0.11.0-dev.12**. Its release assets require no
+GitHub account or sign-in and do not expire. Use the Windows ZIP or Linux tar.gz,
+not the automatic source-code archives. Gameplay itself is fully offline.
 
-The published v0.9.0 release is historical and unchanged. The merged engine expansion
-and creator features belong to 0.11.0-dev.12 development builds, available after building this source or downloading
-the matching manually dispatched GitHub Actions artifact. A development artifact is
-not an official release. Windows x64 and Linux x64 are separate executables.
+The older v0.9.0 release remains unchanged. The current prerelease includes the
+merged engine expansion, Adventure Creator and guided mini adventure. Windows
+x64 and Linux x64 are separate executables. [Release notes](RELEASES.md).
 
 Windows targets Windows 10 x64 and compatible newer Windows. Linux workflow builds on
 Ubuntu 22.04 with glibc; a compatible x86_64 glibc distribution is required. Native
 CachyOS acceptance is not claimed. No macOS or ARM distribution is offered by export.
 
-Extract the entire artifact. Windows: run lupine.exe, or Play.cmd in an adventure export.
+Extract the entire archive and open the enclosed Lupine folder. Windows: run lupine.exe, or Play.cmd in an adventure export.
 Linux: open a terminal in the extracted folder, `chmod u+x lupine`, then `./lupine`;
 an adventure export also supports `sh Play.sh`, including after ZIP extraction loses
 the executable bit. The terminal stays the interface; there is no graphical editor.
 Players need no Rust installation, account or internet.
 
-Portable development packages include README.md, docs/, templates/starter/,
+Portable packages include README.md, docs/, templates/starter/,
 story_example/, adventures/mini_adventure/ and playable samples/. Start at docs/README.md for offline player,
 creator and developer references. Open Markdown files with a text editor if no
 Markdown viewer is installed. Instructions mentioning Cargo or source files apply
 to a source checkout; standalone authoring uses the included executable instead.
-Development artifacts expire after 14 days on GitHub Actions; keep a local copy
+Public release assets do not expire. Contributor Actions artifacts require sign-in
+and expire after 14 days; keep a local copy
 of the matching runtime and its metadata when exporting for another platform.
 
 Maintainers assemble the same verified native package locally with
@@ -35,7 +36,10 @@ Maintainers assemble the same verified native package locally with
 checks offline documentation and runs validation on the copied examples. An existing
 destination is refused; `--output NEW_PATH` selects another. Only tracked documentation,
 templates and playable examples are included. PACKAGE_INCOMPLETE.txt marks an
-interrupted assembly and must not be distributed. This command never publishes a release.
+interrupted assembly and must not be distributed. Add `--release` to create a Windows ZIP or Linux tar.gz and a SHA-256 checksum
+from the verified package. It checks every archived file against the package and
+preserves Linux executable permissions. This command never publishes a release;
+see the [maintainer release procedure](RELEASES.md#maintainer-procedure).
 
 ## Startup and play
 

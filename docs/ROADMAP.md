@@ -9,7 +9,8 @@ unchanged. [Stabilization](STABILIZATION.md) delivered current documentation, of
 packages, routine CI and consumable reachability diagnostics. The
 [acceptance plan](ACCEPTANCE_PLAN.md) now covers a complete creator-directed adventure,
 human beginner/player review and native Windows 10/CachyOS testing. See [recorded automated evidence and remaining human checks](PLAYTHROUGH_REVIEW.md).
-Native CachyOS and broader human beginner acceptance remain pending. A prerelease needs separate approval.
+Native CachyOS and broader human beginner acceptance remain pending. The creator authorized the current-version
+prerelease on 2026-11-21; see [release notes and packaging](RELEASES.md).
 
 Direct TOML/FIG authoring remains primary. [ENGINE_EXPANSION.md](ENGINE_EXPANSION.md)
 records the nine completed phases and original verification. Earlier review orders,

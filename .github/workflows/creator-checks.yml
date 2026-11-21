@@ -36,8 +36,8 @@ jobs:
       - name: Linux interactive history acceptance
         if: runner.os == 'Linux'
         run: python scripts/history_pty_check.py
-      - name: Verify portable development package
-        run: python scripts/package_development.py
+      - name: Verify portable package and release archive
+        run: python scripts/package_development.py --release
       - name: Complete packaged mini adventure and export
         run: python scripts/mini_adventure_acceptance.py
       - name: Retain acceptance evidence
