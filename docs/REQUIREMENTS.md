@@ -164,10 +164,10 @@ This section supersedes earlier descriptions of save/load as optional for Lupine
 - Store per-game saves in user-data locations, independent of installation paths. The file contents must be portable across Windows/Linux when the same game version is compatible.
 - Protect against partial writes and report corrupt or incompatible saves without panics or accidental overwrites.
 
-### Implemented creator expansion (development candidate)
+### Implemented creator expansion (current development)
 
-Complete current-schema structural/text editing, multi-file repair, definition copying and validated deletion use explicit Snapshot publication. Dedicated combat FIG and publication-property forms are available. Author inspection and scenario trace never write progress. Publication credits/license/instructions accompany exports when authored. These features preserve manual-only RORK version 6 and do not promise human beginner or native CachyOS acceptance. Details: [PROJECT_EDITOR.md](PROJECT_EDITOR.md).
+Complete current-schema structural/text editing, multi-file repair, definition copying and validated deletion use explicit Snapshot publication. Dedicated combat FIG and publication-property forms are available. Author inspection and scenario trace never write progress. Publication credits/license/instructions accompany exports when authored. These features preserve manual-only saving; current RORK is version 7 with player-name state and do not promise human beginner or native CachyOS acceptance. Details: [PROJECT_EDITOR.md](PROJECT_EDITOR.md).
 
-Phase 9 candidate: shared searchable/paged lists retain explicit selection and stable displayed numbers; draft visibility and room-centered navigation preserve separate confirmation boundaries. Local runtime discovery never executes or downloads candidates. See CREATOR_NAVIGATION.md and ENGINE_EXPANSION.md for verification.
+Implemented Phase 9: shared searchable/paged lists retain explicit selection and stable displayed numbers; draft visibility and room-centered navigation preserve separate confirmation boundaries. Local runtime discovery never executes or downloads candidates. See CREATOR_NAVIGATION.md and ENGINE_EXPANSION.md for verification.
 
 NPC content is authored one NPC per NPCs/*.toml, including its conversation nodes, conditions and effects. Stable IDs are independent of filenames. NPC item ownership references separate item definitions. See DIALOGUE.md for the complete schema and the explicit development-layout migration.

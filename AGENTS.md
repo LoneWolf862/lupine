@@ -9,7 +9,7 @@
 
 ## Current pre-release policy (2026-11-18)
 
-Lupine is pre-1.0. The published v0.9.0 standalone release remains unchanged; current development uses 0.11.0-dev.11. No known external games require development-version compatibility. Justified breaking API and format changes are allowed. Do not add obsolete-format loaders or unnecessary compatibility layers. Update bundled samples, templates, tests and current documentation together; preserve gameplay unless a change is intentional.
+Lupine is pre-1.0. The published v0.9.0 standalone release remains unchanged; current development uses 0.11.0-dev.12. No known external games require development-version compatibility. Justified breaking API and format changes are allowed. Do not add obsolete-format loaders or unnecessary compatibility layers. Update bundled samples, templates, tests and current documentation together; preserve gameplay unless a change is intentional.
 
 File responsibilities:
 
@@ -31,9 +31,10 @@ Character/progression and terminology FIGs, the guided creator and Phase 3 parse
 
 ## Development workflow
 
-- Engine expansion, stabilization and acceptance/parser follow-ups through PR #45
-  are merged. Current approved work is the guided mini adventure, dialogue-based
-  player naming and human-playthrough/parser fixes; see docs/MINI_ADVENTURE.md.
+- Engine expansion, stabilization and guided-adventure follow-ups through PR #47
+  are implemented; the creator approved PR #47 for merge on 2026-11-21.
+  See docs/PLAYTHROUGH_REVIEW.md for verification and remaining human acceptance,
+  and docs/MINI_ADVENTURE.md for the current adventure. Check GitHub for merge state.
   RORK 7 adds actual name state. Historical stabilization is in docs/STABILIZATION.md.
   File-based TOML/FIG authoring is primary. Use isolated branches/worktrees,
   checkpoint pushes and draft PRs. Do not merge or publish without human approval.

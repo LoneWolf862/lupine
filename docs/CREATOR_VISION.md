@@ -6,7 +6,7 @@ over wizard convenience. See [current reference](CONTENT_REFERENCE.md) and
 [merged expansion](ENGINE_EXPANSION.md). Stabilization is merged; current work is
 [complete-adventure and platform acceptance](ACCEPTANCE_PLAN.md).
 
-**Status:** Engine and terminal creator implemented through PR #43; final
+**Status:** Engine and terminal creator implemented through PR #47; final
 nontechnical accessibility remains unverified and is **not an MVP/course acceptance gate**.
 Advanced features use direct files or structural/text editing, not bespoke beginner forms.
 **Project:** Lupine (engine); HOWLBOUND (tentative first game and authoring-system test case).

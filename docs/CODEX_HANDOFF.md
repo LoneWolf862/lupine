@@ -2,13 +2,17 @@
 
 ## Current handoff
 
-Development through PR #43 is merged. Continue from current main using an isolated
-branch/worktree and a draft PR. [STABILIZATION.md](STABILIZATION.md) records the
-merged verification. Current approved work is status-documentation correction and
-the [acceptance plan](ACCEPTANCE_PLAN.md), including automated verification and
-a handoff for human Windows/CachyOS testing.
-Do not resume the retired branches or worktrees named below. No merge or release
-is authorized. Published v0.9.0 and manual-only RORK remain unchanged.
+Development 0.11.0-dev.12 includes PR #47's creator-approved mini-adventure,
+dialogue, parser and presentation work. The creator authorized its merge and
+front-page download/documentation updates on 2026-11-21. See
+[verification evidence](PLAYTHROUGH_REVIEW.md), [current walkthrough](MINI_ADVENTURE.md)
+and [downloads](../README.md#downloads). Check GitHub for the current merge/CI state
+before starting another isolated branch and draft PR.
+
+RORK remains 7; the revised mini adventure uses content compatibility 2.
+Native CachyOS and broader human beginner acceptance remain open. No new official
+release is authorized; preserve published v0.9.0. Do not resume the retired
+branches/worktrees described in the historical entries below.
 
 ## Historical handoffs
 

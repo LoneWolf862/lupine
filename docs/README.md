@@ -1,6 +1,8 @@
 # Lupine documentation
 
-These entry points describe development 0.11.0-dev.11, with development through PR #45 merged. The mini-adventure follow-up is a candidate.
+These entry points describe development 0.11.0-dev.12, including the creator-approved
+playthrough follow-up in PR #47. [Downloads](../README.md#downloads) and
+[verification evidence](PLAYTHROUGH_REVIEW.md) cover the current build.
 The published v0.9.0 executable has fewer features. [Stabilization](STABILIZATION.md)
 records merged verification; the [acceptance plan](ACCEPTANCE_PLAN.md) describes
 remaining human/platform checks. [Engine expansion](ENGINE_EXPANSION.md)

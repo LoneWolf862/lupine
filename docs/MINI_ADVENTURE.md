@@ -1,6 +1,6 @@
 # Lupine Mini Adventure
 
-Development 0.11.0-dev.12 candidate, based on the creator's dev.11 actual and
+Development 0.11.0-dev.12, approved for merge on 2026-11-21, based on the creator's dev.11 actual and
 example playthroughs. This eight-room training adventure combines the human
 player checks. It is not HOWLBOUND and establishes no original-game lore.
 Smaller samples remain developer regression fixtures.
@@ -110,7 +110,8 @@ save/restart and exported-launcher victory. Linux CI additionally exercises the
 name prompt, persistent conversation and complete route in a real PTY. Exact
 results belong in the PR and CI runs.
 
-The creator reported a real dev.11 playthrough; that is baseline evidence.
-Human acceptance of these dev.12 changes and native CachyOS testing remain
-**NOT VERIFIED** until reported. Windows automation and Ubuntu CI do not replace
-those checks. No release or merge is authorized by this candidate document.
+The creator reported a real dev.11 playthrough and approved this follow-up for
+merge on 2026-11-21. See [recorded verification](PLAYTHROUGH_REVIEW.md) for the
+408-test and native package/terminal evidence. A separate completed dev.12 human
+Windows/CachyOS acceptance report remains **NOT VERIFIED**. Merge approval does
+not establish those results or authorize a new official release.

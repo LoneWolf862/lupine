@@ -5,16 +5,18 @@
 - Complete the [adventure and platform acceptance plan](ACCEPTANCE_PLAN.md).
   [Stabilization](STABILIZATION.md) is merged and its main CI passed.
 - Human Windows beginner walkthrough, original-player retest and native CachyOS terminal/export acceptance.
-- A complete small creator-directed adventure, with scenarios for intended and failed paths.
+- The [guided mini adventure](MINI_ADVENTURE.md) and its scenarios are implemented.
+  Next: record human acceptance and use feedback to direct further work.
 - Broader beginner usability testing, particularly prerequisites and recovery guidance.
 - Optional pronouns/chained commands with explicit validation and cancellation.
 - Optional ZIP compression; built-in export currently uses standard stored ZIP entries.
 - More targeted history scope; current memory-only history spans a CLI invocation.
 - Human-reviewed official release readiness; never rewrite v0.9.0 automatically.
 
-All development through PR #43 is merged: startup/history, parser clarification,
+Development through PR #47 is implemented and creator-approved for merge: startup/history, parser clarification,
 bindings/migration/recovery, exports, engine expansion, per-file NPCs and whole-turn
-rollback. [Engine expansion](ENGINE_EXPANSION.md) preserves original verification.
+rollback, plus the guided mini adventure and playthrough refinements.
+[Current verification](PLAYTHROUGH_REVIEW.md) and [engine expansion](ENGINE_EXPANSION.md) preserves original verification.
 There is no remaining Phase 4/expansion merge stack. Keep the runtime lightweight,
 offline, terminal-only and story-independent. Never autosave.
 
